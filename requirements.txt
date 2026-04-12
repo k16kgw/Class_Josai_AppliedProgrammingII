@@ -1,0 +1,6 @@
+# Python パッケージ
+matplotlib
+numpy
+
+# MyST インタラクティブ対応
+jupyterlab_myst

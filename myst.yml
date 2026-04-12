@@ -1,0 +1,24 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: 2853ef66-98c8-4f5e-b8d6-396b3b1bcdef
+  title: 応用プログラミングII
+  description: 城西大学 応用プログラミングII
+  authors:
+    - name: Keiichiro Kagawa
+    - email: kkagawa@josai.ac.jp
+  github: https://github.com/k16kgw/Class_Josai_AppliedProgrammingII
+  bibliography:
+    - references.bib
+  numbering:
+    headings: true
+  toc:
+    - file: intro.md
+    - file: contents/1_overview.md
+    # - file: contents/2_chapter2.md
+    # - file: contents/3_chapter3.md
+
+site:
+  options:
+    folders: true
+  template: book-theme
