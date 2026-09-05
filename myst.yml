@@ -14,9 +14,32 @@ project:
     headings: true
   toc:
     - file: intro.md
-    - file: contents/1_overview.md
-    # - file: contents/2_chapter2.md
-    # - file: contents/3_chapter3.md
+    - file: contents/1_initial_value_problem.md
+      title: 第1回：常微分方程式の初期値問題
+    - file: contents/2_explicit_methods.md
+      title: 第2回：陽解法と安定性
+    - file: contents/3_accuracy.md
+      title: 第3回：計算精度
+    - file: contents/4_runge_kutta.md
+      title: 第4回：Runge-Kutta法
+    - file: contents/5_structure_preserving.md
+      title: 第5回：構造保存数値解法
+    - file: contents/6_ode_models.md
+      title: 第6回：常微分方程式による数理モデル
+    - file: contents/7_linear_stability.md
+      title: 第7回：線形安定性解析
+    - file: contents/8_ode_simulation.md
+      title: 第8回：常微分方程式モデルの数値シミュレーション
+    - file: contents/9_bifurcation.md
+      title: 第9回：分岐解析
+    - file: contents/10_open_data_modeling.md
+      title: 第10回：オープンデータと微分方程式モデルの構築
+    - file: contents/11_parameter_estimation.md
+      title: 第11回：微分方程式モデルのパラメタ推定
+    - file: contents/12_model_validation.md
+      title: 第12回：モデルの検証と最終レポート準備
+    - file: contents/13_final_report.md
+      title: 第13回：最終レポートの案内（休講）
 
 site:
   options:
