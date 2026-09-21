@@ -14,21 +14,21 @@ project:
     headings: true
   toc:
     - file: intro.md
-    - file: contents/1_modeling.md
-    - file: contents/2_ode_simulation.md
-    - file: contents/3_population_exponential.md
-    - file: contents/4_logistic.md
-    - file: contents/5_parameter_sweep.md
-    - file: contents/6_reservoir_balance.md
-    - file: contents/7_parameter_estimation.md
-    - file: contents/8_tank_model.md
-    - file: contents/9_periodic_forcing.md
-    - file: contents/10_lotka_volterra.md
-    - file: contents/11_sir_model.md
-    - file: contents/12_validation.md
-    - file: contents/13_project.md
-    - file: data/README.md
-      title: 授業用データ一覧
+    # - file: contents/1_modeling.md
+    # - file: contents/2_ode_simulation.md
+    # - file: contents/3_population_exponential.md
+    # - file: contents/4_logistic.md
+    # - file: contents/5_parameter_sweep.md
+    # - file: contents/6_reservoir_balance.md
+    # - file: contents/7_parameter_estimation.md
+    # - file: contents/8_tank_model.md
+    # - file: contents/9_periodic_forcing.md
+    # - file: contents/10_lotka_volterra.md
+    # - file: contents/11_sir_model.md
+    # - file: contents/12_validation.md
+    # - file: contents/13_project.md
+    # - file: data/README.md
+    #   title: 授業用データ一覧
 
 site:
   options:
