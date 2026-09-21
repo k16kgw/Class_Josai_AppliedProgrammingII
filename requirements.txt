@@ -1,6 +1,8 @@
 # Python パッケージ
 matplotlib
 numpy
+pandas
+scipy
 
 # MyST インタラクティブ対応
 jupyterlab_myst
