@@ -154,6 +154,8 @@ pip install numpy pandas matplotlib scipy jupyterlab
 まず，この講義で繰り返し使う人口データを見ておく．
 下の図は，総務省統計局「人口推計」の長期時系列データから作った，日本の総人口の推移である．
 
+![population_observed.png](figs/01/population_observed.png)
+
 ```python
 population = pd.read_csv(DATA_DIR / "population_japan.csv")
 
