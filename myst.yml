@@ -30,7 +30,7 @@ project:
     # - file: contents/12_validation.md
     # - file: contents/13_project.md
     - file: contents/A_data_preprocessing.md
-      title: 補助教材A：データの取得と前処理
+      # title: 補助教材A：データの取得と前処理
     - file: data/README.md
       title: 授業用データ一覧
 
