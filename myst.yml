@@ -7,7 +7,9 @@ project:
   authors:
     - name: Keiichiro Kagawa
       email: kkagawa@josai.ac.jp
-  github: https://github.com/k16kgw/Class_Josai_AppliedProgrammingII
+  edit_url: null
+  source_url: null
+  downloads: []
   bibliography:
     - references.bib
   numbering:
@@ -15,24 +17,26 @@ project:
   toc:
     - file: intro.md
     - file: contents/1_modeling.md
-    - file: contents/2_ode_simulation.md
-    - file: contents/3_population_exponential.md
-    - file: contents/4_logistic.md
-    - file: contents/5_parameter_sweep.md
-    - file: contents/6_reservoir_balance.md
-    - file: contents/7_parameter_estimation.md
-    - file: contents/8_tank_model.md
-    - file: contents/9_periodic_forcing.md
-    - file: contents/10_lotka_volterra.md
-    - file: contents/11_sir_model.md
-    - file: contents/12_validation.md
-    - file: contents/13_project.md
+    # - file: contents/2_ode_simulation.md
+    # - file: contents/3_population_exponential.md
+    # - file: contents/4_logistic.md
+    # - file: contents/5_parameter_sweep.md
+    # - file: contents/6_reservoir_balance.md
+    # - file: contents/7_parameter_estimation.md
+    # - file: contents/8_tank_model.md
+    # - file: contents/9_periodic_forcing.md
+    # - file: contents/10_lotka_volterra.md
+    # - file: contents/11_sir_model.md
+    # - file: contents/12_validation.md
+    # - file: contents/13_project.md
     - file: contents/A_data_preprocessing.md
       title: 補助教材A：データの取得と前処理
     - file: data/README.md
       title: 授業用データ一覧
 
 site:
+  title: 応用プログラミングII
   options:
     folders: true
+    style: styles/site.css
   template: book-theme

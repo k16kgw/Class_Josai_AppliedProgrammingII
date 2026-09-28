@@ -1,0 +1,6 @@
+/* Do not expose source-code actions on the student-facing site. */
+.myst-fm-github-link,
+.myst-fm-edit-link,
+.myst-fm-downloads-dropdown {
+  display: none !important;
+}
