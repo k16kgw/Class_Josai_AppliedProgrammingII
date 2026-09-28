@@ -627,11 +627,10 @@ print(f"仮定Bの2020年: {x_prop_model[-1]:8.1f} 万人（差 {x_prop_model[-1
 
 ````{warning} 課題1：現象をモデルの要素に分解し，変化率の式を立てる
 
-演習1で選んだもの以外の現象を1つ選び，次を`README.md`の「課題1」に書く．
+演習1で選んだ現象について次の問いに答えよ．
 
-1. 8つの要素（現象，目的，状態変数，観測量，パラメタ，初期条件，外部入力，仮定）の表．状態変数と観測量には単位を付ける．
-2. 状態変数の変化率についての仮定を1つ置き，それを $x' = \cdots$ の形の式で書く．右辺の各項が何を表すかと，両辺の単位が一致することを説明する．
-3. その仮定が成り立たなくなりそうな状況を1つ挙げる．
+1. 状態変数の変化率についての仮定を1つ置き，それを $x' = \cdots$ の形の式で書く．右辺の各項が何を表すかと，両辺の単位が一致することを説明する．
+2. その仮定が成り立たなくなりそうな状況を1つ挙げる．
 
 自分で式を立てられれば，形は $x' = a$ や $x' = rx$ でなくてもよい．
 ````
@@ -639,16 +638,9 @@ print(f"仮定Bの2020年: {x_prop_model[-1]:8.1f} 万人（差 {x_prop_model[-1
 <!--
 ```{dropdown} 課題1の解答例：教室内の二酸化炭素濃度
 
-| 要素 | 内容 |
-| --- | --- |
-| 現象 | 授業中の教室内の二酸化炭素濃度の変化 |
-| 目的 | 在室人数と換気が二酸化炭素濃度に与える影響を説明し，濃度の推移を見積もる |
-| 状態変数 | 時刻$t$における教室内の平均二酸化炭素濃度$C(t)$［ppm］ |
-| 観測量 | 教室内のセンサーで一定時間ごとに測定した二酸化炭素濃度［ppm］ |
-| パラメタ | 1人当たりの二酸化炭素発生量$q$［ppm／（人・分）］，換気による除去率$k$［1／分］，外気濃度$C_{\mathrm{out}}$［ppm］ |
-| 初期条件 | 授業開始時の平均濃度$C(0)=600$［ppm］ |
-| 外部入力 | 時刻$t$に教室内にいる人数$n(t)$［人］ |
-| 仮定 | 教室内の空気は十分に混ざり，$q$，$k$，$C_{\mathrm{out}}$は授業中一定とする |
+演習1で「授業中の教室内の二酸化炭素濃度の変化」を選び，状態変数を時刻$t$における教室内の平均二酸化炭素濃度$C(t)$［ppm］とした場合を考える．
+
+**1．変化率の式と各項の意味**
 
 二酸化炭素は在室者によって増加し，外気濃度との差に比例して換気により減少すると仮定する．このとき，
 
@@ -657,7 +649,9 @@ $$
 =q n(t)-k\left(C-C_{\mathrm{out}}\right)
 $$
 
-と書ける．$qn(t)$は在室者による増加量で，単位は
+と書ける．ここで，$n(t)$は在室人数［人］，$q$は1人当たりの二酸化炭素発生量［ppm／（人・分）］，$k$は換気による除去率［1／分］，$C_{\mathrm{out}}$は外気の二酸化炭素濃度［ppm］である．
+
+$qn(t)$は在室者による増加量で，単位は
 
 $$
 \frac{\mathrm{ppm}}{\mathrm{人}\cdot\mathrm{分}}
@@ -674,6 +668,8 @@ $$
 
 となる．左辺$dC/dt$の単位もppm／分であるため，両辺の単位は一致する．
 
+**2．仮定が成り立たなくなる状況**
+
 窓や扉の開閉によって換気量が大きく変わる場合や，教室内の空気が十分に混ざらず場所によって濃度が異なる場合には，$k$が一定で教室内の濃度が一様という仮定は成り立たない．
 ```
 -->
@@ -682,13 +678,123 @@ $$
 
 1. `year_end`を`1950`，`1970`，`1990`の3通りに変え，それぞれについて「オープンデータとの比較」の図を作成し，`reports/figures/`に保存する．
 2. 3枚の図を見比べ，パラメタを決める期間を変えると2020年の予測がどう変わるかを表にまとめる．
-3. 「仮定Bは1970年までよく合う．しかし1970年以降を予測するには不十分である」という結論について，どの仮定が足りないと考えるかを200字程度で書く．「データに合わない」と書くだけでなく，現実のどの要因がモデルに入っていないかを具体的に挙げる．
+3. 「仮定Bは1970年までよく合う．しかし1970年以降を予測するには不十分である」という結論について，どの仮定が足りないと考えるかを200字程度で書く．「データに合わない」と書くだけでなく，現実のどの要素がモデルに入っていないかを具体的に挙げる．
 ````
 
 <!--
 ```{dropdown} 課題2の解答例
 
+**1．`year_end`を変えた計算と作図**
+
+「オープンデータとの比較」までのセルを実行し，`population`，`constant_growth`，`proportional_growth`，`FIGURE_DIR`を定義してから，次のコードを実行する．
+
+```python
+year_start = 1920
+prediction_year = 2020
+fit_end_years = [1950, 1970, 1990]
+
+x_start = float(
+    population.loc[
+        population["year"] == year_start,
+        "population_10k",
+    ].iloc[0]
+)
+x_2020_obs = float(
+    population.loc[
+        population["year"] == prediction_year,
+        "population_10k",
+    ].iloc[0]
+)
+population_to_2020 = population[
+    population["year"] <= prediction_year
+]
+
+comparison_rows = []
+
+for year_end in fit_end_years:
+    x_end = float(
+        population.loc[
+            population["year"] == year_end,
+            "population_10k",
+        ].iloc[0]
+    )
+    duration = year_end - year_start
+
+    # year_startとyear_endの観測値を通るように，
+    # 仮定A・Bのパラメタをそれぞれ計算する．
+    a_data = (x_end - x_start) / duration
+    r_data = (x_end / x_start) ** (1 / duration) - 1
+
+    n_steps = prediction_year - year_start
+    model_years = year_start + np.arange(n_steps + 1)
+    x_const_model = constant_growth(x_start, a_data, n_steps)
+    x_prop_model = proportional_growth(x_start, r_data, n_steps)
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.plot(
+        population_to_2020["year"],
+        population_to_2020["population_10k"],
+        color="black",
+        marker="o",
+        markersize=3,
+        linestyle="none",
+        label="observed",
+    )
+    ax.plot(
+        model_years,
+        x_const_model,
+        linestyle="--",
+        label=f"A: constant increase (a = {a_data:.1f})",
+    )
+    ax.plot(
+        model_years,
+        x_prop_model,
+        linestyle="-",
+        label=f"B: proportional increase (r = {r_data:.4f})",
+    )
+    ax.axvline(
+        year_end,
+        color="gray",
+        linestyle=":",
+        label="end of fitting period",
+    )
+    ax.set_title(
+        f"Two growth models fitted to {year_start}-{year_end}"
+    )
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Population [10^4 persons]")
+    ax.grid(True)
+    ax.legend()
+    fig.tight_layout()
+
+    output_path = (
+        FIGURE_DIR / f"population_two_models_{year_end}.png"
+    )
+    fig.savefig(output_path, dpi=150)
+    plt.show()
+    plt.close(fig)
+
+    comparison_rows.append(
+        {
+            "パラメタを決めた期間": f"{year_start}〜{year_end}年",
+            "仮定Aの2020年予測［万人］": x_const_model[-1],
+            "仮定Aの誤差［万人］": (
+                x_const_model[-1] - x_2020_obs
+            ),
+            "仮定Bの2020年予測［万人］": x_prop_model[-1],
+            "仮定Bの誤差［万人］": (
+                x_prop_model[-1] - x_2020_obs
+            ),
+        }
+    )
+
+comparison = pd.DataFrame(comparison_rows)
+comparison.round(1)
+```
+
 図はそれぞれ`population_two_models_1950.png`，`population_two_models_1970.png`，`population_two_models_1990.png`として保存した．
+
+**2．2020年の予測値の比較**
 
 2020年の観測値は12614.6万人である．各期間から求めたモデルの2020年の値は次のようになった．括弧内は観測値との差であり，正の値は過大評価を表す．
 
@@ -699,6 +805,8 @@ $$
 | 1920〜1990年 | 15260.3（+2645.7） | 17360.1（+4745.5） |
 
 仮定Aでは，パラメタを決める期間を長くすると1年当たりの増加量$a$が少し大きくなり，2020年の予測値も大きくなった．仮定Bでは，期間を長くすると1年当たりの増加率$r$が小さくなるため，2020年の予測値は小さくなった．ただし，どの場合も2020年の人口を過大評価した．
+
+**3．仮定Bに不足している要素**
 
 仮定Bは，出生と死亡の差を表す純増加率$r$が将来も一定であると仮定している．しかし実際には，出生率の低下，平均寿命の変化，世代ごとの人口規模によって年齢構成が変わり，人口に対する出生数・死亡数の割合も変化する．また，出入国や戦争・政策の影響も一定ではない．そのため，1970年までに求めた一つの$r$をその後へ延長すると，増加率の低下や2008年以降の人口減少を表せず，人口を過大評価する．年齢層別の状態変数と，時期によって変わる出生・死亡・移動をモデルに加える必要がある．
 ```
