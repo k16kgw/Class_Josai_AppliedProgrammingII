@@ -636,41 +636,23 @@ print(f"仮定Bの2020年: {x_prop_model[-1]:8.1f} 万人（差 {x_prop_model[-1
 ````
 
 <!--
-```{dropdown} 課題1の解答例：教室内の二酸化炭素濃度
+```{dropdown} 課題1の解答例：スマートフォンのバッテリー残量
 
-演習1で「授業中の教室内の二酸化炭素濃度の変化」を選び，状態変数を時刻$t$における教室内の平均二酸化炭素濃度$C(t)$［ppm］とした場合を考える．
+演習1で「スマートフォンのバッテリー残量」を選び，状態変数を使用開始から$t$時間後のバッテリー残量$x(t)$［%］とした場合を考える．
 
 **1．変化率の式と各項の意味**
 
-二酸化炭素は在室者によって増加し，外気濃度との差に比例して換気により減少すると仮定する．このとき，
+バッテリー残量は1時間当たり一定量$a$［%／時間］ずつ減少すると仮定する．このとき，
 
 $$
-\frac{dC}{dt}
-=q n(t)-k\left(C-C_{\mathrm{out}}\right)
+\frac{dx}{dt}=-a
 $$
 
-と書ける．ここで，$n(t)$は在室人数［人］，$q$は1人当たりの二酸化炭素発生量［ppm／（人・分）］，$k$は換気による除去率［1／分］，$C_{\mathrm{out}}$は外気の二酸化炭素濃度［ppm］である．
-
-$qn(t)$は在室者による増加量で，単位は
-
-$$
-\frac{\mathrm{ppm}}{\mathrm{人}\cdot\mathrm{分}}
-\times\mathrm{人}
-=\frac{\mathrm{ppm}}{\mathrm{分}}
-$$
-
-となる．$k(C-C_{\mathrm{out}})$は換気による減少量で，単位は
-
-$$
-\frac{1}{\mathrm{分}}\times\mathrm{ppm}
-=\frac{\mathrm{ppm}}{\mathrm{分}}
-$$
-
-となる．左辺$dC/dt$の単位もppm／分であるため，両辺の単位は一致する．
+と書ける．左辺$dx/dt$は1時間当たりのバッテリー残量の変化を表し，単位は%／時間である．右辺の$-a$も単位は%／時間であるため，両辺の単位は一致する．負号はバッテリー残量が減少することを表す．
 
 **2．仮定が成り立たなくなる状況**
 
-窓や扉の開閉によって換気量が大きく変わる場合や，教室内の空気が十分に混ざらず場所によって濃度が異なる場合には，$k$が一定で教室内の濃度が一様という仮定は成り立たない．
+動画の再生やゲームなど負荷の大きいアプリを起動した場合には，単位時間当たりの減少量が変わるため，$a$が一定という仮定は成り立たない．充電を始めた場合にも，残量が減少し続けるという仮定は成り立たない．
 ```
 -->
 
@@ -686,110 +668,43 @@ $$
 
 **1．`year_end`を変えた計算と作図**
 
-「オープンデータとの比較」までのセルを実行し，`population`，`constant_growth`，`proportional_growth`，`FIGURE_DIR`を定義してから，次のコードを実行する．
+「オープンデータとの比較」までのセルを実行し，`population`，`constant_growth`，`proportional_growth`，`FIGURE_DIR`を定義してから，次のコードを実行する．最初は`year_end=1950`とし，その後`1970`，`1990`へ書き換えて，同じセルを合計3回実行する．
 
 ```python
-year_start = 1920
-prediction_year = 2020
-fit_end_years = [1950, 1970, 1990]
+year_start, year_end = 1920, 1950  # 1950，1970，1990に変える
 
-x_start = float(
-    population.loc[
-        population["year"] == year_start,
-        "population_10k",
-    ].iloc[0]
-)
-x_2020_obs = float(
-    population.loc[
-        population["year"] == prediction_year,
-        "population_10k",
-    ].iloc[0]
-)
-population_to_2020 = population[
-    population["year"] <= prediction_year
-]
+x_start = float(population.loc[population["year"] == year_start, "population_10k"].iloc[0])
+x_end = float(population.loc[population["year"] == year_end, "population_10k"].iloc[0])
+duration = year_end - year_start
 
-comparison_rows = []
+a_data = (x_end - x_start) / duration
+r_data = (x_end / x_start) ** (1 / duration) - 1
 
-for year_end in fit_end_years:
-    x_end = float(
-        population.loc[
-            population["year"] == year_end,
-            "population_10k",
-        ].iloc[0]
-    )
-    duration = year_end - year_start
+n_steps = 2020 - year_start
+model_years = year_start + np.arange(n_steps + 1)
 
-    # year_startとyear_endの観測値を通るように，
-    # 仮定A・Bのパラメタをそれぞれ計算する．
-    a_data = (x_end - x_start) / duration
-    r_data = (x_end / x_start) ** (1 / duration) - 1
+x_const_model = constant_growth(x_start, a_data, n_steps)
+x_prop_model = proportional_growth(x_start, r_data, n_steps)
 
-    n_steps = prediction_year - year_start
-    model_years = year_start + np.arange(n_steps + 1)
-    x_const_model = constant_growth(x_start, a_data, n_steps)
-    x_prop_model = proportional_growth(x_start, r_data, n_steps)
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(population["year"], population["population_10k"], color="black", marker="o", markersize=3, linestyle="none", label="observed")
+ax.plot(model_years, x_const_model, linestyle="--", label=f"A: constant increase (a = {a_data:.1f})")
+ax.plot(model_years, x_prop_model, linestyle="-", label=f"B: proportional increase (r = {r_data:.4f})")
+ax.axvline(year_end, color="gray", linestyle=":", label="end of fitting period")
+ax.set_title(f"Two growth models fitted to {year_start}-{year_end}")
+ax.set_xlabel("Year")
+ax.set_ylabel("Population [10^4 persons]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / f"population_two_models_{year_end}.png", dpi=150)
+plt.show()
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.plot(
-        population_to_2020["year"],
-        population_to_2020["population_10k"],
-        color="black",
-        marker="o",
-        markersize=3,
-        linestyle="none",
-        label="observed",
-    )
-    ax.plot(
-        model_years,
-        x_const_model,
-        linestyle="--",
-        label=f"A: constant increase (a = {a_data:.1f})",
-    )
-    ax.plot(
-        model_years,
-        x_prop_model,
-        linestyle="-",
-        label=f"B: proportional increase (r = {r_data:.4f})",
-    )
-    ax.axvline(
-        year_end,
-        color="gray",
-        linestyle=":",
-        label="end of fitting period",
-    )
-    ax.set_title(
-        f"Two growth models fitted to {year_start}-{year_end}"
-    )
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Population [10^4 persons]")
-    ax.grid(True)
-    ax.legend()
-    fig.tight_layout()
-
-    output_path = (
-        FIGURE_DIR / f"population_two_models_{year_end}.png"
-    )
-    fig.savefig(output_path, dpi=150)
-    plt.show()
-    plt.close(fig)
-
-    comparison_rows.append(
-        {
-            "パラメタを決めた期間": f"{year_start}〜{year_end}年",
-            "仮定Aの2020年予測［万人］": x_const_model[-1],
-            "仮定Aの誤差［万人］": (
-                x_const_model[-1] - x_2020_obs
-            ),
-            "仮定Bの2020年予測［万人］": x_prop_model[-1],
-            "仮定Bの誤差［万人］": (
-                x_prop_model[-1] - x_2020_obs
-            ),
-        }
-    )
-
-comparison = pd.DataFrame(comparison_rows)
-comparison.round(1)
+x_2020_obs = float(population.loc[population["year"] == 2020, "population_10k"].iloc[0])
+print(f"推定期間: {year_start}〜{year_end}年")
+print(f"2020年の観測値: {x_2020_obs:.1f} 万人")
+print(f"仮定Aの2020年: {x_const_model[-1]:.1f} 万人")
+print(f"仮定Bの2020年: {x_prop_model[-1]:.1f} 万人")
 ```
 
 図はそれぞれ`population_two_models_1950.png`，`population_two_models_1970.png`，`population_two_models_1990.png`として保存した．
@@ -808,7 +723,7 @@ comparison.round(1)
 
 **3．仮定Bに不足している要素**
 
-仮定Bは，出生と死亡の差を表す純増加率$r$が将来も一定であると仮定している．しかし実際には，出生率の低下，平均寿命の変化，世代ごとの人口規模によって年齢構成が変わり，人口に対する出生数・死亡数の割合も変化する．また，出入国や戦争・政策の影響も一定ではない．そのため，1970年までに求めた一つの$r$をその後へ延長すると，増加率の低下や2008年以降の人口減少を表せず，人口を過大評価する．年齢層別の状態変数と，時期によって変わる出生・死亡・移動をモデルに加える必要がある．
+仮定Bでは，人口の増加率$r$が毎年同じであると仮定している．しかし実際には，出生率や死亡率は時代とともに変わり，人口の年齢構成も変化する．また，出入国による人口の増減もモデルに入っていない．そのため，1970年までのデータから求めた$r$をその後も使い続けると，増加率の低下や2008年以降の人口減少を表せず，人口を過大評価する．出生・死亡・出入国の変化をモデルに加える必要がある．
 ```
 -->
 
