@@ -61,6 +61,26 @@ cd ~/applied_programming_ii/01
 mkdir -p notebooks reports/figures
 ```
 
+この回の作業で使用するディレクトリとファイルの構成は次のようになる．
+
+```text
+~/applied_programming_ii/
+├── data/
+│   └── population_japan.csv
+└── 01/
+    ├── README.md
+    ├── notebooks/
+    │   └── modeling.ipynb
+    └── reports/
+        └── figures/
+            ├── two_growth_models.png
+            ├── proportional_growth_r.png
+            ├── population_two_models.png
+            └── population_two_models_1990.png
+```
+
+`data`は全授業回で共通して使用するデータの保存場所である．`01`には第1回の作業だけを置き，作成した図は`reports/figures`に保存する．
+
 2. 講義サイトの[授業用データ一覧](../data/README.md)から`population_japan.csv`をダウンロードし，`~/applied_programming_ii/data/`に置く．
 
 3. JupyterLabまたはVS Codeで，`notebooks/modeling.ipynb`を新規作成する．
