@@ -158,17 +158,22 @@ print("人口データの有無:", (DATA_DIR / "population_japan.csv").exists())
 最後の行が`True`になっていれば準備完了である．
 ````
 
-````{dropdown} 補足：Python環境が未準備の場合
+````{dropdown} 補足：仮想環境でPythonを使用する場合
 
-応用プログラミングIで使った環境があればそのまま使える．
-新しく用意する場合は，ターミナルで次を実行する．
-
+ターミナルで次を実行し，仮想環境をactivateする．（Python3はインストール済みであることが前提）
 ```bash
 cd ~/applied_programming_ii
 python3 -m venv .venv
 source .venv/bin/activate
 pip install numpy pandas matplotlib scipy jupyterlab
 ```
+
+仮想環境から抜ける場合には次を実行する．
+```bash
+deactivate
+```
+
+activateしているタブを消したり，PCを再起動したりすると仮想環境がdeactivateされるため，使用する際には毎回activateする必要がある．
 ````
 
 ### 導入
