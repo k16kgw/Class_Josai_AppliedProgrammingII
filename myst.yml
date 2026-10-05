@@ -17,7 +17,7 @@ project:
   toc:
     - file: intro.md
     - file: contents/1_modeling.md
-    # - file: contents/2_ode_simulation.md
+    - file: contents/2_ode_simulation.md
     # - file: contents/3_population_exponential.md
     # - file: contents/4_logistic.md
     # - file: contents/5_parameter_sweep.md
