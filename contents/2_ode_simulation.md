@@ -127,18 +127,24 @@ Euler法の原理を説明し，Pythonで初期値問題を数値計算して解
 
 - 終了時刻での絶対誤差と右辺の評価回数の比較：
 
-## 課題1：減衰モデルの記録
+## 課題：減衰モデルの半減期と数値解の比較
 
-| 減衰率 k [1/時間] | 数値解から読んだ半減期 [時間] | 解析解の半減期 [時間] |
+### 設問1：減衰モデルの計算
+
+- コードはNotebookに記録する．
+
+### 設問2：半減期
+
+| 減衰率 $\lambda$ [1/時間] | 数値解から読んだ半減期 [時間] | 解析解の半減期 [時間] |
 | --- | --- | --- |
 | 0.3 |  |  |
 | 0.1 |  |  |
 | 0.6 |  |  |
 
 - 数値解と解析解から求めた半減期の比較：
-- kを変えたときの半減期の変化：
+- 減衰率を変えたときの半減期の変化：
 
-## 課題2：減衰モデルの数値解と解析解の比較
+### 設問3：解法比較の表
 
 | 解法 | 刻み幅 h [時間] | t=24での数値解 | 解析解 | 誤差（数値解−解析解） | 右辺の評価回数 |
 | --- | --- | --- | --- | --- | --- |
@@ -148,7 +154,13 @@ Euler法の原理を説明し，Pythonで初期値問題を数値計算して解
 | Euler法 | 0.1 |  |  |  |  |
 | solve_ivp | 自動調整 |  |  |  |  |
 
-- 精度と計算量の比較（3行程度）：
+### 設問4：比較図
+
+- 保存した図のファイル名：
+
+### 設問5：精度と計算量の比較
+
+- 考察（3行程度）：
 ```
 
 4. Notebookの最初のコードセルに以下を入力して実行し，NumPy・SciPyのバージョンと作業フォルダが表示されることを確認せよ．今回から`scipy`を使う．
@@ -469,11 +481,12 @@ t_fine = np.linspace(t_span[0], t_span[1], 201)
 x_exact = exponential_solution(t_fine, x0, r)
 
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(t_fine, x_exact, color="black", label="analytical solution")
+ax.plot(t_fine, x_exact, color="black", label="解析解")
 for h, marker in zip([1.0, 0.5, 0.1], ["o", "s", "^"]):
     t, x = euler(exponential_rhs, t_span, x0, h, args=(r,))
     ax.plot(t, x, marker=marker, markersize=4, linestyle="--", label=f"Euler, h = {h}")
-ax.set_title("Euler method vs. analytical solution (dx/dt = 0.2 x)")
+
+ax.set_title("Euler法と解析解の比較 (dx/dt = 0.2 x)")
 ax.set_xlabel("t")
 ax.set_ylabel("x")
 ax.grid(True)
@@ -695,145 +708,97 @@ else:
 - `sol.y[0] >= 2.0 * x0`：各出力時刻の数値解が条件を満たすかを判定する．
 - `np.flatnonzero(...)`：条件が`True`となる位置の添字を配列で返す．`indices[0]`は最初の添字．
 - `indices.size`：添字の個数．0のときは`indices[0]`を取り出せないため，`if`で確認する．`else`は条件を満たさない場合の処理．
-- 課題1への変更：比較を`<=`に，しきい値を初期値の半分に変え，減衰モデルの計算結果に適用する．
-- `np.log(2)`：自然対数 $\ln2$．解析解の半減期 $\ln2/k$ は`np.log(2) / k`で求める．
+- 課題への変更：比較を`<=`に，しきい値を初期値の半分に変え，減衰モデルの計算結果に適用する．
+- `np.log(2)`：自然対数 $\ln2$．解析解の半減期 $\ln2/\lambda$ は`np.log(2) / decay_rate`で求める．
 - 出力間隔の影響：取得するのは条件を満たす最初の**出力時刻**であり，濃度が厳密に半分になる時刻とは限らない．
 ````
 
-````{warning} 課題1：減衰モデルを solve_ivp で解く
+````{warning} 課題：減衰モデルの半減期と数値解の比較
 
 薬を服用した後の血中濃度のように，現在量に比例して減る現象を考える．
 
 $$
-\frac{dx}{dt} = -k\,x,
-\qquad x(0) = 100
+\frac{dx}{dt}=-\lambda x,\qquad x(0)=100
 $$
 
-$k = 0.3$ /時間，計算区間を0〜24時間とする．出力時刻には`np.linspace(0.0, 24.0, 241)`を指定し，許容誤差は既定値を用いよ．プログラムと図はNotebookに，表と考察は`README.md`に記録せよ．
+減衰率を $\lambda$ と表し，Pythonでは`decay_rate`という変数名を用いる．計算区間は0〜24時間，濃度は任意単位とする．`solve_ivp`の出力時刻には`np.linspace(0.0, 24.0, 241)`を指定し，許容誤差は既定値を用いよ．プログラムと図はNotebookに，表と考察は`README.md`に記録せよ．数値解・解析解・誤差は，本文の`{error:10.6f}`と同様に小数点以下6桁で表示せよ．
 
-1. Notebookに右辺の関数`decay_rhs(t, x, k)`を定義せよ．
-2. `solve_ivp`で解き，解析解 $100e^{-kt}$ と同じ図に描け．凡例と，時間・濃度の単位を示す軸ラベルを付けよ（濃度は任意単位とする）．
-3. 数値解が初期値の半分以下となる最初の出力時刻を求め，解析解の半減期 $\ln2/k$ とともに`README.md`の課題1の表に記入せよ．両者の差を比較欄に記述せよ．
-4. $k$ を`0.1`と`0.6`に変更して同じ計算を行い，表を埋めよ．$k$ と半減期の関係を`README.md`に記述せよ．
+1. 右辺の関数`decay_rhs(t, x, decay_rate)`を定義し，$\lambda=0.3$ /時間として`solve_ivp`で解け．この計算結果は設問3・4でも使用せよ．
+2. $\lambda=0.3,0.1,0.6$ /時間のそれぞれについて，数値解が初期値の半分以下となる最初の出力時刻と，解析解の半減期 $\ln2/\lambda$ を半減期の表に記入せよ．数値解から求めた半減期と解析解との差，および $\lambda$ と半減期の関係を説明せよ．
+3. $\lambda=0.3$ /時間としてEuler法を刻み幅 $h=2,1,0.5,0.1$ 時間で実行せよ．各刻み幅と設問1の`solve_ivp`について，$t=24$ での数値解・解析解 $100e^{-0.3\times24}$・誤差（数値解−解析解）・右辺の評価回数を解法比較の表に記入せよ．Euler法の評価回数はステップ数，`solve_ivp`の評価回数は`sol.nfev`を用いよ．
+4. $\lambda=0.3$ /時間の解析解・Euler法（$h=2$ と $h=0.1$）・`solve_ivp`の結果を1枚の図に描き，`reports/figures/`に保存せよ．線種とマーカーで解法を区別し，凡例と単位付きの軸ラベルを付けよ．
+5. 設問3・4の表と図に基づき，Euler法と`solve_ivp`の絶対誤差・右辺の評価回数の違いを3行程度で説明せよ．
 ````
 
 <!--
-````{dropdown} 課題1の解答例
+````{dropdown} 課題の解答例
+
+**設問1：減衰モデルの計算**
 
 ```python
-def decay_rhs(t, x, k):
-    """dx/dt = -k x の右辺．"""
-    return -k * x
+def decay_rhs(t, x, decay_rate):
+    return -decay_rate * x
 
-
-k = 0.3                      # 減衰率 [1/時間]
-x0_decay = 100.0             # 初期濃度 [任意単位]
-t_span_decay = (0.0, 24.0)   # 0〜24時間
+decay_rate = 0.3
+x0_decay = 100.0
+t_span_decay = (0.0, 24.0)
 t_eval_decay = np.linspace(0.0, 24.0, 241)
-
-sol_decay = solve_ivp(decay_rhs, t_span_decay, [x0_decay], t_eval=t_eval_decay, args=(k,))
-x_decay = sol_decay.y[0]
-x_decay_exact = x0_decay * np.exp(-k * sol_decay.t)
-
-# 半減期：数値解が初期値の半分以下となる最初の出力時刻
-half_indices = np.flatnonzero(x_decay <= 0.5 * x0_decay)
-if half_indices.size > 0:
-    idx_half = half_indices[0]
-    print(f"数値解から読んだ半減期: {sol_decay.t[idx_half]:.2f} 時間")
-else:
-    print("計算区間内では初期値の半分以下になっていません．")
-print(f"解析解の半減期 ln2/k:  {np.log(2) / k:.2f} 時間")
-
-fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(sol_decay.t, x_decay_exact, color="black", label="analytical solution")
-ax.plot(sol_decay.t, x_decay, linestyle="--", label="solve_ivp")
-ax.axhline(0.5 * x0_decay, color="gray", linestyle=":", label="half of initial value")
-ax.set_title(f"Exponential decay (dx/dt = -{k:g} x)")
-ax.set_xlabel("Time [hour]")
-ax.set_ylabel("Concentration [arbitrary unit]")
-ax.grid(True)
-ax.legend()
-fig.tight_layout()
-fig.savefig(FIGURE_DIR / "decay_solve_ivp.png", dpi=150)
-plt.show()
+sol_decay = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
+                      t_eval=t_eval_decay, args=(decay_rate,))
 ```
 
-```{dropdown} コードの補足
-
-- `x_decay <= 0.5 * x0_decay`：各要素が初期値の半分以下かを判定し，`True`・`False`の配列を作る．
-- [`np.flatnonzero(...)`](https://numpy.org/doc/stable/reference/generated/numpy.flatnonzero.html)：上の判定が`True`になった位置の添字を取り出す．値そのものではなく，位置を返す．
-- `half_indices.size > 0`：条件を満たす位置が1つ以上あるかを確認する．ある場合だけ`half_indices[0]`で最初の位置を取り出す．
-- `np.log(2)`：自然対数 $\ln2$ の計算．`np.log`の底は10ではなく $e$．
-```
-
-減衰率を変更した結果も，次のコードで確認する．
+**設問2：半減期**
 
 ```python
-for k in [0.3, 0.1, 0.6]:
-    sol_decay = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
-                          t_eval=t_eval_decay, args=(k,))
-    half_indices = np.flatnonzero(sol_decay.y[0] <= 0.5 * x0_decay)
-    print(k, sol_decay.t[half_indices[0]], np.log(2) / k)
+print("減衰率, 数値解から読んだ半減期, 解析解の半減期")
+for decay_rate in [0.3, 0.1, 0.6]:
+    # 設問1の結果を残し，減衰率を変更した結果は別の変数に保存する
+    sol_half = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
+                         t_eval=t_eval_decay, args=(decay_rate,))
+    indices = np.flatnonzero(sol_half.y[0] <= 0.5 * x0_decay)
+    if indices.size > 0:
+        print(decay_rate, sol_half.t[indices[0]], np.log(2) / decay_rate)
+    else:
+        print(decay_rate, "計算区間内の出力時刻では半分以下になりません．")
 ```
 
-- この3条件では，いずれも計算区間内に初期値の半分以下になるため，`half_indices[0]`を取り出せる．
-
-| 減衰率 k [1/時間] | 数値解から読んだ半減期 [時間] | 解析解の半減期 [時間] |
+| 減衰率 $\lambda$ [1/時間] | 数値解から読んだ半減期 [時間] | 解析解の半減期 [時間] |
 | --- | --- | --- |
 | 0.3 | 2.4 | 約2.3105 |
 | 0.1 | 7.0 | 約6.9315 |
 | 0.6 | 1.2 | 約1.1552 |
 
-- 解析解の半減期：$\ln2/0.3\approx2.31$ 時間．
-- 数値解からの読み取り：濃度が50以下となる最初の出力時刻は2.4時間．
-- 読み取りの誤差：0.1時間間隔の出力時刻で代用するための誤差を含む．
-- 解析解との差：上の順に約0.0895，0.0685，0.0448時間．数値解自体の誤差も含むため，出力間隔だけで決まるものではない．
-- $k$ との関係：$k$ を2倍にすると，半減期は半分．
-````
--->
+- 解析解との差：上の順に約0.0895，0.0685，0.0448時間．出力時刻を0.1時間間隔に限定した影響と，数値解自体の誤差を含む．
+- 減衰率との関係：解析解の半減期は $\lambda$ に反比例し，$\lambda$ を2倍にすると半減期は半分になる．
 
-````{warning} 課題2：減衰モデルの数値解と解析解の比較
-
-$x'=-kx$，$x(0)=100$，$k=0.3$ /時間，計算区間0〜24時間について，次の設問に解答せよ．プログラムと図はNotebookに，表と考察は`README.md`に記録せよ．
-
-数値解・解析解・誤差は，本文の`{error:10.6f}`と同様に小数点以下6桁で表示せよ．小数点以下2桁では，小さい誤差が`0.00`と表示されるためである．
-
-1. Euler法を刻み幅 $h=2,1,0.5,0.1$ 時間で実行し，$t=24$ での数値解・解析解・誤差（数値解−解析解）・右辺の評価回数を表に記入せよ．今回のEuler法では，右辺の評価回数はステップ数に等しい．
-2. `solve_ivp`でも同じ問題を解き，結果を同じ表に記入せよ．出力時刻と許容誤差は課題1と同じ設定にし，右辺の評価回数には`sol.nfev`を用いよ．
-3. 解析解・Euler法（$h=2$ と $h=0.1$）・`solve_ivp`の結果を1枚の図に描き，`reports/figures/`に保存せよ．線種とマーカーで解法を区別し，凡例と単位付きの軸ラベルを付けよ．
-4. 表と図に基づき，Euler法と`solve_ivp`の絶対誤差・右辺の評価回数の違いを3行程度で説明せよ．
-````
-
-<!--
-````{dropdown} 課題2の解答例
-
-課題1で定義した`decay_rhs`と，講義中に定義した`euler`を用いる．
+**設問3：解法比較の表**
 
 ```python
-k = 0.3
-x0_decay = 100.0
-t_span_decay = (0.0, 24.0)
-t_eval_decay = np.linspace(0.0, 24.0, 241)
-exact_end = x0_decay * np.exp(-k * t_span_decay[1])
-
+decay_rate = 0.3
+exact_end = x0_decay * np.exp(-decay_rate * t_span_decay[1])
 print("解法, 刻み幅, x(24), 解析解, 誤差, 右辺の評価回数")
 for h in [2.0, 1.0, 0.5, 0.1]:
-    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(k,))
+    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(decay_rate,))
     print(f"Euler法, {h:g}, {x[-1]:.6f}, {exact_end:.6f}, "
           f"{x[-1] - exact_end:.6f}, {len(t) - 1}")
 
-sol = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
-                t_eval=t_eval_decay, args=(k,))
-print(f"solve_ivp, 自動調整, {sol.y[0, -1]:.6f}, {exact_end:.6f}, "
-      f"{sol.y[0, -1] - exact_end:.6f}, {sol.nfev}")
+print(f"solve_ivp, 自動調整, {sol_decay.y[0, -1]:.6f}, {exact_end:.6f}, "
+      f"{sol_decay.y[0, -1] - exact_end:.6f}, {sol_decay.nfev}")
+```
 
+出力された数値を，対応する解法・刻み幅の行に転記する．
+
+**設問4：比較図**
+
+```python
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(sol.t, x0_decay * np.exp(-k * sol.t), color="black", label="解析解")
+ax.plot(sol_decay.t, x0_decay * np.exp(-decay_rate * sol_decay.t),
+        color="black", label="解析解")
 for h, marker in zip([2.0, 0.1], ["o", "s"]):
-    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(k,))
+    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(decay_rate,))
     ax.plot(t, x, linestyle=":", marker=marker, markersize=3,
             label=f"Euler法 h={h:g}")
-ax.plot(sol.t, sol.y[0], linestyle="--", label="solve_ivp")
+ax.plot(sol_decay.t, sol_decay.y[0], linestyle="--", label="solve_ivp")
 ax.set_xlabel("時間 [時間]")
 ax.set_ylabel("濃度 [任意単位]")
 ax.legend()
@@ -843,7 +808,8 @@ fig.savefig(FIGURE_DIR / "decay_comparison.png", dpi=150)
 plt.show()
 ```
 
-- 表の記入：出力された数値を，対応する解法・刻み幅の行に転記する．
+**設問5：精度と計算量の比較**
+
 - Euler法：刻み幅を小さくすると絶対誤差が減少する一方，右辺の評価回数は12，24，48，240回と増える．
 - `solve_ivp`：今回の条件では，終了時刻の絶対誤差が約0.000265，右辺の評価回数が62回となり，Euler法（$h=0.1$）よりも両者が小さい．数値や評価回数はSciPyのバージョンにより異なる場合がある．
 - 計算量の比較：右辺の評価回数は計算量の目安であり，実行時間そのものではない．
@@ -1029,7 +995,7 @@ $$
 
 ## 自主学習用の発展問題
 
-以下は，演習1〜3と課題1・2を終えた学生向けの任意問題である．取り組む場合は，数式・説明・コード・図をNotebookに記録せよ．
+以下は，演習1〜3と課題を終えた学生向けの任意問題である．取り組む場合は，数式・説明・コード・図をNotebookに記録せよ．
 
 ````{note} 発展問題1：Runge–Kutta法の導出
 
@@ -1117,21 +1083,21 @@ plt.show()
 
 ### Euler法の不安定性
 
-$x'=-kx$，$k>0$，$x(0)>0$ を，一定の刻み幅 $h>0$ のEuler法で解く場合を考える．更新式は $x_{n+1}=(1-hk)x_n$ となる．$hk>2$ なら $|1-hk|>1$ であるため，数値解の符号は交互に変わり，絶対値は増大する．解析解が単調に減衰するのに対し，この数値解は発散する．ここでは，減衰率 $k$ と区別するため，ステップの添字を $n$ と表す．
+$x'=-\lambda x$，$\lambda>0$，$x(0)>0$ を，一定の刻み幅 $h>0$ のEuler法で解く場合を考える．更新式は $x_{n+1}=(1-h\lambda)x_n$ となる．$h\lambda>2$ なら $|1-h\lambda|>1$ であるため，数値解の符号は交互に変わり，絶対値は増大する．解析解が単調に減衰するのに対し，この数値解は発散する．ここでは，ステップの添字を $n$ と表す．
 
 ````{dropdown} 発展演習：Euler法の不安定性
 
 ```python
-k = 2.0
+decay_rate = 2.0
 x0_decay = 100.0
 t_span_decay = (0.0, 10.0)
 
 fig, ax = plt.subplots(figsize=(7, 4))
 t_fine = np.linspace(0.0, 10.0, 201)
-ax.plot(t_fine, x0_decay * np.exp(-k * t_fine), color="black", label="analytical solution")
+ax.plot(t_fine, x0_decay * np.exp(-decay_rate * t_fine), color="black", label="analytical solution")
 for h in [0.4, 0.9, 1.2]:
-    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(k,))
-    ax.plot(t, x, marker="o", markersize=3, linestyle="--", label=f"Euler, h = {h} (hk = {h * k:.1f})")
+    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(decay_rate,))
+    ax.plot(t, x, marker="o", markersize=3, linestyle="--", label=f"Euler, h = {h} (h * decay_rate = {h * decay_rate:.1f})")
 ax.set_title("Euler method for dx/dt = -2 x with large step sizes")
 ax.set_xlabel("Time [arbitrary unit]")
 ax.set_ylabel("x [arbitrary unit]")
@@ -1143,18 +1109,18 @@ fig.savefig(FIGURE_DIR / "euler_instability.png", dpi=150)
 plt.show()
 ```
 
-1. 上のコードを実行し，$0<hk<1$，$1<hk<2$，$hk>2$ で数値解の符号と絶対値がどう変化するかを説明せよ．境界の $hk=1$ と $hk=2$ についても更新式から結果を求めよ．最後に刻み幅を短くするステップでは，実際の刻み幅を用いよ．
+1. 上のコードを実行し，$0<h\lambda<1$，$1<h\lambda<2$，$h\lambda>2$ で数値解の符号と絶対値がどう変化するかを説明せよ．境界の $h\lambda=1$ と $h\lambda=2$ についても更新式から結果を求めよ．最後に刻み幅を短くするステップでは，実際の刻み幅を用いよ．
 2. 同じ問題を`solve_ivp`で解き，出力時刻上の最大絶対誤差を求めて記録せよ．
-3. $k$ が大きいほどEuler法で小さい刻み幅が必要になる理由を，増幅率 $1-hk$ を用いて説明せよ．
+3. $\lambda$ が大きいほどEuler法で小さい刻み幅が必要になる理由を，増幅率 $1-h\lambda$ を用いて説明せよ．
 
-- 増幅率：1ステップ前の近似値に掛ける係数．この減衰モデルに対するEuler法では $1-hk$．
+- 増幅率：1ステップ前の近似値に掛ける係数．この減衰モデルに対するEuler法では $1-h\lambda$．
 ````
 
 刻み幅を選ぶ際は，解析解の挙動を数値解が再現できるかに注意する．`solve_ivp`を使う場合にも，計算の成功・失敗と，許容誤差を変更したときの結果の変化を確認する必要がある．
 
 ````{note} 発展問題2：後退Euler法と数値的安定性
 
-これまで用いた前進Euler法は始点の傾きを使い，上の減衰モデルでは $hk>2$ で数値解が発散する．これに対して，後退Euler法（陰的Euler法）は終点の傾きを使い，次の更新式で近似値を求める．ここでも，ステップの添字を $n$ とする．
+これまで用いた前進Euler法は始点の傾きを使い，上の減衰モデルでは $h\lambda>2$ で数値解が発散する．これに対して，後退Euler法（陰的Euler法）は終点の傾きを使い，次の更新式で近似値を求める．ここでも，ステップの添字を $n$ とする．
 
 $$
 x_{n+1} = x_n + h\,f(t_{n+1},\ x_{n+1})
@@ -1162,11 +1128,11 @@ $$
 
 一般には，各ステップで未知値 $x_{n+1}$ に関する代数方程式を解く必要があり，計算量はその求解方法にも依存する．
 
-1. $f(t,x)=-kx$ の場合に上の式を $x_{n+1}$ について解き，$x_{n+1}=x_n/(1+hk)$ となることを示せ．
-2. 任意の一定の刻み幅 $h>0$，$k>0$ に対して $0<1/(1+hk)<1$ であることから，初期値が正なら数値解が単調に減少して0に近づくことを示せ．前進Euler法の増幅率 $1-hk$ と比較し，安定となる刻み幅の条件の違いを述べよ．
+1. $f(t,x)=-\lambda x$ の場合に上の式を $x_{n+1}$ について解き，$x_{n+1}=x_n/(1+h\lambda)$ となることを示せ．
+2. 任意の一定の刻み幅 $h>0$，$\lambda>0$ に対して $0<1/(1+h\lambda)<1$ であることから，初期値が正なら数値解が単調に減少して0に近づくことを示せ．前進Euler法の増幅率 $1-h\lambda$ と比較し，安定となる刻み幅の条件の違いを述べよ．
 3. この減衰モデルに対する後退Euler法を実装し，$x'=-2x$，$x(0)=100$，計算区間0〜10について $h=0.4,0.9,1.2$ で計算せよ．解析解とともに描き，前進Euler法の図と並べて示せ．
 4. $h=1.2$ で計算した $t=10$ の絶対誤差を求め，安定性と近似精度が別の性質であることを説明せよ．後退Euler法はこの減衰問題で任意の $h>0$ に対して安定だが，大域打ち切り誤差は前進Euler法と同じ $O(h)$ である．
-5. $k$ を大きくし，`solve_ivp`のRK45と`method="Radau"`，`method="BDF"`で計算せよ．各解法には同じ $k$・許容誤差・計算区間・出力時刻を指定せよ．使用した条件と，出力時刻上の最大絶対誤差・`sol.nfev`を表にまとめ，比較せよ．
+5. $\lambda$ を大きくし，`solve_ivp`のRK45と`method="Radau"`，`method="BDF"`で計算せよ．各解法には同じ $\lambda$・許容誤差・計算区間・出力時刻を指定せよ．使用した条件と，出力時刻上の最大絶対誤差・`sol.nfev`を表にまとめ，比較せよ．
 
 陰的解法には行列の分解なども必要となるため，`sol.nfev`だけでは計算費用全体を比較できない．
 
@@ -1176,24 +1142,24 @@ $$
 
 ````{dropdown} コードの補足：後退Euler法と解法の切り替え
 
-減衰モデル専用の後退Euler法は，本文の`euler`関数をコピーし，関数名を`backward_euler_decay`，引数を`(t_span, x0, h, decay_rate)`に変更して作成できる．ループ内の更新式を`x[k + 1] = x[k] / (1 + dt * decay_rate)`に置き換え，他の処理はそのまま使う．`backward_euler_decay(t_span_decay, x0_decay, h, k)`と呼び出せば，本文と同じように時刻と数値解を受け取れる．ここで`decay_rate`は減衰率であり，ループの添字`k`と区別するための名前である．
+減衰モデル専用の後退Euler法は，本文の`euler`関数をコピーし，関数名を`backward_euler_decay`，引数を`(t_span, x0, h, decay_rate)`に変更して作成できる．ループ内の更新式を`x[k + 1] = x[k] / (1 + dt * decay_rate)`に置き換え，他の処理はそのまま使う．`backward_euler_decay(t_span_decay, x0_decay, h, decay_rate)`と呼び出せば，本文と同じように時刻と数値解を受け取れる．ここで`decay_rate`は減衰率であり，ループの添字`k`と区別するための名前である．
 
-`solve_ivp`の解法は`method`で切り替える．課題1で定義した`decay_rhs`を用い，例えば次のように同じ条件で比較できる．
+`solve_ivp`の解法は`method`で切り替える．課題の設問1で定義した`decay_rhs`を用い，例えば次のように同じ条件で比較できる．
 
 ```python
-k = 20.0
+decay_rate = 20.0
 x0_decay = 100.0
 t_span_decay = (0.0, 10.0)
 t_eval_decay = np.linspace(0.0, 10.0, 1001)
 rtol = 1e-3
 atol = 1e-6
-print("k, rtol, atol, 計算区間:", k, rtol, atol, t_span_decay)
+print("decay_rate, rtol, atol, 計算区間:", decay_rate, rtol, atol, t_span_decay)
 
 for method in ["RK45", "Radau", "BDF"]:
     sol = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
-                    t_eval=t_eval_decay, args=(k,), method=method,
+                    t_eval=t_eval_decay, args=(decay_rate,), method=method,
                     rtol=rtol, atol=atol)
-    x_exact = x0_decay * np.exp(-k * sol.t)
+    x_exact = x0_decay * np.exp(-decay_rate * sol.t)
     max_error = np.max(np.abs(sol.y[0] - x_exact))
     print(method, "成功したか:", sol.success,
           "最大絶対誤差（出力時刻上）:", max_error,
