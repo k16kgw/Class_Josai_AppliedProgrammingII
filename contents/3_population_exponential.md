@@ -29,8 +29,8 @@
 
 | 段階 | 内容 | 時間 |
 | --- | --- | --- |
-| 1 | 準備と第2回の復習（演習0） | 10分 |
-| 2 | データの確認，仮定から $N' = rN$ の導出，各項の意味（演習1） | 25分 |
+| 1 | 作業環境の準備（演習0） | 10分 |
+| 2 | 第1・2回の復習（演習1），人口モデルの仮定と各項の意味 | 25分 |
 | 3 | 解析解を用いた2時点法と対数線形法による推定 | 20分 |
 | 4 | 観測値との重ね合わせ，残差，期間を変えた比較，外挿（演習2〜4） | 35分 |
 | 5 | 外れる理由の共有，まとめ，課題の説明 | 15分 |
@@ -157,6 +157,63 @@ applied_programming_ii/
 ## 課題2：観測量と状態変数
 
 - 対応関係と相違点の説明（200字程度）：
+
+## 課題3：ヨウ素131濃度の指数減衰モデル
+
+### 1．データの確認
+
+| 項目 | 確認した内容 |
+| --- | --- |
+| 提供機関・資料名・出典URL | |
+| 取得日・利用条件・加工内容 | |
+| 採取地点・対象核種 | |
+| 期間・件数・日付の間隔 | |
+| 単位・欠損・不検出の有無 | |
+| 通常のグラフと対数グラフのファイル名 | |
+
+- 全体の傾向と，前日より濃度が上昇した日の有無：
+
+### 2．モデルの設定
+
+- 状態変数・時刻の原点・各量の単位：
+- 仮定：
+- 微分方程式・初期条件・解析解：
+
+### 3．パラメタ推定（設問5の結果も記入）
+
+| 推定方法 | 推定に使う期間（2011年） | C0 [Bq/kg，3月21日に対応] | λ [1/日] | 見かけの半減期 [日] |
+| --- | --- | --- | --- | --- |
+| 2時点法 | 3月21日・28日 | | | |
+| 対数線形法 | 3月21〜28日 | | | |
+| 対数線形法 | 3月21〜31日 | | | |
+
+### 4．観測値との比較
+
+- 比較図と残差図のファイル名：
+
+| 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
+| --- | --- | --- | --- |
+| 2時点法 | 3月21〜28日 | | |
+| 2時点法 | 3月29日〜4月3日 | | |
+| 対数線形法 | 3月21〜28日 | | |
+| 対数線形法 | 3月29日〜4月3日 | | |
+
+- 推定方法・評価期間による誤差の違いと，残差の時間変化：
+
+### 5．推定期間の変更と外挿
+
+| 対数線形法の推定期間（2011年） | 4月10日のモデル値 [Bq/kg] |
+| --- | --- |
+| 3月21〜28日 | |
+| 3月21〜31日 | |
+
+- 推定期間によるパラメタと外挿値の違い：
+- このCSVでは4月10日の予測誤差を求められない理由：
+
+### 6．半減期の解釈とモデルの限界
+
+- 推定した見かけの半減期と，物理的半減期との比較：
+- 放射性崩壊以外に濃度を変化させうる要因と，このデータだけでは特定できないこと（200字程度）：
 ```
 
 4. Notebookの最初のコードセルに以下を入力し，実行できることを確認せよ．
@@ -186,55 +243,23 @@ print("人口データの有無:", (DATA_DIR / "population_japan.csv").exists())
 - `.exists()`：指定したファイルやフォルダが存在すれば`True`を返す．
 - データがない場合：[授業用CSV](../data/population_japan.csv)をダウンロードし，共通の`data/`に保存してから再実行する．
 ```
-```
-
-## 復習：第2回から再利用する内容
-
-第2回の[常微分方程式と数値シミュレーション](2_ode_simulation.md)から，今回必要な式とコードだけを確認する．導出や関数の基本的な使い方は繰り返さない．
-
-- 初期値問題：$N'=rN$，$N(t_0)=N_0$．第2回の状態変数 $x$ を，今回は人口を表す $N$ に置き換える．
-- 解析解：$N(t)=N_0e^{r(t-t_0)}$．
-- 数値解：`solve_ivp`に右辺の関数・計算区間・初期値・係数を渡し，`sol.y[0]`から近似値を取り出す．
-- 出力時刻：`t_eval`は結果を取り出す時刻の指定であり，内部の刻み幅の指定ではない．
-- 精度の確認：解析解との差の絶対値を計算する．`sol.success`が`True`でも，精度が保証されるわけではない．
-
-今回も使う2つの関数を，準備のセルの後に定義する．
-
-```python
-def exponential_rhs(t, N, r):
-    """指数成長モデル dN/dt = r N の右辺．"""
-    return r * N
-
-
-def exponential_solution(t, N0, r, t0=0.0):
-    """初期条件 N(t0) = N0 に対する解析解．"""
-    return N0 * np.exp(r * (t - t0))
-```
-
-````{dropdown} 復習用コード：数値解と解析解の比較
-
-以下は第2回の計算条件による確認用のコードであり，人口データへの適合ではない．
-
-```python
-t_review = np.linspace(0.0, 10.0, 101)
-sol_review = solve_ivp(
-    exponential_rhs, (0.0, 10.0), [100.0],
-    t_eval=t_review, args=(0.2,)
-)
-N_exact_review = exponential_solution(sol_review.t, 100.0, 0.2)
-print("成功したか:", sol_review.success)
-print("出力時刻上の最大絶対誤差:",
-      np.max(np.abs(sol_review.y[0] - N_exact_review)))
-```
-
-- `np.exp(...)`・`np.log(...)`：指数関数と自然対数．
-- `np.abs(...)`・`abs(...)`：配列の各要素・数値1つの絶対値．`np.max(...)`で配列の最大値を求める．
-- 描画・保存：`ax.plot`，`ax.set_xlabel`，`ax.set_ylabel`，`ax.legend`，`fig.savefig`は第2回のコードを再利用する．
 ````
 
-## データを確認する
+## 復習：第1・2回から再利用する内容
 
-### 出典と利用条件
+[第1回](1_modeling.md)の人口データの扱いと，[第2回](2_ode_simulation.md)の初期値問題の計算を，今回の作業に必要な範囲で確認する．準備のセルを実行した後，以下の順に進める．
+
+- 第1回からの接続：データの出典・単位・期間を確認し，人口の観測値を比較できる状態にする．
+- 第2回からの接続：初期値と係数からモデル値を計算し，数値計算の誤差とデータとの不一致を区別する．
+- この節の到達点：`population`と`population_10k`列，右辺の関数と解析解の関数を用意し，後続の推定・比較で再利用する．
+
+### 第1回の復習：人口データの読み込みと確認
+
+- 復習の目的：比較する人口値の単位・時点・対象範囲を揃え，データの読み違いをモデルの誤差と取り違えないようにする．
+- 再利用する操作：CSVの読み込み，万人単位への変換，期間と行数の確認，観測量と状態変数の区別．
+- 今回の確認事項：年の間隔・欠損値・注記も確認し，推定期間を選ぶ際の注意点を記録する．
+
+#### 出典と利用条件
 
 - 使用ファイル：`population_japan.csv`．総務省統計局「人口推計」の長期時系列データから整形した授業用CSV．
 - 元の統計：「我が国の推計人口（大正9年〜平成12年）」と「長期時系列データ（平成12年〜令和2年）」．
@@ -253,10 +278,10 @@ print("出力時刻上の最大絶対誤差:",
 | 期間 | 1920〜2020年 |
 | 単位 | 千人 |
 
-### 単位，期間，欠損を確かめる
+#### 単位，期間，欠損を確かめる
 
 - 確認項目：先頭・末尾の値，行数，期間，年の間隔，欠損値の数．
-- 単位の変換：千人から万人への変換では10で割る．
+- 単位の変換：千人から万人への変換では10で割る．例えば55963千人は5596.3万人であり，元の列を残して比較用の列を追加する．
 
 ```python
 population = pd.read_csv(DATA_DIR / "population_japan.csv")
@@ -283,6 +308,16 @@ print(population.isna().sum())
 - `.isna().sum()`：欠損値かどうかを判定し，列ごとの欠損数を数える．
 ```
 
+出力結果は次の基準で確認する．
+
+| 確認項目 | このデータでの結果 | 確認する理由 |
+| --- | --- | --- |
+| 期間・行数 | 1920〜2020年，101行 | 推定に使う年が含まれているかを確かめる． |
+| 年の間隔 | `[1]` | 年が昇順で1年ずつ並んでいることを確かめる．前年との差を計算する前提となる． |
+| 人口列の欠損数 | 0 | 各時点の人口値を使えることを確かめる． |
+| `note`列の欠損 | 注記のない年で生じる | 人口値の欠測とは区別する． |
+
+- 想定と異なる結果の場合：単位変換や推定へ進む前に，読み込んだファイル・列名・年の順序を確認する．
 - 人口列：このCSVでは全年の値がそろっている．
 - `note`列の空欄：人口値の欠測ではなく，個別の注記がないことを表す．
 - `note`列の値：国勢調査や補正人口など，値の作成方法を示す．
@@ -311,9 +346,9 @@ print(population[(population["year"] >= 1940) & (population["year"] <= 1950)][["
 - 解釈の限界：総人口の系列だけから，死亡・人口移動・集計範囲の変更の寄与を分離することはできない．
 - モデルとの関係：一定の増加率を仮定するモデルには，こうした人口動態や集計上の変化を明示的に組み込んでいない．
 
-### データの列とモデルの変数の対応
+#### データの列とモデルの変数の対応
 
-データの列とモデルの記号を対応させ，観測量と状態変数を区別する．
+第1回で区別した観測量と状態変数を，今回の記号に対応させる．観測値は特定時点で記録された値であり，モデルの状態変数は時刻の関数として定義する．
 
 | データの列 | モデルの記号 | 対応の仕方 |
 | --- | --- | --- |
@@ -323,7 +358,8 @@ print(population[(population["year"] >= 1940) & (population["year"] <= 1950)][["
 
 - 観測値 $y_i$：統計に記録された人口．集計方法や対象範囲の影響を含む．
 - モデル値 $N(t_i)$：仮定とパラメタに基づいて計算した人口．
-- 比較の条件：同じ時刻・単位・対象範囲に対応する値を比較する．
+- 比較の条件：同じ時刻・単位・対象範囲に対応する値を比較する．集計範囲が変わる年は，その影響を注記として残す．
+- 時刻の対応：1920年は $t=0$，1970年は $t=50$．年そのものと経過年数を混同すると，解析解の指数部分が変わってしまう．
 
 ````{dropdown} コードの補足：最小値・最大値と減少年の抽出
 
@@ -359,6 +395,57 @@ print(population[change < 0][["year", "population_10k", "note"]].to_string(index
 - 追加資料が必要なこと：減少を出生・死亡・人口移動などに分けて説明するには，それぞれの統計が必要である．
 ```
 -->
+
+### 第2回の復習：初期値問題と計算結果の確認
+
+- 復習の目的：モデルの解を計算する操作と，観測値からモデルの妥当性を調べる操作を区別する．
+- 今回の使い方：指数成長モデルには解析解があるため，本文の推定・比較には解析解を使う．`solve_ivp`は数値解の意味を確認する復習用とする．
+
+- 初期値問題：$N'=rN$，$N(t_0)=N_0$．第2回の状態変数 $x$ を，今回は人口を表す $N$ に置き換える．
+- 初期値と係数：$N_0$ は基準時刻 $t_0$ の人口，$r$ は一人あたりの増加率．初期値・係数・計算時刻を指定するとモデル値が決まる．
+- 解析解：$N(t)=N_0e^{r(t-t_0)}$．$t=t_0$ を代入すると $N(t_0)=N_0$ となる．
+- 数値解：`solve_ivp`に右辺の関数・計算区間・初期値・係数を渡し，`sol.y[0]`から近似値を取り出す．
+- 出力時刻：`t_eval`は結果を取り出す時刻の指定であり，内部の刻み幅の指定ではない．
+- 精度の確認：解析解との差の絶対値を計算する．`sol.success`が`True`でも，精度が保証されるわけではない．
+
+今回も使う2つの関数を定義する．`exponential_rhs`は変化率を，`exponential_solution`は指定した時刻のモデル値を返す．両者の戻り値の意味を区別する．
+
+```python
+def exponential_rhs(t, N, r):
+    """指数成長モデル dN/dt = r N の右辺．"""
+    return r * N
+
+
+def exponential_solution(t, N0, r, t0=0.0):
+    """初期条件 N(t0) = N0 に対する解析解．"""
+    return N0 * np.exp(r * (t - t0))
+```
+
+````{dropdown} 復習用コード：数値解と解析解の比較
+
+以下は第2回の計算条件による確認用のコードであり，人口データへの適合ではない．
+
+```python
+t_review = np.linspace(0.0, 10.0, 101)
+sol_review = solve_ivp(
+    exponential_rhs, (0.0, 10.0), [100.0],
+    t_eval=t_review, args=(0.2,)
+)
+N_exact_review = exponential_solution(sol_review.t, 100.0, 0.2)
+print("成功したか:", sol_review.success)
+print("時刻の配列の形:", sol_review.t.shape)
+print("解の配列の形:", sol_review.y.shape)
+print("出力時刻上の最大絶対誤差:",
+      np.max(np.abs(sol_review.y[0] - N_exact_review)))
+```
+
+- 計算条件：初期値100，係数0.2，区間0〜10．この復習例では物理的な単位を設定しない．
+- 配列の形：正常終了時，`sol_review.t`は`(101,)`，`sol_review.y`は`(1, 101)`．状態変数1個について101時点の値が格納される．
+- 誤差の計算：同じ出力時刻の数値解と解析解を引き，絶対値の最大を求める．誤差が0でないことは，計算失敗を意味しない．
+- `np.exp(...)`・`np.log(...)`：指数関数と自然対数．
+- `np.abs(...)`・`abs(...)`：配列の各要素・数値1つの絶対値．`np.max(...)`で配列の最大値を求める．
+- 描画・保存：`ax.plot`，`ax.set_xlabel`，`ax.set_ylabel`，`ax.legend`，`fig.savefig`は第2回のコードを再利用する．
+````
 
 ## 仮定から式へ：指数成長モデル
 
@@ -724,16 +811,370 @@ for year in [1970, 2000, 2020, 2050]:
 4. 1950年までのデータだけに基づき，設問3のモデル値を2020年の人口予測として提示することの問題点を200字程度で説明せよ．誤差の大小に加え，仮定の適用範囲と推定期間を検討せよ．
 ````
 
+<!--
+````{dropdown} 課題1の解答例
+
+本文の準備・データ読み込み・関数定義を実行した後に，次のコードを実行する．数値の表は，丸める前の推定値を使って計算した結果である．
+
+**1．パラメタの推定**
+
+```python
+fit_mask = (year_obs >= 1920) & (year_obs <= 1950)
+slope, intercept = np.polyfit(t_obs[fit_mask], np.log(y_obs[fit_mask]), 1)
+r_loglinear = slope
+N0_loglinear = np.exp(intercept)
+N_model = exponential_solution(t_obs, N0_loglinear, r_loglinear)
+residual = y_obs - N_model
+
+print(f"r = {r_loglinear:.8f} /年")
+print(f"N0 = {N0_loglinear:.1f} 万人")
+```
+
+- 推定値：$r \approx 0.01207289$／年，$N_0 \approx 5661.5$万人．
+- 初期値の意味：1920年に対応するモデル値．1920年の観測値5596.3万人に固定した値ではない．
+
+**2．比較図と残差図**
+
+```python
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3,
+        linestyle="none", label="観測値")
+ax.plot(year_obs, N_model, label="指数成長モデル")
+ax.axvline(1950, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 [万人]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment1_population_fit.png", dpi=150)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.plot(year_obs, residual, marker="o", markersize=3)
+ax.axhline(0, color="black", linewidth=0.8)
+ax.axvline(1950, color="gray", linestyle=":")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
+ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment1_population_residual.png", dpi=150)
+plt.show()
+```
+
+**3．モデル値と観測値の比較**
+
+```python
+for year in [1970, 1990, 2020]:
+    observed = y_obs[year_obs == year][0]
+    model = exponential_solution(year - 1920, N0_loglinear, r_loglinear)
+    print(f"{year}年: モデル {model:.1f}，観測値 {observed:.1f}，差 {model - observed:+.1f} 万人")
+```
+
+| 年 | モデル値 [万人] | 観測値 [万人] | 差（モデル値−観測値）[万人] |
+| --- | --- | --- | --- |
+| 1970 | 10353.5 | 10372.0 | −18.5 |
+| 1990 | 13181.1 | 12361.1 | +820.0 |
+| 2020 | 18934.2 | 12614.6 | +6319.6 |
+
+**4．考察の記述例**
+
+1920〜1950年のデータから求めたモデルは，1970年の人口には近いが，2020年には約6320万人の過大評価となる．一定の純増加率が70年間続くと仮定しており，出生率・死亡率や年齢構成の変化を表していない．推定期間には戦中戦後の集計方法・範囲の変更も含まれる．したがって，この値を確実な予測として提示せず，推定期間と仮定を明記し，推定に使わなかった期間の観測値との比較や追加資料によって適用可能性を検討する必要がある．
+````
+-->
+
 ````{warning} 課題2：観測量と状態変数の対応を説明する
 
 1. `README.md`のモデルの記録を完成させよ．1920〜1970年の対数線形法を基準として，推定値を記入せよ．
 2. `population_10k`列の値と状態変数 $N(t)$ の対応関係，および集計方法とモデルの仮定の違いを200字程度で説明せよ．国勢調査年・補正人口・沖縄県の除外に関する注記を用いよ．
 ````
 
-### 提出物
+<!--
+````{dropdown} 課題2の解答例
 
-- 提出先・期限：WebClassの指示に従う．
-- 提出物：`README.md`，`notebooks/population_exponential.ipynb`，`reports/figures/`に保存した図．
+**1．モデルの記録**
+
+課題1で変更した推定期間を1920〜1970年に戻して計算する．
+
+```python
+fit_mask = (year_obs >= 1920) & (year_obs <= 1970)
+slope, intercept = np.polyfit(t_obs[fit_mask], np.log(y_obs[fit_mask]), 1)
+r_loglinear = slope
+N0_loglinear = np.exp(intercept)
+print(f"r = {r_loglinear:.8f} /年，N0 = {N0_loglinear:.1f} 万人")
+```
+
+- 微分方程式：$dN/dt=rN$．$t$は1920年からの経過年数，$N$の単位は万人．
+- 仮定：出生・死亡による変化量が人口に比例し，その差に対応する一人あたりの純増加率$r$が一定．人口移動や年齢構成の変化は明示的に扱わない．
+- パラメタ：1920〜1970年の51時点に対する対数線形法から，$r\approx 0.01244342$／年．
+- 初期条件：$N(0)=N_0\approx 5647.3$万人．$N_0$も対数線形法で推定した値．
+
+**2．対応関係と相違点の記述例**
+
+population_10k列は，統計に記録された人口を万人単位に直した離散時点の観測値である．一方，N(t)は一定の純増加率を仮定した微分方程式の連続時間の状態変数であり，各観測時点で両者を比較する．国勢調査年には調査結果が使われ，1940年・1945年には補正人口が含まれる．また，1945〜1971年は沖縄県を含まない．モデルは集計方法や対象範囲の変更を表していないため，残差をすべて人口動態の変化と解釈することはできない．
+````
+-->
+
+````{warning} 課題3：福島第一原発事故後のヨウ素131濃度をモデル化する
+
+2011年3月の福島第一原子力発電所事故後に公表された水道水の検査結果を用い，人口モデルと同じ手順で指数減衰モデルを構築・評価する．対象は，福島市の原子力センター福島支所で採取した水道水中のヨウ素131濃度である．
+
+- 使用データ：[授業用CSV](../data/iodine131_fukushima_tapwater_2011.csv)．2011年3月21日〜4月3日の14件を収録している．共通の`~/applied_programming_ii/data/`に保存する．
+- 出典：[厚生労働省の検査結果（2011年4月4日公表）](https://www.mhlw.go.jp/stf/houdou/2r98520000017x7l-img/2r98520000017xbt.pdf)．[データ一覧](../data/README.md)に抽出箇所・取得日・利用条件・加工内容を記載している．
+- 観測量：ヨウ素131の放射能濃度．1 Bqは1秒あたり平均1回の放射性崩壊に相当し，Bq/kgは水1 kgあたりの放射能を表す．
+- 時間：2011年3月21日を $t=0$ とし，日単位で扱う．事故発生日からの経過日数ではない．
+- 作業場所：既存の`population_exponential.ipynb`に課題3の節を追加し，結果を`README.md`の同じ番号の解答欄に記入する．
+
+1. **データの確認**：出典・利用条件・採取地点・核種・期間・件数・単位を確認し，記録せよ．日付の間隔と欠損・不検出の有無を確認せよ．横軸を経過日数とする観測値のグラフと，縦軸を対数目盛にしたグラフを作成せよ．全体の傾向と，前日より濃度が上昇した日の有無を記述せよ．
+2. **モデルの構築**：放射能濃度を $C(t)$ とし，濃度の減少速度がその時点の濃度に比例すると仮定せよ．比例係数を時間によらない定数 $\lambda>0$，初期値を $C_0$ として，微分方程式・初期条件・解析解を示せ．$C(t)$，$C_0$，$t$，$\lambda$ の意味と単位を記入せよ．
+3. **パラメタ推定**：3月21日と28日の観測値から2時点法で $\lambda$ を求めよ．次に，3月21〜28日の全観測値から対数線形法で $\lambda$ と $C_0$ を求めよ．それぞれの見かけの半減期を計算し，表に記入せよ．
+4. **モデルの評価**：両推定方法について4月3日までのモデル値を求め，観測値との比較図と残差図を作成せよ．残差は観測値−モデル値とし，推定対象期間の終わりを縦線で示せ．3月21〜28日と3月29日〜4月3日を分けてMSE・RMSEを求め，推定方法・評価期間による違いと残差の時間変化を説明せよ．図は設問1の図とともに`reports/figures/`へ保存せよ．
+5. **推定期間の変更と外挿**：対数線形法で用いる観測期間を3月31日まで延長し，$\lambda$・$C_0$・見かけの半減期を再推定せよ．3月28日までで推定したモデルと，3月31日までで推定したモデルから，それぞれ4月10日の濃度を計算せよ．推定期間によるパラメタと外挿値の違いを説明し，このCSVでは4月10日の予測誤差を求められない理由を述べよ．
+6. **モデルの解釈**：設問3・5の見かけの半減期を，ヨウ素131の物理的半減期である約8日と比較せよ．毎日別の水を採取していることを踏まえ，放射性崩壊以外に濃度を変化させうる要因を挙げ，このデータだけでは要因を特定できない理由を200字程度で説明せよ．
+````
+
+
+````{dropdown} 課題3の解答例
+
+本文の準備と，`exponential_solution`・`mean_squared_error`の定義を実行済みとする．以下のコードを設問番号の順に実行する．
+
+**1．データの確認**
+
+| 項目 | 確認結果 |
+| --- | --- |
+| 提供機関・資料 | 厚生労働省「水道水中の放射性物質に関する検査の実施状況」（2011年4月4日公表）．出典URLは課題本文のリンク参照 |
+| 取得日・利用条件 | 2026年10月10日．公共データ利用規約（PDL1.0）に従い，出典と加工した旨を記載 |
+| 加工内容 | 対象地点・期間のヨウ素131濃度を抽出し，日付と経過日数を付けた授業用CSV．平均化・補間は実施していない |
+| 採取地点・核種 | 福島市の原子力センター福島支所．ヨウ素131 |
+| 期間・件数・間隔 | 2011年3月21日〜4月3日，14件，1日間隔 |
+| 単位・欠損・不検出 | Bq/kg．抽出した14件には欠損・不検出の記載なし |
+
+```python
+radioactivity = pd.read_csv(DATA_DIR / "iodine131_fukushima_tapwater_2011.csv")
+t_decay = radioactivity["elapsed_days"].to_numpy().astype(float)
+c_obs = radioactivity["iodine131_bq_kg"].to_numpy()
+
+print(radioactivity)
+print("件数:", len(radioactivity))
+print("日付の間隔 [日]:", np.unique(np.diff(t_decay)))
+print("欠損値の数:", radioactivity.isna().sum())
+print("すべて正の値か:", np.all(c_obs > 0))
+change = radioactivity["iodine131_bq_kg"].diff()
+print("前日より濃度が上昇した日:")
+print(radioactivity[change > 0][["date", "iodine131_bq_kg"]])
+
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none",
+        label="観測値")
+ax.set_xlabel("3月21日からの経過日数 [日]")
+ax.set_ylabel("ヨウ素131濃度 [Bq/kg]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment3_observed.png", dpi=150)
+plt.show()
+
+# 同じ図の縦軸を対数目盛に変え，別のファイルに保存する．
+ax.set_yscale("log")
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment3_observed_log.png", dpi=150)
+```
+
+- 全体の傾向：濃度は23 Bq/kgから4.492 Bq/kgへ減少するが，単調減少ではない．対数目盛の図でも全体として右下がりである．
+- 前日より上昇した日：3月23日，3月26日，3月27日，4月1日．一定係数の指数減衰モデルはこれらの上昇を表せない．
+
+**2．モデルの設定**
+
+$$
+\frac{dC}{dt}=-\lambda C,\qquad C(0)=C_0,
+\qquad C(t)=C_0e^{-\lambda t}.
+$$
+
+- 状態変数$C(t)$：時刻$t$の水道水中のヨウ素131濃度．単位はBq/kg．
+- 時刻$t$：2011年3月21日からの経過日数．単位は日．
+- 初期値$C_0$：3月21日に対応するモデルの濃度．単位はBq/kg．
+- 係数$\lambda$：単位時間あたりの相対的な減少率．単位は1／日．時間によらない正の定数と仮定する．
+- 仮定の範囲：複数の要因を分離せず，対象期間の濃度の減少傾向を1つの比例係数で近似する．放射性崩壊だけが作用すると断定する仮定ではない．
+
+**3．パラメタ推定**
+
+2時点法では$C_0=23$，$C(7)=12$とし，$\lambda=-\log(12/23)/7$を求める．対数線形法では，Bq/kg単位の濃度の数値を用いた対数上の傾きが$-\lambda$，切片が$\log C_0$となる．
+
+```python
+fit_decay = t_decay <= 7
+C0_two_point = c_obs[0]
+c_day7 = c_obs[t_decay == 7][0]
+decay_rate_two_point = -np.log(c_day7 / C0_two_point) / 7
+half_life_two_point = np.log(2) / decay_rate_two_point
+
+slope_decay, intercept_decay = np.polyfit(
+    t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
+)
+decay_rate = -slope_decay
+C0_loglinear = np.exp(intercept_decay)
+half_life = np.log(2) / decay_rate
+
+print("2時点法（C0，λ，半減期）:", C0_two_point, decay_rate_two_point, half_life_two_point)
+print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, half_life)
+```
+
+| 推定方法 | 推定対象（2011年） | C0 [Bq/kg] | λ [1/日] | 見かけの半減期 [日] |
+| --- | --- | --- | --- | --- |
+| 2時点法 | 3月21日・28日 | 23.0000 | 0.0929411 | 7.4579 |
+| 対数線形法 | 3月21〜28日 | 21.5776 | 0.0936854 | 7.3987 |
+
+**4．モデルの評価**
+
+```python
+C_two_point = exponential_solution(t_decay, C0_two_point, -decay_rate_two_point)
+C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
+residual_two_point_decay = c_obs - C_two_point
+residual_decay = c_obs - C_model
+
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none", label="観測値")
+ax.plot(t_decay, C_two_point, label="2時点法")
+ax.plot(t_decay, C_model, label="対数線形法")
+ax.axvline(7, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_xlabel("3月21日からの経過日数 [日]")
+ax.set_ylabel("ヨウ素131濃度 [Bq/kg]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment3_decay_fit.png", dpi=150)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.plot(t_decay, residual_two_point_decay, marker="o", label="2時点法")
+ax.plot(t_decay, residual_decay, marker="o", label="対数線形法")
+ax.axhline(0, color="black", linewidth=0.8)
+ax.axvline(7, color="gray", linestyle=":")
+ax.set_xlabel("3月21日からの経過日数 [日]")
+ax.set_ylabel("残差 [Bq/kg]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment3_decay_residual.png", dpi=150)
+plt.show()
+
+mse_two_fit = mean_squared_error(c_obs[fit_decay], C_two_point[fit_decay])
+mse_two_after = mean_squared_error(c_obs[~fit_decay], C_two_point[~fit_decay])
+mse_log_fit = mean_squared_error(c_obs[fit_decay], C_model[fit_decay])
+mse_log_after = mean_squared_error(c_obs[~fit_decay], C_model[~fit_decay])
+print("2時点法・3月21〜28日（MSE，RMSE）:", mse_two_fit, np.sqrt(mse_two_fit))
+print("2時点法・3月29日以降（MSE，RMSE）:", mse_two_after, np.sqrt(mse_two_after))
+print("対数線形法・3月21〜28日（MSE，RMSE）:", mse_log_fit, np.sqrt(mse_log_fit))
+print("対数線形法・3月29日以降（MSE，RMSE）:", mse_log_after, np.sqrt(mse_log_after))
+```
+
+| 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
+| --- | --- | --- | --- |
+| 2時点法 | 3月21〜28日 | 7.8117 | 2.7949 |
+| 2時点法 | 3月29日〜4月3日 | 3.9120 | 1.9779 |
+| 対数線形法 | 3月21〜28日 | 7.2543 | 2.6934 |
+| 対数線形法 | 3月29日〜4月3日 | 2.3749 | 1.5411 |
+
+- 推定方法の比較：このデータでは対数線形法のMSE・RMSEが両期間で小さい．ただし，対数線形法が最小化するのは対数残差の二乗和であり，元の濃度でのMSEが必ず小さくなるわけではない．
+- 評価期間の比較：両方法とも後半のRMSEが小さい．後半は濃度自体も低く，異なる観測値の集合を比較しているため，外挿の精度が一般に高いとは結論できない．
+- 残差の時間変化：3月23日・27日には両方法で正，3月24〜26日には負となる．3月29日以降は4月1日を除いて負であり，この期間では過大評価が多い．
+
+**5．推定期間の変更と外挿**
+
+```python
+fit_decay_extended = t_decay <= 10  # 3月31日まで
+slope_extended, intercept_extended = np.polyfit(
+    t_decay[fit_decay_extended], np.log(c_obs[fit_decay_extended]), 1
+)
+decay_rate_extended = -slope_extended
+C0_extended = np.exp(intercept_extended)
+half_life_extended = np.log(2) / decay_rate_extended
+print("3月31日まで（C0，λ，半減期）:", C0_extended, decay_rate_extended, half_life_extended)
+
+prediction_day20 = exponential_solution(20, C0_loglinear, -decay_rate)
+prediction_day20_extended = exponential_solution(20, C0_extended, -decay_rate_extended)
+print("3月28日までで推定した4月10日の濃度:", prediction_day20, "Bq/kg")
+print("3月31日までで推定した4月10日の濃度:", prediction_day20_extended, "Bq/kg")
+```
+
+| 対数線形法の推定期間（2011年） | C0 [Bq/kg] | λ [1/日] | 見かけの半減期 [日] | 4月10日のモデル値 [Bq/kg] |
+| --- | --- | --- | --- | --- |
+| 3月21〜28日 | 21.5776 | 0.0936854 | 7.3987 | 3.3133 |
+| 3月21〜31日 | 22.9487 | 0.1161707 | 5.9666 | 2.2476 |
+
+- 推定期間による違い：3月29〜31日の観測値は元のモデルより小さい．これらを加えると減衰係数が大きくなり，見かけの半減期と4月10日のモデル値は小さくなる．時刻の原点は同じであり，$C_0$はどちらも3月21日に対応する推定値である．
+- 予測誤差を求められない理由：このCSVには4月3日までの観測値しかない．4月10日のモデル値同士の差は求められるが，観測値との差は求められない．
+
+**6．モデルの解釈**
+
+- 半減期の比較：2時点法で約7.46日，3月28日までの対数線形法で約7.40日，3月31日までの対数線形法で約5.97日となる．いずれも物理的半減期の約8日より短く，推定期間によっても変わる．
+- 考察の記述例：このデータは同じ試料を保存して測ったものではなく，毎日採取した別の水の濃度である．濃度は放射性崩壊に加え，水源への放射性物質の流入，降水などによる希釈，浄水処理での除去などにも影響されうる．したがって，推定した係数は複数の作用を含む見かけの減少率である．各要因の寄与を特定するには，水源の濃度・流量・処理条件などの追加資料が必要であり，この濃度系列だけから減少の原因や健康影響を判断することはできない．
+````
+
+
+```{note} 物理的半減期と，濃度の見かけの半減期
+
+- 放射性崩壊：不安定な原子核が別の原子核へ変化する現象．外部との物質の出入りがない試料では，ヨウ素131の放射能は物理的半減期に従って減少する．
+- 物理的半減期：放射性崩壊によって原子核の数が半分になるまでの時間．ヨウ素131では約8日である（[環境省：半減期と放射能の減衰](https://www.env.go.jp/chemi/rhm/current/01-02-07.html)）．
+- 見かけの半減期：今回の濃度モデル $C(t)=C_0e^{-\lambda t}$ が半分の値になるまでの時間．$T_{1/2}=\log 2/\lambda$ で求める．ここで $\log$ は自然対数である．
+- 両者の違い：水道水の濃度には，放射性崩壊だけでなく水源への流入や希釈・除去なども影響しうる．推定した $\lambda$ は対象期間の濃度変化を近似する係数であり，ヨウ素131固有の崩壊定数とは限らない．
+- 解釈の範囲：半減期が約8日に近くても，放射性崩壊だけで変化した証拠にはならない．この地点・期間の濃度から健康影響や現在の水道水の安全性を判断することもできない．
+```
+
+````{dropdown} コードの補足：人口モデルのコードを課題3に利用する
+
+新しいライブラリは必要ない．本文のコードをコピーし，データ・時刻・パラメタ・軸ラベルを次のように対応させる．人口の結果を残すため，課題3では別の変数名を使う．
+
+| 人口モデル | 濃度の減衰モデル |
+| --- | --- |
+| 人口の観測値`y_obs` | 濃度の観測値`c_obs` |
+| 1920年からの経過年`t_obs` | 3月21日からの経過日数`t_decay` |
+| 初期値 $N_0$ | 初期濃度 $C_0$ |
+| 増加率 $r$ | 減衰係数の符号を反転した $-\lambda$ |
+| 推定対象を選ぶ`fit_mask` | 推定対象を選ぶ`fit_decay` |
+
+```python
+radioactivity = pd.read_csv(DATA_DIR / "iodine131_fukushima_tapwater_2011.csv")
+t_decay = radioactivity["elapsed_days"].to_numpy().astype(float)
+c_obs = radioactivity["iodine131_bq_kg"].to_numpy()
+
+print(radioactivity.head())
+print(radioactivity.tail())
+print("件数:", len(radioactivity))
+print("日付の間隔 [日]:", np.unique(np.diff(t_decay)))
+print("欠損値の数:", radioactivity.isna().sum())
+
+# 3月21〜28日の8件を選ぶ．3月21日を0日とする．
+fit_decay = t_decay <= 7
+```
+
+- 対数をとる条件：元資料で不検出の有無を確認したうえで，`np.all(c_obs > 0)`により濃度がすべて正であることを確かめる．不検出を0として対数をとる処理は行わない．
+- 2時点法：本文の式 $r=\log(N_1/N_0)/(t_1-t_0)$ に濃度を代入し，符号を反転して $\lambda$ とする．初期値には3月21日の観測値を使う．
+- 対数線形法：次のように傾きの符号を反転する．Pythonの`lambda`は構文に使う予約語なので，変数名には`decay_rate`を使う．
+
+```python
+slope_decay, intercept_decay = np.polyfit(
+    t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
+)
+decay_rate = -slope_decay
+C0_loglinear = np.exp(intercept_decay)
+C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
+half_life = np.log(2) / decay_rate
+```
+
+- 解析解の再利用：`exponential_solution`は係数が負の場合にも使える．2時点法でも，その方法で求めた初期値と係数を引数に渡す．
+- 評価：`residual_decay = c_obs - C_model`とし，本文の描画コード・`mean_squared_error`・`np.sqrt`を再利用する．`fit_decay`と`~fit_decay`で評価期間を分ける．2時点法で使うのは端点2件のみだが，設問4では対数線形法と同じ期間の全件で評価する．
+- 図の表示：横軸を`3月21日からの経過日数 [日]`，縦軸を`ヨウ素131濃度 [Bq/kg]`または`残差 [Bq/kg]`に変える．縦線も年ではなく経過日数で指定し，保存ファイル名は人口の図と区別する．
+- 対数目盛：`ax.set_yscale("log")`で縦軸を対数目盛にする．この場合は`c_obs`をそのまま描き，`np.log(c_obs)`には置き換えない．
+- 期間の変更：推定対象を選ぶ条件を変更し，傾き・切片・初期値・半減期を計算し直す．3月21日を時刻の原点とする設定は変えない．変更前の結果も表に記録する．
+- 外挿：4月10日は3月21日から20日後である．`exponential_solution(20, C0_loglinear, -decay_rate)`で計算できる．各推定期間について計算し，観測値がない日の誤差は算出しない．
+````
+
+### 提出先・期限
+
+- 提出場所：WebClass「第3回課題」
+- 提出物：
+  - `README.md`
+  - Notebookファイル`population_exponential.ipynb`
+- 提出期限：2026年10月17日(土)23:59
 
 ## 自主学習用の発展演習
 
