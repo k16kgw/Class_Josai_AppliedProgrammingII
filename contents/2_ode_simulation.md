@@ -358,7 +358,7 @@ $x' = 0.2\,x$，$x(0) = 100$ を刻み幅 $h = 1$ で3ステップ計算する�
 1. $t=3$ での数値解と絶対誤差を求め，$h=1$ の数値解172.8，解析解 $100e^{0.6}\approx182.21$ とともに`README.md`の比較表に記入せよ．
 2. $h=0.5$ の絶対誤差を $h=1$ の絶対誤差で割った比を求め，刻み幅を半分にすると絶対誤差がおよそ何分の1になったかを`README.md`に記述せよ．
 ````
-<!-- 
+
 ```{dropdown} 演習1の確認
 
 - 更新式：$x_{k+1}=x_k+0.5\times0.2x_k=1.1x_k$．
@@ -370,7 +370,7 @@ $x' = 0.2\,x$，$x(0) = 100$ を刻み幅 $h = 1$ で3ステップ計算する�
 
 - 比較：絶対誤差の比は約 $5.06/9.41\approx0.54$．刻み幅を半分にすると，絶対誤差もおよそ半分になる．Euler法の大域誤差が $O(h)$ となる性質に対応する．
 ```
- -->
+
 
 ## Pythonによる実装
 
@@ -516,7 +516,7 @@ plt.show()
 4. 絶対誤差を10分の1にするために必要なステップ数の倍率を表から見積もり，`README.md`に記入せよ．
 ````
 
-<!--
+
 ````{dropdown} 演習2の解答例
 
 ```python
@@ -545,7 +545,7 @@ print("ステップ数の倍率:", (len(t_001) - 1) / (len(t_01) - 1))
 - 絶対誤差の比：$h=0.001$ と $h=0.01$ の比は約0.1002．
 - 必要なステップ数：1000回から10000回への増加により，絶対誤差が約10分の1になる．必要なステップ数の倍率は約10倍と見積もれる．
 ````
--->
+
 
 ## `solve_ivp`による数値シミュレーション
 
@@ -648,7 +648,7 @@ print(f"Euler法 h=0.01 の x(10) = {x_euler[-1]:.4f}，ステップ数 = {len(t
 4. Euler法（$h=0.01$）の結果を同じ表に記入し，終了時刻での絶対誤差と右辺の評価回数を比較して記述せよ．
 ````
 
-<!--
+
 ````{dropdown} 演習3の解答例
 
 解析解は $x(t)=x(0)e^{rt}$ に $r=0.5$，$x(0)=30$ を代入して，$x(t)=30e^{0.5t}$ となる．
@@ -688,6 +688,8 @@ fig.savefig(FIGURE_DIR / "growth_solve_ivp.png", dpi=150)
 plt.show()
 ```
 
+![演習3：増殖モデルの解析解とsolve_ivpによる数値解](figs/02/growth_solve_ivp.png)
+
 - 計算結果：正常終了した場合，`sol.success`は`True`，`sol.t.shape`は`(201,)`，`sol.y.shape`は`(1, 201)`．
 - 解析解：$x(20)=30e^{10}\approx660793.973844$．
 - Euler法（$h=0.01$）：$x(20)\approx644532.420699$，誤差は約 $-16261.553146$，右辺の評価回数は2000回．
@@ -695,7 +697,7 @@ plt.show()
 - 比較：両解法の終了時刻の絶対誤差と評価回数を比較する．今回の条件では，`solve_ivp`の方が少ない評価回数で小さい絶対誤差を得られる．
 - 注意：`solve_ivp`の数値や評価回数は，SciPyのバージョンにより異なる場合がある．
 ````
--->
+
 
 ## 課題
 
@@ -737,7 +739,7 @@ $$
 5. 設問3・4の表と図に基づき，Euler法と`solve_ivp`の絶対誤差・右辺の評価回数の違いを3行程度で説明せよ．
 ````
 
-<!--
+
 ````{dropdown} 課題の解答例
 
 **設問1：減衰モデルの計算**
@@ -815,13 +817,15 @@ fig.savefig(FIGURE_DIR / "decay_comparison.png", dpi=150)
 plt.show()
 ```
 
+![課題・設問4：減衰モデルの解析解，Euler法，solve_ivpの比較](figs/02/decay_comparison.png)
+
 **設問5：精度と計算量の比較**
 
 - Euler法：刻み幅を小さくすると絶対誤差が減少する一方，右辺の評価回数は12，24，48，240回と増える．
 - `solve_ivp`：今回の条件では，終了時刻の絶対誤差が約0.000265，右辺の評価回数が62回となり，Euler法（$h=0.1$）よりも両者が小さい．数値や評価回数はSciPyのバージョンにより異なる場合がある．
 - 計算量の比較：右辺の評価回数は計算量の目安であり，実行時間そのものではない．
 ````
--->
+
 
 ### 提出先・期限
 
@@ -1041,6 +1045,119 @@ $$
 - 収束次数：刻み幅 $h$ を小さくしたとき，大域打ち切り誤差が $O(h^p)$ となる場合の次数 $p$．
 ````
 
+<!--
+````{dropdown} 発展問題1の解答例
+
+本文のインポートと`euler`・`exponential_rhs`・`exponential_solution`の定義を実行済みとする．
+
+**設問1：厳密解のTaylor展開**
+
+合成関数の微分から，$x''(t)=f_t(t,x(t))+f_x(t,x(t))x'(t)=f_t+f_xf$である．したがって，
+
+$$
+x(t_k+h)=x_k+hx'(t_k)+\frac{h^2}{2}x''(t_k)+O(h^3)
+=x_k+hf+\frac{h^2}{2}(f_t+f_xf)+O(h^3).
+$$
+
+**設問2：中点での傾きと局所打ち切り誤差**
+
+$k_1=f$を代入して2変数のTaylor展開を行うと，
+
+$$
+k_2=f\!\left(t_k+\frac h2,x_k+\frac h2f\right)
+=f+\frac h2 f_t+\frac h2 f_xf+O(h^2).
+$$
+
+よって更新値は$x_k+hk_2=x_k+hf+(h^2/2)(f_t+f_xf)+O(h^3)$となる．厳密解の展開と2次まで一致するため，厳密解から1ステップ進めたときの差は$O(h^3)$である．
+
+**設問3：RK2の実装**
+
+```python
+def rk2(rhs, t_span, x0, h, args=()):
+    t0, t_end = t_span
+    if h <= 0 or t_end <= t0:
+        raise ValueError("h > 0，t_end > t0 を指定してください．")
+    n_steps = int(np.ceil((t_end - t0) / h))
+    t = t0 + h * np.arange(n_steps + 1)
+    t = np.append(t[t < t_end], t_end)
+    n_steps = len(t) - 1
+    x = np.zeros(n_steps + 1)
+    x[0] = x0
+    for k in range(n_steps):
+        dt = t[k + 1] - t[k]
+        k1 = rhs(t[k], x[k], *args)
+        k2 = rhs(t[k] + dt / 2, x[k] + dt * k1 / 2, *args)
+        x[k + 1] = x[k] + dt * k2
+    return t, x
+```
+
+**設問4・5：絶対誤差と収束次数**
+
+```python
+r = 0.2
+x0 = 100.0
+t_span = (0.0, 10.0)
+h_values = [1.0, 0.5, 0.1, 0.01]
+exact_end = exponential_solution(10.0, x0, r)
+errors_euler = np.zeros(len(h_values))
+errors_rk2 = np.zeros(len(h_values))
+for j in range(len(h_values)):
+    h = h_values[j]
+    t, x = euler(exponential_rhs, t_span, x0, h, args=(r,))
+    errors_euler[j] = abs(x[-1] - exact_end)
+    t, x = rk2(exponential_rhs, t_span, x0, h, args=(r,))
+    errors_rk2[j] = abs(x[-1] - exact_end)
+    print(h, errors_euler[j], errors_rk2[j])
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.loglog(h_values, errors_euler, marker="o", label="Euler法")
+ax.loglog(h_values, errors_rk2, marker="s", label="RK2")
+ax.set_xlabel("刻み幅 h")
+ax.set_ylabel("t=10での絶対誤差")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "rk2_convergence.png", dpi=150)
+plt.show()
+
+for j in range(len(h_values) - 1):
+    slope_euler = np.log(errors_euler[j + 1] / errors_euler[j]) / np.log(h_values[j + 1] / h_values[j])
+    slope_rk2 = np.log(errors_rk2[j + 1] / errors_rk2[j]) / np.log(h_values[j + 1] / h_values[j])
+    print("刻み幅の組:", h_values[j], h_values[j + 1], "傾き:", slope_euler, slope_rk2)
+```
+
+![発展問題1・設問4と5：刻み幅と終了時刻の絶対誤差の両対数グラフ](figs/02/rk2_convergence.png)
+
+| 刻み幅 | Euler法の絶対誤差 | RK2の絶対誤差 |
+| --- | ---: | ---: |
+| 1 | 119.731968 | 8.442468 |
+| 0.5 | 66.155615 | 2.282126 |
+| 0.1 | 14.440998 | 0.097048 |
+| 0.01 | 1.474371 | 0.000984 |
+
+- 隣り合う点から求めた傾き：Euler法は約0.856，0.946，0.991，RK2は約1.887，1.962，1.994．刻み幅を小さくするとそれぞれ1，2に近づく．
+- 収束次数との関係：主要誤差が$E(h)\approx Ch^p$（$C>0$）なら，$\log E(h)\approx\log C+p\log h$となる．したがって，丸め誤差が支配的でない十分小さい刻み幅では，両対数グラフの傾きが次数$p$に近づく．
+
+**設問6：RK45との比較**
+
+```python
+sol = solve_ivp(exponential_rhs, t_span, [x0], t_eval=[10.0], args=(r,))
+error_rk45 = abs(sol.y[0, -1] - exact_end)
+print("RK45:", sol.success, "絶対誤差:", error_rk45, "評価回数:", sol.nfev)
+for h in [0.1, 0.05, 0.02, 0.01]:
+    t, x = rk2(exponential_rhs, t_span, x0, h, args=(r,))
+    error = abs(x[-1] - exact_end)
+    n_steps = len(t) - 1
+    print("RK2:", h, "絶対誤差:", error,
+          "ステップ数:", n_steps, "評価回数:", 2 * n_steps)
+```
+
+- RK45：既定の許容誤差で，終了時刻の絶対誤差は約0.018868，右辺の評価回数は26回．
+- RK2：$h=0.05$では誤差が約0.024446，$h=0.02$では約0.003929．したがって，候補の中では$h=0.02$でRK45以下の絶対誤差となり，500ステップ・1000回の右辺評価を要する．
+- 比較上の注意：この条件ではRK45の評価回数が少ない．`t_eval`の点数は内部のステップ数ではない．評価回数は実行時間そのものでもない．以下も含め，SciPyの数値はバージョンに依存しうる（数値例はSciPy 1.18.1）．
+````
+-->
+
 ````{dropdown} コードの補足：RK2の実装と誤差の描画
 
 `euler`関数をコピーして名前を`rk2`に変更し，更新式のループを次のコードに置き換える．時刻配列の準備や戻り値は変更しない．
@@ -1123,6 +1240,51 @@ plt.show()
 - 増幅率：1ステップ前の近似値に掛ける係数．この減衰モデルに対するEuler法では $1-h\lambda$．
 ````
 
+<!--
+````{dropdown} 発展演習：Euler法の不安定性の解答例
+
+**設問1：増幅率と数値解の挙動**
+
+![発展演習：刻み幅によるEuler法の減衰・振動・発散の違い（縦軸の表示範囲は−300〜300）](figs/02/euler_instability.png)
+
+一定刻み幅では$x_n=(1-h\lambda)^n x_0$である．
+
+| 条件 | 増幅率 | 数値解の挙動（$x_0>0$） |
+| --- | --- | --- |
+| $0<h\lambda<1$ | $0<1-h\lambda<1$ | 正のまま単調減少し，0に近づく |
+| $h\lambda=1$ | 0 | 1ステップで0となり，以後0のまま |
+| $1<h\lambda<2$ | $-1<1-h\lambda<0$ | 符号が交互に変わり，絶対値は0に近づく |
+| $h\lambda=2$ | −1 | 符号が交互に変わり，絶対値は初期値のまま |
+| $h\lambda>2$ | $1-h\lambda<-1$ | 符号が交互に変わり，絶対値が増大する |
+
+- $\lambda=2$の場合：$h=0.4,0.9,1.2$の増幅率はそれぞれ$0.2,-0.8,-1.4$である．設問の図では$h=1.2$の値の一部は縦軸の表示範囲外となる．
+- 最終ステップ：$h=0.9$では9.9から10までの刻み幅0.1により増幅率0.8，$h=1.2$では9.6から10までの刻み幅0.4により増幅率0.2となる．この最後の1ステップでは符号は変わらず，絶対値が減る．一定刻み幅での分類と区別する．
+
+**設問2：solve_ivpの誤差**
+
+```python
+def decay_rhs(t, x, decay_rate):
+    return -decay_rate * x
+
+decay_rate = 2.0
+x0_decay = 100.0
+t_span_decay = (0.0, 10.0)
+t_eval_decay = np.linspace(0.0, 10.0, 201)
+sol = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
+                t_eval=t_eval_decay, args=(decay_rate,))
+x_exact = x0_decay * np.exp(-decay_rate * sol.t)
+max_error = np.max(np.abs(sol.y[0] - x_exact))
+print("成功したか:", sol.success, "出力時刻上の最大絶対誤差:", max_error)
+```
+
+既定のRK45・許容誤差で，指定した201時点における最大絶対誤差は約0.041268となる．出力時刻の間での最大値を求めたものではない．
+
+**設問3：減衰率と刻み幅**
+
+数値解が0へ減衰するには$|1-h\lambda|<1$，すなわち$0<h<2/\lambda$が必要である．したがって，$\lambda$が大きいほど安定に計算できる刻み幅の上限は小さくなる．さらに，正値を保って減少させるには$0<h\lambda<1$が必要であり，安定であることだけでは解析解の正値性や近似精度は保証されない．
+````
+-->
+
 刻み幅を選ぶ際は，解析解の挙動を数値解が再現できるかに注意する．`solve_ivp`を使う場合にも，計算の成功・失敗と，許容誤差を変更したときの結果の変化を確認する必要がある．
 
 ````{note} 発展問題2：後退Euler法と数値的安定性
@@ -1146,6 +1308,118 @@ $$
 - 陰的な方法：次の時刻の未知値を右辺にも含む更新式を用いる方法．後退Euler法では $x_{n+1}$ に関する方程式を解く．
 - 硬い問題（stiff problem）：精度のために必要な刻み幅よりも，陽的解法の安定性のために著しく小さい刻み幅が必要な問題．典型例は速く減衰する成分と遅い成分が共存する問題であり，単一の減衰モデルでも急減後の長い区間の計算で同様の制約が現れる．
 ````
+
+<!--
+````{dropdown} 発展問題2の解答例
+
+本文の`euler`と課題の`decay_rhs`を定義済みとする．
+
+**設問1：更新式の導出**
+
+$$
+x_{n+1}=x_n-h\lambda x_{n+1}
+\quad\Longrightarrow\quad
+(1+h\lambda)x_{n+1}=x_n
+\quad\Longrightarrow\quad
+x_{n+1}=\frac{x_n}{1+h\lambda}.
+$$
+
+**設問2：安定性の比較**
+
+後退Euler法の増幅率を$q=1/(1+h\lambda)$とすると，$h,\lambda>0$より$0<q<1$である．一定刻み幅では$x_n=q^n x_0>0$であり，$x_{n+1}<x_n$かつ$\lim_{n\to\infty}x_n=0$となる．前進Euler法が0へ減衰する条件は$0<h\lambda<2$だが，後退Euler法にはこの上限制約がない．これは今回の線形減衰問題についての結論である．
+
+**設問3：実装と比較図**
+
+```python
+def backward_euler_decay(t_span, x0, h, decay_rate):
+    t0, t_end = t_span
+    if h <= 0 or t_end <= t0:
+        raise ValueError("h > 0，t_end > t0 を指定してください．")
+    n_steps = int(np.ceil((t_end - t0) / h))
+    t = t0 + h * np.arange(n_steps + 1)
+    t = np.append(t[t < t_end], t_end)
+    n_steps = len(t) - 1
+    x = np.zeros(n_steps + 1)
+    x[0] = x0
+    for k in range(n_steps):
+        dt = t[k + 1] - t[k]
+        x[k + 1] = x[k] / (1 + dt * decay_rate)
+    return t, x
+
+decay_rate = 2.0
+x0_decay = 100.0
+t_span_decay = (0.0, 10.0)
+t_fine = np.linspace(0.0, 10.0, 201)
+x_exact = x0_decay * np.exp(-decay_rate * t_fine)
+
+# 1行2列の描画領域を作り，axes[0]を左，axes[1]を右の図とする．
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+for h in [0.4, 0.9, 1.2]:
+    t, x = euler(decay_rhs, t_span_decay, x0_decay, h, args=(decay_rate,))
+    axes[0].plot(t, x, marker="o", markersize=3, label=f"h = {h}")
+    t, x = backward_euler_decay(t_span_decay, x0_decay, h, decay_rate)
+    axes[1].plot(t, x, marker="o", markersize=3, label=f"h = {h}")
+for ax in axes:
+    ax.plot(t_fine, x_exact, color="black", label="解析解")
+    ax.set_xlabel("時刻 t")
+    ax.set_ylabel("x")
+    ax.grid(True)
+    ax.legend()
+axes[0].set_title("前進Euler法")
+axes[1].set_title("後退Euler法")
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "forward_backward_euler.png", dpi=150)
+plt.show()
+```
+
+![発展問題2・設問3：前進Euler法と後退Euler法の比較](figs/02/forward_backward_euler.png)
+
+前進Euler法の$h=1.2$では振動しながら絶対値が増大するのに対し，後退Euler法では3通りとも正のまま減少する．ここでは前進Euler法の発散を確認できるよう，縦軸の表示範囲を制限していない．
+
+**設問4：安定性と近似精度**
+
+```python
+t, x = backward_euler_decay((0.0, 10.0), 100.0, 1.2, 2.0)
+exact_end_decay = 100.0 * np.exp(-2.0 * t[-1])
+print("t=10の数値解:", x[-1])
+print("解析解:", exact_end_decay)
+print("絶対誤差:", abs(x[-1] - exact_end_decay))
+```
+
+- 数値解：幅1.2の8ステップと幅0.4の最終ステップにより，$100/(3.4^8\times1.8)\approx0.0031109724$．
+- 解析解：$100e^{-20}\approx2.0612\times10^{-7}$．絶対誤差は約0.0031107663．
+- 解釈：発散せず減少していても，この数値解は解析解より大きく，減衰の速さを十分再現していない．安定性は誤差の小ささを保証せず，精度を上げるには刻み幅の検討が必要である．
+
+**設問5：減衰率を大きくした場合の比較**
+
+```python
+decay_rate = 20.0
+x0_decay = 100.0
+t_span_decay = (0.0, 10.0)
+t_eval_decay = np.linspace(0.0, 10.0, 1001)
+rtol = 1e-3
+atol = 1e-6
+for method in ["RK45", "Radau", "BDF"]:
+    sol = solve_ivp(decay_rhs, t_span_decay, [x0_decay],
+                    t_eval=t_eval_decay, args=(decay_rate,), method=method,
+                    rtol=rtol, atol=atol)
+    x_exact = x0_decay * np.exp(-decay_rate * sol.t)
+    max_error = np.max(np.abs(sol.y[0] - x_exact))
+    print(method, sol.success, "最大絶対誤差:", max_error, "評価回数:", sol.nfev)
+```
+
+共通条件は$\lambda=20$，$x(0)=100$，計算区間$[0,10]$，出力時刻は0.01刻み，`rtol=1e-3`，`atol=1e-6`である．
+
+| 解法 | 出力時刻上の最大絶対誤差 | 右辺の評価回数 |
+| --- | ---: | ---: |
+| RK45 | 0.020993 | 512 |
+| Radau | 0.006182 | 219 |
+| BDF | 0.075239 | 144 |
+
+- 比較：この条件ではRadauとBDFの右辺評価回数がRK45より少ない．ただし，陰的解法には行列の分解などの費用もあり，評価回数だけから実行時間の大小は判断できない．
+- 精度：同じ許容誤差でも最大絶対誤差は同じにならない．許容誤差は内部の誤差推定に用いる条件であり，区間全体の最大絶対誤差を直接指定する値ではない．特にBDFでは評価回数が少なくても，この例の最大絶対誤差は他の2法より大きい．
+````
+-->
 
 ````{dropdown} コードの補足：後退Euler法と解法の切り替え
 
