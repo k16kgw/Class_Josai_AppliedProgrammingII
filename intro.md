@@ -87,8 +87,8 @@ DP1○，DP2○，DP3◎
 
 【準備学習】1回目の内容を復習する
 
-<!-- **[■3回目](/contents/3_population_exponential)** -->
-**■3回目**
+**[■3回目](/contents/3_population_exponential)**
+<!-- **■3回目** -->
 
 【テーマ】人口統計と指数成長モデル
 
