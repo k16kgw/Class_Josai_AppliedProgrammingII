@@ -166,13 +166,11 @@ applied_programming_ii/
 
 データとモデルは講義ノートの課題2の準備節を用いる．
 
-### 1．パラメタ推定（設問3の結果も記入）
+### 1．パラメタ推定
 
 | 推定方法 | 推定に使う期間（2011年） | C0 [Bq/kg，3月21日に対応] | λ [1/日] | 見かけの半減期 [日] |
 | --- | --- | --- | --- | --- |
-| 2時点からの推定 | 3月21日・28日 | | | |
 | 対数線形法 | 3月21〜28日 | | | |
-| 対数線形法 | 3月21〜31日 | | | |
 
 ### 2．観測値との比較
 
@@ -180,21 +178,17 @@ applied_programming_ii/
 
 | 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
 | --- | --- | --- | --- |
-| 2時点からの推定 | 3月21〜28日 | | |
-| 2時点からの推定 | 3月29日〜4月3日 | | |
 | 対数線形法 | 3月21〜28日 | | |
 | 対数線形法 | 3月29日〜4月3日 | | |
 
-- 推定方法・評価期間による誤差の違いと，残差の時間変化：
+- 評価期間による誤差の違いと，残差の時間変化：
 
-### 3．推定期間の変更と外挿
+### 3．外挿
 
 | 対数線形法の推定期間（2011年） | 4月10日のモデル値 [Bq/kg] |
 | --- | --- |
 | 3月21〜28日 | |
-| 3月21〜31日 | |
 
-- 推定期間によるパラメタと外挿値の違い：
 - このCSVでは4月10日の予測誤差を求められない理由：
 
 ### 4．半減期の解釈とモデルの限界
@@ -1033,30 +1027,19 @@ $$
 ```
 
 
-````{warning} 課題2：ヨウ素131濃度のパラメタ推定とモデルの評価
+````{dropdown} コード作成例：人口モデルから必要な処理を抜粋する
 
-上の準備コードとモデルを用いて，以下に取り組め．コードと図はNotebookに，表と考察は`README.md`の課題2の解答欄に記入せよ．
+上のデータ読み込みと，本文の関数定義を実行してから，以下を順に実行する．人口モデルの推定・描画・誤差評価・外挿のコードから必要な処理だけを抜粋し，濃度データに対応する変数名と単位に置き換えている．新しい関数は定義しない．
 
-1. **パラメタ推定**：3月21日と28日の観測値を通る指数関数から $\lambda$ を求めよ．次に，3月21〜28日の全観測値から対数線形法で $\lambda$ と $C_0$ を求めよ．それぞれの見かけの半減期を計算し，表に記入せよ．
-2. **モデルの評価**：両推定方法について4月3日までのモデル値を求め，観測値との比較図と残差図を作成せよ．残差は観測値−モデル値とし，推定対象期間の終わりを縦線で示せ．3月21〜28日と3月29日〜4月3日を分けてMSE・RMSEを求め，推定方法・評価期間による違いと残差の時間変化を説明せよ．作成した図は`reports/figures/`へ保存せよ．
-3. **推定期間の変更と外挿**：対数線形法で用いる観測期間を3月31日まで延長し，$\lambda$・$C_0$・見かけの半減期を再推定せよ．3月28日までで推定したモデルと，3月31日までで推定したモデルから，それぞれ4月10日の濃度を計算せよ．推定期間によるパラメタと外挿値の違いを説明し，このCSVでは4月10日の予測誤差を求められない理由を述べよ．
-4. **モデルの解釈**：設問1・3の見かけの半減期を，ヨウ素131の物理的半減期である約8日と比較せよ．毎日別の水を採取していることを踏まえ，放射性崩壊以外に濃度を変化させうる要因を挙げ，このデータだけでは要因を特定できない理由を200字程度で説明せよ．
-````
+- データの対応：`t_obs`を`t_decay`，`y_obs`を`c_obs`に置き換える．横軸には暦年ではなく経過日数を使う．
+- 係数の対応：人口モデルの傾き$r$は，減衰モデルでは$-\lambda$に対応する．`decay_rate = -slope_decay`とし，解析解には`-decay_rate`を渡す．
+- 半減期：上で示した式$\log 2/\lambda$の計算だけを追加する．Pythonの`lambda`は予約語なので，変数名には`decay_rate`を使う．
 
-````{dropdown} 課題2の解答例
-
-直前の準備コードを実行済みとする．以下のコードを設問番号の順に実行する．
-
-**1．パラメタ推定**
-
-2時点からの推定では$C_0=23$，$C(7)=12$とし，$\lambda=-\log(12/23)/7$を求める．対数線形法では，Bq/kg単位の濃度の数値を用いた対数上の傾きが$-\lambda$，切片が$\log C_0$となる．
+**推定：本文の対数線形最小二乗法を再利用**
 
 ```python
-fit_decay = t_decay <= 7
-C0_two_point = c_obs[0]
-c_day7 = c_obs[t_decay == 7][0]
-decay_rate_two_point = -np.log(c_day7 / C0_two_point) / 7
-half_life_two_point = np.log(2) / decay_rate_two_point
+fit_end_day = 7  # 推定期間の終わり（3月21日からの経過日数）
+fit_decay = t_decay <= fit_end_day
 
 slope_decay, intercept_decay = np.polyfit(
     t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
@@ -1065,7 +1048,98 @@ decay_rate = -slope_decay
 C0_loglinear = np.exp(intercept_decay)
 half_life = np.log(2) / decay_rate
 
-print("2時点からの推定（C0，λ，半減期）:", C0_two_point, decay_rate_two_point, half_life_two_point)
+print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, half_life)
+```
+
+**比較図・残差図：本文の描画コードを再利用**
+
+人口用の縦軸範囲`ax.set_ylim(0, 20000)`は使わず，濃度に応じた自動設定にする．
+
+```python
+C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
+residual_decay = c_obs - C_model
+
+fig, ax = plt.subplots(figsize=(8, 4.5))
+ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none", label="観測値")
+ax.plot(t_decay, C_model, label="対数線形法")
+ax.set_title("ヨウ素131濃度と指数減衰モデル")
+ax.axvline(fit_end_day, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_xlabel("3月21日からの経過日数 [日]")
+ax.set_ylabel("ヨウ素131濃度 [Bq/kg]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment2_decay_fit.png", dpi=150)
+plt.show()
+
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.plot(t_decay, residual_decay, marker="o", label="対数線形法")
+ax.set_title("濃度モデルの残差（観測値−モデル値）")
+ax.axhline(0, color="black", linewidth=0.8)
+ax.axvline(fit_end_day, color="gray", linestyle=":")
+ax.set_xlabel("3月21日からの経過日数 [日]")
+ax.set_ylabel("残差 [Bq/kg]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment2_decay_residual.png", dpi=150)
+plt.show()
+```
+
+![ヨウ素131濃度の観測値と対数線形法によるモデル値](figs/03/assignment2_decay_fit.png)
+
+![対数線形法による濃度の残差](figs/03/assignment2_decay_residual.png)
+
+**誤差評価：本文のMSE・RMSEの計算を再利用**
+
+```python
+mse_log_fit = mean_squared_error(c_obs[fit_decay], C_model[fit_decay])
+mse_log_after = mean_squared_error(c_obs[~fit_decay], C_model[~fit_decay])
+print("推定期間内（MSE，RMSE）:", mse_log_fit, np.sqrt(mse_log_fit))
+print("推定期間後（MSE，RMSE）:", mse_log_after, np.sqrt(mse_log_after))
+```
+
+**外挿：本文と同じ解析解で指定した時刻の値を求める**
+
+```python
+prediction_day = 20  # 3月21日からの経過日数
+prediction = exponential_solution(prediction_day, C0_loglinear, -decay_rate)
+print(f"{prediction_day}日後のモデル値: {prediction:.4f} Bq/kg")
+```
+
+- 推定期間：全設問で3月21〜28日の推定値を使う．3月28日は経過日数7なので，`fit_end_day = 7`のままとする．
+- 外挿先：4月10日は経過日数20である．人口用の`year - 1920`は使わない．この日の観測値はないため，モデル値だけを求める．
+- 外挿に使うパラメタ：設問1で求めた`C0_loglinear`と`decay_rate`をそのまま使う．再推定は不要である．
+````
+
+````{warning} 課題2：ヨウ素131濃度のパラメタ推定とモデルの評価
+
+上の準備コードとモデルを用いて，以下に取り組め．コードと図はNotebookに，表と考察は`README.md`の課題2の解答欄に記入せよ．
+
+1. **パラメタ推定**：3月21〜28日の全観測値から対数線形最小二乗法で $\lambda$ と $C_0$ を求めよ．見かけの半減期を計算し，表に記入せよ．
+2. **モデルの評価**：設問1で推定したモデルについて4月3日までのモデル値を求め，観測値との比較図と残差図を作成せよ．残差は観測値−モデル値とし，推定対象期間の終わりを縦線で示せ．3月21〜28日と3月29日〜4月3日を分けてMSE・RMSEを求め，評価期間による違いと残差の時間変化を説明せよ．作成した図は`reports/figures/`へ保存せよ．
+3. **外挿**：設問1で推定したモデルを用いて4月10日の濃度を計算し，表に記入せよ．このCSVでは4月10日の予測誤差を求められない理由を述べよ．
+4. **モデルの解釈**：設問1で求めた見かけの半減期を，ヨウ素131の物理的半減期である約8日と比較せよ．毎日別の水を採取していることを踏まえ，放射性崩壊以外に濃度を変化させうる要因を挙げ，このデータだけでは要因を特定できない理由を200字程度で説明せよ．
+````
+
+````{dropdown} 課題2の解答例
+
+直前の準備コードを実行済みとする．以下のコードを設問番号の順に実行する．
+
+**1．パラメタ推定**
+
+対数線形法では，Bq/kg単位の濃度の数値を用いた対数上の傾きが$-\lambda$，切片が$\log C_0$となる．
+
+```python
+fit_decay = t_decay <= 7
+
+slope_decay, intercept_decay = np.polyfit(
+    t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
+)
+decay_rate = -slope_decay
+C0_loglinear = np.exp(intercept_decay)
+half_life = np.log(2) / decay_rate
+
 print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, half_life)
 ```
 
@@ -1073,21 +1147,18 @@ print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, hal
 
 | 推定方法 | 推定対象（2011年） | C0 [Bq/kg] | λ [1/日] | 見かけの半減期 [日] |
 | --- | --- | --- | --- | --- |
-| 2時点からの推定 | 3月21日・28日 | 23.0000 | 0.0929411 | 7.4579 |
 | 対数線形法 | 3月21〜28日 | 21.5776 | 0.0936854 | 7.3987 |
 
 **2．モデルの評価**
 
 ```python
-C_two_point = exponential_solution(t_decay, C0_two_point, -decay_rate_two_point)
 C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
-residual_two_point_decay = c_obs - C_two_point
 residual_decay = c_obs - C_model
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
 ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none", label="観測値")
-ax.plot(t_decay, C_two_point, label="2時点からの推定")
 ax.plot(t_decay, C_model, label="対数線形法")
+ax.set_title("ヨウ素131濃度と指数減衰モデル")
 ax.axvline(7, color="gray", linestyle=":", label="推定期間の終わり")
 ax.set_xlabel("3月21日からの経過日数 [日]")
 ax.set_ylabel("ヨウ素131濃度 [Bq/kg]")
@@ -1098,8 +1169,8 @@ fig.savefig(FIGURE_DIR / "assignment2_decay_fit.png", dpi=150)
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
-ax.plot(t_decay, residual_two_point_decay, marker="o", label="2時点からの推定")
 ax.plot(t_decay, residual_decay, marker="o", label="対数線形法")
+ax.set_title("濃度モデルの残差（観測値−モデル値）")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.axvline(7, color="gray", linestyle=":")
 ax.set_xlabel("3月21日からの経過日数 [日]")
@@ -1110,106 +1181,48 @@ fig.tight_layout()
 fig.savefig(FIGURE_DIR / "assignment2_decay_residual.png", dpi=150)
 plt.show()
 
-mse_two_fit = mean_squared_error(c_obs[fit_decay], C_two_point[fit_decay])
-mse_two_after = mean_squared_error(c_obs[~fit_decay], C_two_point[~fit_decay])
 mse_log_fit = mean_squared_error(c_obs[fit_decay], C_model[fit_decay])
 mse_log_after = mean_squared_error(c_obs[~fit_decay], C_model[~fit_decay])
-print("2時点からの推定・3月21〜28日（MSE，RMSE）:", mse_two_fit, np.sqrt(mse_two_fit))
-print("2時点からの推定・3月29日以降（MSE，RMSE）:", mse_two_after, np.sqrt(mse_two_after))
 print("対数線形法・3月21〜28日（MSE，RMSE）:", mse_log_fit, np.sqrt(mse_log_fit))
 print("対数線形法・3月29日以降（MSE，RMSE）:", mse_log_after, np.sqrt(mse_log_after))
 ```
 
 - コードの意図：人口用の解析解を減衰モデルに再利用するため，増加率の引数に負の値`-decay_rate`を渡す．`fit_decay`とその否定`~fit_decay`で期間を分け，推定への適合と推定後の予測誤差を別々に評価する．
 
-![課題2・設問2：ヨウ素131濃度の観測値と両推定方法のモデル値](figs/03/assignment2_decay_fit.png)
+![課題2・設問2：ヨウ素131濃度の観測値と対数線形法によるモデル値](figs/03/assignment2_decay_fit.png)
 
-![課題2・設問2：両推定方法の濃度の残差（観測値−モデル値）](figs/03/assignment2_decay_residual.png)
+![課題2・設問2：対数線形法による濃度の残差（観測値−モデル値）](figs/03/assignment2_decay_residual.png)
 
 | 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
 | --- | --- | --- | --- |
-| 2時点からの推定 | 3月21〜28日 | 7.8117 | 2.7949 |
-| 2時点からの推定 | 3月29日〜4月3日 | 3.9120 | 1.9779 |
 | 対数線形法 | 3月21〜28日 | 7.2543 | 2.6934 |
 | 対数線形法 | 3月29日〜4月3日 | 2.3749 | 1.5411 |
 
-- 推定方法の比較：このデータでは対数線形法のMSE・RMSEが両期間で小さい．ただし，対数線形法が最小化するのは対数残差の二乗和であり，元の濃度でのMSEが必ず小さくなるわけではない．
-- 評価期間の比較：両方法とも後半のRMSEが小さい．後半は濃度自体も低く，異なる観測値の集合を比較しているため，外挿の精度が一般に高いとは結論できない．
-- 残差の時間変化：3月23日・27日には両方法で正，3月24〜26日には負となる．3月29日以降は4月1日を除いて負であり，この期間では過大評価が多い．
+- 誤差指標：対数線形法が最小化するのは対数残差の二乗和であり，ここで評価する濃度のMSEとは異なる．
+- 評価期間の比較：このモデルでは後半のRMSEが小さい．後半は濃度自体も低く，異なる観測値の集合を比較しているため，外挿の精度が一般に高いとは結論できない．
+- 残差の時間変化：3月23日・27日には正，3月24〜26日には負となる．3月29日以降は4月1日を除いて負であり，この期間では過大評価が多い．
 
-**3．推定期間の変更と外挿**
+**3．外挿**
 
 ```python
-fit_decay_extended = t_decay <= 10  # 3月31日まで
-slope_extended, intercept_extended = np.polyfit(
-    t_decay[fit_decay_extended], np.log(c_obs[fit_decay_extended]), 1
-)
-decay_rate_extended = -slope_extended
-C0_extended = np.exp(intercept_extended)
-half_life_extended = np.log(2) / decay_rate_extended
-print("3月31日まで（C0，λ，半減期）:", C0_extended, decay_rate_extended, half_life_extended)
-
-prediction_day20 = exponential_solution(20, C0_loglinear, -decay_rate)
-prediction_day20_extended = exponential_solution(20, C0_extended, -decay_rate_extended)
-print("3月28日までで推定した4月10日の濃度:", prediction_day20, "Bq/kg")
-print("3月31日までで推定した4月10日の濃度:", prediction_day20_extended, "Bq/kg")
+prediction_day = 20  # 4月10日は3月21日から20日後
+prediction = exponential_solution(prediction_day, C0_loglinear, -decay_rate)
+print(f"4月10日のモデル値: {prediction:.4f} Bq/kg")
 ```
 
-- コードの意図：推定期間の変更による影響だけを比較するため，時刻の原点は3月21日のまま，3月31日までのデータで再推定する．4月10日はその20日後なので，両モデルに同じ時刻`20`を渡す．
+- コードの意図：設問1の推定値をそのまま使い，解析解に経過日数20を渡す．観測期間外でもモデル値は計算できるが，予測誤差の計算にはその日の観測値が必要である．
 
-| 対数線形法の推定期間（2011年） | C0 [Bq/kg] | λ [1/日] | 見かけの半減期 [日] | 4月10日のモデル値 [Bq/kg] |
-| --- | --- | --- | --- | --- |
-| 3月21〜28日 | 21.5776 | 0.0936854 | 7.3987 | 3.3133 |
-| 3月21〜31日 | 22.9487 | 0.1161707 | 5.9666 | 2.2476 |
+| 対数線形法の推定期間（2011年） | 4月10日のモデル値 [Bq/kg] |
+| --- | --- |
+| 3月21〜28日 | 3.3133 |
 
-- 推定期間による違い：3月29〜31日の観測値は元のモデルより小さい．これらを加えると減衰係数が大きくなり，見かけの半減期と4月10日のモデル値は小さくなる．時刻の原点は同じであり，$C_0$はどちらも3月21日に対応する推定値である．
-- 予測誤差を求められない理由：このCSVには4月3日までの観測値しかない．4月10日のモデル値同士の差は求められるが，観測値との差は求められない．
+- 予測誤差を求められない理由：このCSVには4月3日までの観測値しかなく，4月10日のモデル値と比較する観測値がないためである．
 
 **4．モデルの解釈**
 
-- 半減期の比較：2時点からの推定で約7.46日，3月28日までの対数線形法で約7.40日，3月31日までの対数線形法で約5.97日となる．いずれも物理的半減期の約8日より短く，推定期間によっても変わる．
+- 半減期の比較：3月21〜28日のデータから推定した見かけの半減期は約7.40日であり，物理的半減期の約8日より短い．ただし，この違いだけでは濃度を変化させた要因を特定できない．
 - 考察の記述例：このデータは同じ試料を保存して測ったものではなく，毎日採取した別の水の濃度である．濃度は放射性崩壊に加え，水源への放射性物質の流入，降水などによる希釈，浄水処理での除去などにも影響されうる．したがって，推定した係数は複数の作用を含む見かけの減少率である．各要因の寄与を特定するには，水源の濃度・流量・処理条件などの追加資料が必要であり，この濃度系列だけから減少の原因や健康影響を判断することはできない．
 ````
-````{dropdown} コードの補足：人口モデルのコードを課題2に利用する
-
-新しいライブラリは必要ない．本文のコードをコピーし，データ・時刻・パラメタ・軸ラベルを次のように対応させる．人口の結果を残すため，課題2では別の変数名を使う．
-
-| 人口モデル | 濃度の減衰モデル |
-| --- | --- |
-| 人口の観測値`y_obs` | 濃度の観測値`c_obs` |
-| 1920年からの経過年`t_obs` | 3月21日からの経過日数`t_decay` |
-| 初期値 $N_0$ | 初期濃度 $C_0$ |
-| 増加率 $r$ | 減衰係数の符号を反転した $-\lambda$ |
-| 推定対象を選ぶ`fit_mask` | 推定対象を選ぶ`fit_decay` |
-
-```python
-# 課題前の準備コードで読み込んだ t_decay と c_obs を使う．
-# 3月21〜28日の8件を選ぶ．3月21日を0日とする．
-fit_decay = t_decay <= 7
-```
-
-- 対数をとる条件：元資料で不検出の有無を確認したうえで，`np.all(c_obs > 0)`により濃度がすべて正であることを確かめる．不検出を0として対数をとる処理は行わない．
-- 2時点からの推定：本文の式 $r=\log(N_1/N_0)/(t_1-t_0)$ に濃度を代入し，符号を反転して $\lambda$ とする．初期値には3月21日の観測値を使う．
-- 対数線形法：次のように傾きの符号を反転する．Pythonの`lambda`は構文に使う予約語なので，変数名には`decay_rate`を使う．
-
-```python
-slope_decay, intercept_decay = np.polyfit(
-    t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
-)
-decay_rate = -slope_decay
-C0_loglinear = np.exp(intercept_decay)
-C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
-half_life = np.log(2) / decay_rate
-```
-
-- 解析解の再利用：`exponential_solution`は係数が負の場合にも使える．2時点からの推定でも，その方法で求めた初期値と係数を引数に渡す．
-- 評価：`residual_decay = c_obs - C_model`とし，本文の描画コード・`mean_squared_error`・`np.sqrt`を再利用する．`fit_decay`と`~fit_decay`で評価期間を分ける．2時点からの推定で使うのは端点2件のみだが，設問2では対数線形法と同じ期間の全件で評価する．
-- 図の表示：横軸を`3月21日からの経過日数 [日]`，縦軸を`ヨウ素131濃度 [Bq/kg]`または`残差 [Bq/kg]`に変える．縦線も年ではなく経過日数で指定し，保存ファイル名は人口の図と区別する．
-- 対数目盛：`ax.set_yscale("log")`で縦軸を対数目盛にする．この場合は`c_obs`をそのまま描き，`np.log(c_obs)`には置き換えない．
-- 期間の変更：推定対象を選ぶ条件を変更し，傾き・切片・初期値・半減期を計算し直す．3月21日を時刻の原点とする設定は変えない．変更前の結果も表に記録する．
-- 外挿：4月10日は3月21日から20日後である．`exponential_solution(20, C0_loglinear, -decay_rate)`で計算できる．各推定期間について計算し，観測値がない日の誤差は算出しない．
-````
-
 ### 提出先・期限
 
 - 提出場所：WebClass「第3回課題」
