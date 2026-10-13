@@ -108,16 +108,18 @@ applied_programming_ii/
 
 ## 演習3：図と残差
 
+1920〜1970年の観測値に対数線形最小二乗法を適用したモデルを用いる．
+
 - 残差が正の期間とその意味：
 - 残差が負の期間とその意味：
 - 1945年と2020年の残差の解釈：
 
-| 推定方法（1920〜1970年） | 2020年のモデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
+| 評価する年 | モデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
 | --- | --- | --- | --- |
-| 2時点からの推定 | | | |
-| 対数線形法 | | | |
+| 2020 | | | |
 
-- 2020年の絶対誤差の比較と，1時点だけで判断することの問題点：
+- 2020年のモデル値と観測値の比較：
+- 1時点の誤差だけで他の年への適用可能性を判断することの問題点：
 
 ## 演習4：外挿期間と誤差
 
@@ -617,7 +619,7 @@ plt.show()
 
 ### 観測値とモデルを同じ図に描く
 
-第1回の重ね描きを再利用する．演習2の設定を1920〜1970年に戻し，推定した$r,N_0$を以後の基準モデルに使う．
+第1回の重ね描きを再利用する．演習2の設定を1920〜1970年に戻し，対数線形最小二乗法で推定した$r,N_0$を以後の基準モデルに使う．演習3でも，このモデルだけを観測値と比較する．
 
 ```python
 fit_mask = (year_obs >= 1920) & (year_obs <= 1970)
@@ -711,9 +713,11 @@ print(f"それ以降の期間（1971〜2020年）の MSE           = {mse_after:
 
 ````{note} 演習3：図と残差を読む
 
+1920〜1970年の観測値に対数線形最小二乗法を適用したモデルを用いよ．
+
 1. 残差が正の期間と負の期間を`README.md`に記入し，それぞれ観測値とモデル値の大小関係を説明せよ．
-2. 1945年と2020年の負の残差について，集計上の注意点と一定の増加率という仮定の限界を区別して説明せよ．原因の特定には追加資料が必要であることにも言及せよ．
-3. 1920年と1970年の観測値から求めた $r$ と1920年の観測値 $N_0$ を使い，比較図と残差図を描け．両推定方法の2020年のモデル値・観測値・絶対誤差を表に記入し，比較せよ．1時点の誤差だけで他の年への適用可能性を判断できるかを説明せよ．
+2. 1945年と2020年の負の残差について，集計上の注意点と一定の増加率という仮定の限界を区別して説明せよ．原因の特定には例えばどのような追加資料が必要であるかも考察せよ．
+3. 本文のコードを用いて，観測値とモデル値の比較図および残差図を描け．2020年のモデル値・観測値・絶対誤差を`README.md`の表に記入し，モデル値と観測値を比較せよ．1時点の誤差だけで他の年への適用可能性を判断できるかを説明せよ．
 ````
 
 <!--
@@ -731,7 +735,9 @@ print(f"それ以降の期間（1971〜2020年）の MSE           = {mse_after:
 - 1945年：残差は約−493.3万人．戦中戦後の人口変動に加え，11月1日の調査に基づく補正人口であること，沖縄県を含まないことに注意する．この値だけでは死亡・移動・集計変更の寄与を分離できない．
 - 2020年：残差は約−6985.2万人．長期にわたる過大評価は，一定の純増加率という仮定の限界を示す．原因を特定するには出生・死亡・年齢構成などの追加資料が必要である．
 
-**設問3：両推定方法の比較**
+**設問3：対数線形最小二乗法によるモデルと観測値の比較**
+
+本文の推定・描画コードを再利用する．同じ推定値から比較図と残差図を作成し，2020年に対応する要素を取り出して絶対誤差を求める．
 
 ```python
 # 基準となる対数線形法の推定値を再計算する．
@@ -744,17 +750,12 @@ residual = y_obs - N_model
 print("残差が正の年:", year_obs[residual > 0])
 print("残差が負の年:", year_obs[residual < 0])
 
-N0 = y_obs[year_obs == 1920][0]
-r_two_point = np.log(y_obs[year_obs == 1970][0] / N0) / 50.0
-N_two_point = exponential_solution(t_obs, N0, r_two_point)
-residual_two_point = y_obs - N_two_point
-
 fig, ax = plt.subplots(figsize=(8, 4.5))
 ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3,
         linestyle="none", label="観測値")
-ax.plot(year_obs, N_two_point, label="2時点からの推定")
-ax.plot(year_obs, N_model, linestyle="--", label="対数線形法")
+ax.plot(year_obs, N_model, label="対数線形最小二乗法によるモデル")
 ax.axvline(1970, color="gray", linestyle=":")
+ax.set_title("観測人口と指数成長モデルの比較（推定期間：1920〜1970年）")
 ax.set_xlabel("年")
 ax.set_ylabel("人口 [万人]")
 ax.grid(True)
@@ -764,10 +765,11 @@ fig.savefig(FIGURE_DIR / "exercise3_population_fit.png", dpi=150)
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
-ax.plot(year_obs, residual_two_point, label="2時点からの推定")
-ax.plot(year_obs, residual, linestyle="--", label="対数線形法")
+ax.plot(year_obs, residual, marker="o", markersize=3,
+        label="対数線形最小二乗法によるモデルの残差")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.axvline(1970, color="gray", linestyle=":")
+ax.set_title("人口モデルの残差（観測値−モデル値）")
 ax.set_xlabel("年")
 ax.set_ylabel("残差 [万人]")
 ax.grid(True)
@@ -777,48 +779,45 @@ fig.savefig(FIGURE_DIR / "exercise3_population_residual.png", dpi=150)
 plt.show()
 
 observed = y_obs[year_obs == 2020][0]
-model_two_point = N_two_point[year_obs == 2020][0]
 model_loglinear = N_model[year_obs == 2020][0]
-print("2時点からの推定:", model_two_point, observed, abs(model_two_point - observed))
-print("対数線形法:", model_loglinear, observed, abs(model_loglinear - observed))
+print(f"2020年のモデル値: {model_loglinear:.1f} 万人")
+print(f"2020年の観測値: {observed:.1f} 万人")
+print(f"2020年の絶対誤差: {abs(model_loglinear - observed):.1f} 万人")
 ```
 
-![演習3・設問3：観測人口と2時点からの推定・対数線形法によるモデル値](figs/03/exercise3_population_fit.png)
+![演習3・設問3：観測人口と対数線形最小二乗法によるモデル値](figs/03/exercise3_population_fit.png)
 
-![演習3・設問3：両推定方法の残差（観測値−モデル値）](figs/03/exercise3_population_residual.png)
+![演習3・設問3：対数線形最小二乗法によるモデルの残差（観測値−モデル値）](figs/03/exercise3_population_residual.png)
 
-| 推定方法 | 2020年のモデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
+| 評価する年 | モデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
 | --- | ---: | ---: | ---: |
-| 2時点からの推定 | 19223.1 | 12614.6 | 6608.5 |
-| 対数線形法 | 19599.8 | 12614.6 | 6985.2 |
+| 2020 | 19599.8 | 12614.6 | 6985.2 |
 
-- 比較：2020年の絶対誤差は2時点からの推定の方が小さいが，両方法とも大幅に過大評価している．
+- 比較：2020年のモデル値は観測値を約6985.2万人上回り，大幅に過大評価している．
 - 評価の限界：1時点だけの結果から他の年への適用可能性は判断できない．推定に使わなかった複数時点の残差やMSE・RMSEも調べる必要がある．対数線形法は2020年の誤差を最小にする方法ではない．
 ````
 -->
 
-````{dropdown} コードの補足：推定方法を変えて比較する
+````{dropdown} コードの補足：2020年のモデル値と観測値を比較する
 
-基準モデルの変数を上書きせず，2時点からの推定の結果を別の変数に保存する．本文の描画コードをコピーし，描く配列を置き換えれば比較できる．
+本文で計算した`N_model`から，2020年に対応する要素を取り出す．
 
 ```python
-N_two_point = exponential_solution(t_obs, N0, r_two_point)
-residual_two_point = y_obs - N_two_point
 year = 2020
 observed = y_obs[year_obs == year][0]
-model_two_point = N_two_point[year_obs == year][0]
 model_loglinear = N_model[year_obs == year][0]
-print("2時点からの推定:", model_two_point, observed, abs(model_two_point - observed))
-print("対数線形法:", model_loglinear, observed, abs(model_loglinear - observed))
+print(f"モデル値: {model_loglinear:.1f} 万人")
+print(f"観測値: {observed:.1f} 万人")
+print(f"絶対誤差: {abs(model_loglinear - observed):.1f} 万人")
 ```
 
-- 初期値：2時点からの推定では観測値`N0`，対数線形法では推定値`N0_loglinear`を使う．係数だけでなく初期値も対応させる．
-- 図の保存：比較図・残差図のラベルとファイル名も変え，基準モデルの図を上書きしない．
+- `year_obs == year`：評価する年に対応する要素を選ぶ条件．`[0]`で，選ばれた1要素を取り出す．
+- `abs(...)`：差の絶対値を求める．絶対誤差には，過大評価・過小評価を区別する符号はない．
 ````
 
 ## 未来へ外挿する危険
 
-- 外挿：推定期間外でモデル値を計算すること．第1回でも実施した操作を，今回は対数線形法の推定値で2050年まで行う．演習3の変更を戻すため，基準モデルを再計算する．
+- 外挿：推定期間外でモデル値を計算すること．第1回でも実施した操作を，今回は演習3と同じ対数線形法の推定値で2050年まで行う．単独でも再実行できるように，基準モデルのパラメタを再計算する．
 
 ```python
 fit_mask = (year_obs >= 1920) & (year_obs <= 1970)
