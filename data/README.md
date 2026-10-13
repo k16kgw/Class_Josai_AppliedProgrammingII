@@ -30,6 +30,8 @@
 
 1945〜1971年は沖縄県を含まない．
 
+`note`の英語ラベルは，原資料の注記を整理するために授業用CSVへ付けたものである．[補助教材Aの確認手順](../contents/A_data_preprocessing.md#population-note-labels)では，`census`に対応する年・数値・原表の注記を照合する方法を示す．
+
 ### `iodine131_fukushima_tapwater_2011.csv`
 
 | 列 | 意味 | 単位 |

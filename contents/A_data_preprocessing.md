@@ -256,6 +256,73 @@ data.to_csv(
 
 処理後は101行で，年の重複と人口の欠損がないことを確認した．`note`の空欄は人口の欠損ではなく，特別な注記がない推計人口を意味する．また，1945〜1971年の値には沖縄県が含まれないため，長期変化を解釈するときは注意する．
 
+(population-note-labels)=
+### note列の意味を原資料で確認する
+
+`census`は国勢調査を意味し，この授業用CSVでは**国勢調査による人口であることを示すラベル**として使っている．例えば，1920年の`55963`は国勢調査による総人口を千人単位で表した値である．
+
+ただし，`note`列とその英語ラベルは，原表の注記を整理するために授業用CSVへ付けたものであり，原表の列をそのままコピーしたものではない．そのため，**CSV内でラベルを確認した後，対応する年と注記を原表で照合する**．
+
+#### 1．授業用CSVでラベルと該当年を確認する
+
+[授業用データ一覧](../data/README.md)の列の説明を読み，次の対応を確認する．
+
+| note列の値 | このCSVでの意味 | 1920〜2000年の原表で対応する注記 |
+| --- | --- | --- |
+| `census` | 国勢調査による人口 | 注1） |
+| `adjusted_1940_census` | 1940年の国勢調査結果を補正した人口 | 注2） |
+| `adjusted_1945_survey` | 1945年11月1日の人口調査結果を補正した人口 | 注3） |
+| `extraordinary_census_1947` | 1947年の臨時国勢調査による人口 | 注4） |
+| 空欄 | 上記のラベルを付けていない推計人口 | 個別の注記に加え，表全体の補間補正や対象範囲の説明を確認する |
+
+次に，CSVから実際の値と該当年を取り出す．第3回のNotebookでも実行できる．
+
+```python
+from pathlib import Path
+import pandas as pd
+
+DATA_DIR = Path.home() / "applied_programming_ii" / "data"
+population_notes = pd.read_csv(DATA_DIR / "population_japan.csv")
+
+print("note列の値と件数:")
+print(population_notes["note"].value_counts(dropna=False))
+
+is_census = population_notes["note"] == "census"
+print("censusが付いた年と人口:")
+print(population_notes.loc[is_census, ["year", "total_population_thousand", "note"]].to_string(index=False))
+
+print("1940〜1947年の値と注記:")
+selected = (population_notes["year"] >= 1940) & (population_notes["year"] <= 1947)
+print(population_notes.loc[selected, ["year", "total_population_thousand", "note"]].to_string(index=False))
+```
+
+```{dropdown} コードの補足
+
+- `value_counts(dropna=False)`：値ごとの件数を数え，空欄を読み込んだ欠損値も集計に含める．
+- `population_notes["note"] == "census"`：ラベルが完全に一致する行を選ぶ条件．`extraordinary_census_1947`などは含めない．
+- `.loc[条件, 列名のリスト]`：条件に合う行から，指定した列を取り出す．
+- `.to_string(index=False)`：行番号を付けず，選んだ表全体を表示する．
+```
+
+授業用CSVでは，`census`が19件，3種類の特別な注記が各1件，空欄が79件となる．空欄が`NaN`などと表示されても，**人口値が欠測という意味ではない**．
+
+#### 2．原表の年・人口・注記を照合する
+
+1. [総務省統計局の人口推計ページ](https://www.stat.go.jp/data/jinsui/2.htm)を開き，長期時系列データから[我が国の推計人口（大正9年〜平成12年）](https://www.e-stat.go.jp/stat-search/files?tclass=000000090004&cycle=0&layout=datalist)へ進め．
+2. 表番号1の男女別人口（各年10月1日現在）のExcelを開け．[第1表のExcelを直接取得する](https://www.e-stat.go.jp/stat-search/file-download?fileKind=0&statInfId=000000090261)こともできる．
+3. シート「第1表」で1920年の行を探し，総人口の男女計が`55963`，単位が千人，年に付く注記が`1)`であることを確認せよ．日本人人口や男女別の列と取り違えないこと．
+4. 表の下部にある注1）を読み，国勢調査による人口を示すことを確認せよ．続けて1940・1945・1947年の注記を注2）〜4）と照合し，CSVのラベルの違いを確認せよ．
+5. 2001〜2020年について確認する場合は，同じ統計局ページから長期時系列データ（平成12年〜令和2年）へ進み，該当する年の表と注記を確認せよ．注記番号は表によって異なるため，上の番号をそのまま当てはめないこと．
+
+例えば1920年については，**CSVの`census` → 原表の1920年に付く`1)` → 表の下部の注1）**という順に根拠を確認できる．確認結果には，CSVのラベルだけでなく，表名・対象年・単位・注記番号・URLも記録する．
+
+```{tip} ラベルだけでは判断できないこと
+
+- `census`は人口値の由来を示すものであり，値に誤差がないことを保証する印ではない．人口の増減の原因を表すラベルでもない．
+- 空欄の年も，無条件に比較してよいわけではない．原表には国勢調査間の補間補正や，1945〜1971年の沖縄県の除外など，複数年に共通する注記がある．
+- 原表を確認できない場合は，授業用データ一覧で確認した内容と，原資料では未確認の内容を区別して記録する．英単語や年の規則性だけから意味を推測しない．
+```
+
 ### 他のデータに応用できる点
 
 - 複数の時期に分かれた統計表を結合するときは，境界年の重複と定義変更を確認する
