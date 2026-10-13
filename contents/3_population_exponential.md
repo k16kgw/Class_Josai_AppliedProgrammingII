@@ -1027,94 +1027,90 @@ $$
 ```
 
 
-````{dropdown} コード作成例：人口モデルから必要な処理を抜粋する
+````{dropdown} 参考コード：人口モデルの本文からの抜粋
 
-上のデータ読み込みと，本文の関数定義を実行してから，以下を順に実行する．人口モデルの推定・描画・誤差評価・外挿のコードから必要な処理だけを抜粋し，濃度データに対応する変数名と単位に置き換えている．新しい関数は定義しない．
+以下は人口モデルの本文コードを変更せずに抜粋したものであり，課題2用の完成コードではない．データ読み込みとモデルの設定は上の準備節を使い，以下のコードを濃度の減衰モデルに合わせて変更せよ．本文で定義した`exponential_solution`と`mean_squared_error`はそのまま再利用できる．
 
-- データの対応：`t_obs`を`t_decay`，`y_obs`を`c_obs`に置き換える．横軸には暦年ではなく経過日数を使う．
-- 係数の対応：人口モデルの傾き$r$は，減衰モデルでは$-\lambda$に対応する．`decay_rate = -slope_decay`とし，解析解には`-decay_rate`を渡す．
-- 半減期：上で示した式$\log 2/\lambda$の計算だけを追加する．Pythonの`lambda`は予約語なので，変数名には`decay_rate`を使う．
-
-**推定：本文の対数線形最小二乗法を再利用**
+**パラメタ推定：「対数線形の最小二乗法」から抜粋**
 
 ```python
-fit_end_day = 7  # 推定期間の終わり（3月21日からの経過日数）
-fit_decay = t_decay <= fit_end_day
+# パラメタを決めるのに使う期間
+fit_mask = year_obs <= 1970
 
-slope_decay, intercept_decay = np.polyfit(
-    t_decay[fit_decay], np.log(c_obs[fit_decay]), 1
-)
-decay_rate = -slope_decay
-C0_loglinear = np.exp(intercept_decay)
-half_life = np.log(2) / decay_rate
+slope, intercept = np.polyfit(t_obs[fit_mask], np.log(y_obs[fit_mask]), 1)
+r_loglinear = slope
+N0_loglinear = np.exp(intercept)
 
-print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, half_life)
+print(f"対数線形の最小二乗法による r  = {r_loglinear:.5f} /年")
+print(f"同じ方法で決めた N0          = {N0_loglinear:.1f} 万人（観測値は {N0:.1f} 万人）")
 ```
 
-**比較図・残差図：本文の描画コードを再利用**
-
-人口用の縦軸範囲`ax.set_ylim(0, 20000)`は使わず，濃度に応じた自動設定にする．
+**比較図：「観測値とモデルを同じ図に描く」から抜粋**
 
 ```python
-C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
-residual_decay = c_obs - C_model
+N_model = exponential_solution(t_obs, N0_loglinear, r_loglinear)
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
-ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none", label="観測値")
-ax.plot(t_decay, C_model, label="対数線形法")
-ax.set_title("ヨウ素131濃度と指数減衰モデル")
-ax.axvline(fit_end_day, color="gray", linestyle=":", label="推定期間の終わり")
-ax.set_xlabel("3月21日からの経過日数 [日]")
-ax.set_ylabel("ヨウ素131濃度 [Bq/kg]")
+ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+ax.plot(year_obs, N_model, label=f"指数成長モデル（r = {r_loglinear:.4f}）")
+ax.axvline(1970, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_title("日本の人口と指数成長モデルの比較")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 [万人]")
+ax.set_ylim(0, 20000)
 ax.grid(True)
 ax.legend()
 fig.tight_layout()
-fig.savefig(FIGURE_DIR / "assignment2_decay_fit.png", dpi=150)
+fig.savefig(FIGURE_DIR / "population_exponential_fit.png", dpi=150)
 plt.show()
+```
+
+**残差図：「残差を描く」から抜粋**
+
+```python
+residual = y_obs - N_model
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
-ax.plot(t_decay, residual_decay, marker="o", label="対数線形法")
-ax.set_title("濃度モデルの残差（観測値−モデル値）")
+ax.plot(year_obs, residual, marker="o", markersize=3)
 ax.axhline(0, color="black", linewidth=0.8)
-ax.axvline(fit_end_day, color="gray", linestyle=":")
-ax.set_xlabel("3月21日からの経過日数 [日]")
-ax.set_ylabel("残差 [Bq/kg]")
+ax.axvline(1970, color="gray", linestyle=":")
+ax.set_title("人口モデルの残差（観測値−モデル値）")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
 ax.grid(True)
-ax.legend()
 fig.tight_layout()
-fig.savefig(FIGURE_DIR / "assignment2_decay_residual.png", dpi=150)
+fig.savefig(FIGURE_DIR / "population_exponential_residual.png", dpi=150)
 plt.show()
 ```
 
-![ヨウ素131濃度の観測値と対数線形法によるモデル値](figs/03/assignment2_decay_fit.png)
-
-![対数線形法による濃度の残差](figs/03/assignment2_decay_residual.png)
-
-**誤差評価：本文のMSE・RMSEの計算を再利用**
+**誤差評価：「誤差を数値で表す」から抜粋**
 
 ```python
-mse_log_fit = mean_squared_error(c_obs[fit_decay], C_model[fit_decay])
-mse_log_after = mean_squared_error(c_obs[~fit_decay], C_model[~fit_decay])
-print("推定期間内（MSE，RMSE）:", mse_log_fit, np.sqrt(mse_log_fit))
-print("推定期間後（MSE，RMSE）:", mse_log_after, np.sqrt(mse_log_after))
+mse_fit = mean_squared_error(y_obs[fit_mask], N_model[fit_mask])
+mse_after = mean_squared_error(y_obs[~fit_mask], N_model[~fit_mask])
+
+print(f"パラメタ決定に使った期間（1920〜1970年）の MSE = {mse_fit:12.1f} （万人）^2，平方根 = {np.sqrt(mse_fit):7.1f} 万人")
+print(f"それ以降の期間（1971〜2020年）の MSE           = {mse_after:12.1f} （万人）^2，平方根 = {np.sqrt(mse_after):7.1f} 万人")
 ```
 
-**外挿：本文と同じ解析解で指定した時刻の値を求める**
+**外挿：「未来へ外挿する危険」から抜粋**
 
 ```python
-prediction_day = 20  # 3月21日からの経過日数
-prediction = exponential_solution(prediction_day, C0_loglinear, -decay_rate)
-print(f"{prediction_day}日後のモデル値: {prediction:.4f} Bq/kg")
+t_future = np.arange(0.0, 131.0)              # 1920年から2050年まで
+N_future = exponential_solution(t_future, N0_loglinear, r_loglinear)
 ```
 
-- 推定期間：全設問で3月21〜28日の推定値を使う．3月28日は経過日数7なので，`fit_end_day = 7`のままとする．
-- 外挿先：4月10日は経過日数20である．人口用の`year - 1920`は使わない．この日の観測値はないため，モデル値だけを求める．
-- 外挿に使うパラメタ：設問1で求めた`C0_loglinear`と`decay_rate`をそのまま使う．再推定は不要である．
+**変更時に確認する事項**
+
+- データと時刻：人口の配列と暦年をそのまま使わず，準備節の濃度と経過日数に対応させよ．人口の結果を残せるように，計算結果を保存する変数名も区別せよ．
+- 推定と半減期：設問の期間に対応する観測値を選べ．人口モデルの$r$と減衰モデルの$-\lambda$の対応を確認し，上で示した式から半減期の計算を追加せよ．Pythonの`lambda`は予約語なので，減衰率の変数名には`decay_rate`を用いよ．
+- 図と出力：タイトル・軸ラベル・単位・縦線・縦軸の範囲を濃度データに合わせよ．図の保存名を人口の図と区別し，誤差の表示文も評価期間と単位に合わせよ．
+- 外挿：設問1の推定値を使い，評価する日付を準備節の原点からの経過日数に直せ．その時刻のモデル値を計算し，Notebookに表示せよ．
 ````
 
 ````{warning} 課題2：ヨウ素131濃度のパラメタ推定とモデルの評価
 
-上の準備コードとモデルを用いて，以下に取り組め．コードと図はNotebookに，表と考察は`README.md`の課題2の解答欄に記入せよ．
+上の準備節でデータを読み込み，人口モデルの参考コードを濃度の減衰モデルに合わせて変更して，以下に取り組め．変更したコードと図はNotebookに，表と考察は`README.md`の課題2の解答欄に記入せよ．
 
 1. **パラメタ推定**：3月21〜28日の全観測値から対数線形最小二乗法で $\lambda$ と $C_0$ を求めよ．見かけの半減期を計算し，表に記入せよ．
 2. **モデルの評価**：設問1で推定したモデルについて4月3日までのモデル値を求め，観測値との比較図と残差図を作成せよ．残差は観測値−モデル値とし，推定対象期間の終わりを縦線で示せ．3月21〜28日と3月29日〜4月3日を分けてMSE・RMSEを求め，評価期間による違いと残差の時間変化を説明せよ．作成した図は`reports/figures/`へ保存せよ．
@@ -1124,7 +1120,7 @@ print(f"{prediction_day}日後のモデル値: {prediction:.4f} Bq/kg")
 <!-- 
 ````{dropdown} 課題2の解答例
 
-直前の準備コードを実行済みとする．以下のコードを設問番号の順に実行する．
+準備節のデータ読み込みと本文の関数定義を実行済みとする．以下は人口モデルの参考コードを課題2用に変更した解答例であり，設問番号の順に実行する．
 
 **1．パラメタ推定**
 
