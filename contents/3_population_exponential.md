@@ -14,14 +14,14 @@
 - 第2回：Euler法と`solve_ivp`で初期値問題を解き，解析解との誤差を比較した．
 - **第3回**：人口統計の出典・単位・集計範囲を確認し，指数成長モデルを観測値と比較する．
   - データとの比較：数値解が微分方程式の解を近似する精度と，モデルが観測値を説明する精度を区別する．
-  - パラメタ推定：観測値からモデルの係数を決めること．今回は**2時点法**と**対数線形の最小二乗法**を扱う．
+  - パラメタ推定：観測値からモデルの係数を決めること．今回は**2時点の観測値による推定**と**対数線形の最小二乗法**を扱う．
 
 ### 到達目標
 
 <!-- - データの確認：出典・単位・期間・欠損値・集計上の注意点を記録できる．
 - モデルの構築：人口の変化率が現在の人口に比例するという仮定から $N'=rN$ を導き，各項の意味と単位を説明できる． -->
 - 既習内容の利用：第2回の解析解を用いて，人口モデルの計算値を求められる．
-- パラメタ推定：2時点法と対数線形の最小二乗法で $r$ を求め，使用するデータと初期値の扱いの違いを説明できる．
+- パラメタ推定：2時点からの推定と対数線形の最小二乗法で $r$ を求め，使用するデータと初期値の扱いの違いを説明できる．
 - 適合度の評価：観測値とモデルの比較図・残差・平均二乗誤差から，推定期間内外の違いを説明できる．
 - 外挿：推定期間外への予測について，仮定の適用範囲と限界を説明できる．
 
@@ -32,7 +32,7 @@
 | --- | --- | --- |
 | 1 | 作業環境の準備（演習0） | 10分 |
 | 2 | 第1・2回の復習（演習1），人口モデルの仮定と各項の意味 | 25分 |
-| 3 | 解析解を用いた2時点法と対数線形法による推定 | 20分 |
+| 3 | 解析解を用いたパラメタ推定（2時点の観測値・対数線形法） | 20分 |
 | 4 | 観測値との重ね合わせ，残差，期間を変えた比較，外挿（演習2〜4） | 35分 |
 | 5 | 外れる理由の共有，まとめ，課題の説明 | 15分 |
  -->
@@ -118,7 +118,7 @@ applied_programming_ii/
 
 | 推定方法（1920〜1970年） | 2020年のモデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
 | --- | --- | --- | --- |
-| 2時点法 | | | |
+| 2時点からの推定 | | | |
 | 対数線形法 | | | |
 
 - 2020年の絶対誤差の比較と，1時点だけで判断することの問題点：
@@ -171,7 +171,7 @@ applied_programming_ii/
 
 | 推定方法 | 推定に使う期間（2011年） | C0 [Bq/kg，3月21日に対応] | λ [1/日] | 見かけの半減期 [日] |
 | --- | --- | --- | --- | --- |
-| 2時点法 | 3月21日・28日 | | | |
+| 2時点からの推定 | 3月21日・28日 | | | |
 | 対数線形法 | 3月21〜28日 | | | |
 | 対数線形法 | 3月21〜31日 | | | |
 
@@ -181,8 +181,8 @@ applied_programming_ii/
 
 | 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
 | --- | --- | --- | --- |
-| 2時点法 | 3月21〜28日 | | |
-| 2時点法 | 3月29日〜4月3日 | | |
+| 2時点からの推定 | 3月21〜28日 | | |
+| 2時点からの推定 | 3月29日〜4月3日 | | |
 | 対数線形法 | 3月21〜28日 | | |
 | 対数線形法 | 3月29日〜4月3日 | | |
 
@@ -319,6 +319,12 @@ print(population[(population["year"] >= 1940) & (population["year"] <= 1950)][["
 
 #### データとモデルの対応
 
+観測データを，時刻と人口の組 $(t_i,y_i)$ で表す．添字 $i=1,\ldots,n$ は時刻順に並べた観測の番号，$n$ は観測数である．
+
+- $t_i$ は第 $i$ 番目の観測時刻で，今回は1920年からの経過年数を表す．
+- その時刻に対応する人口の観測値が $y_i$ であり，単位は万人である．
+- 一方，$N(t_i)$ は同じ時刻におけるモデルの計算値である．観測値 $y_i$ と必ず一致するわけではなく，その差 $y_i-N(t_i)$ を残差として評価する．
+
 | データ | 今回の扱い |
 | --- | --- |
 | `year` | $t=\text{year}-1920$（年）．1920年は$t=0$，1970年は$t=50$ |
@@ -450,6 +456,9 @@ N0 = y_obs[0]                                   # 初期値：1920年の人口 [
 print(f"初期値 N0 = {N0:.1f} 万人")
 ```
 
+- `obs`は**observed（観測された）**の略で，`t_obs`と`y_obs`には観測時刻と観測値を同じ順序で保存する．
+- 数式の観測番号は1から，Pythonの添字は0から数えるため，$(t_i,y_i)$ は`(t_obs[i - 1], y_obs[i - 1])`に対応する．例えば最初の観測は $(t_1,y_1)=(0,5596.3)$ である．
+
 ```{dropdown} コードの補足
 
 - `.to_numpy()`：表の1列をNumPy配列に変換する．
@@ -457,7 +466,9 @@ print(f"初期値 N0 = {N0:.1f} 万人")
 - `y_obs[0]`：配列の先頭要素．年の昇順を確認したこのデータでは1920年の観測値．
 ```
 
-### 2時点法：連続時間モデルへの適用
+### 2時点の観測値によるパラメタ推定
+
+2つの観測値を通る指数関数を求め，その係数をパラメタとする．以下の図・表では，この操作を「2時点からの推定」と表記する．これは操作内容を示す説明であり，独立した標準的な手法名ではない．
 
 - 既習の方法：第1回と同じく，1920年と1970年の2点を使う．今回は$N(50)=N_0e^{50r}$から$r=\log(y_{1970}/y_{1920})/50$を求める．
 - 係数の違い：第1回の差分モデルの年間増加割合を$q$と書くと，今回の係数との関係は$r=\log(1+q)$．両者を混同しない．
@@ -465,20 +476,20 @@ print(f"初期値 N0 = {N0:.1f} 万人")
 ```python
 y_1970 = y_obs[year_obs == 1970][0]
 r_two_point = np.log(y_1970 / N0) / 50.0
-print(f"2時点法による r = {r_two_point:.5f} /年")
+print(f"2時点からの推定による r = {r_two_point:.5f} /年")
 ```
 
 - `y_obs[year_obs == 1970][0]`：1970年に対応する観測値を抽出し，その1要素を取り出す．
 - 人口比の単位：分子・分母をともに万人で与え，単位によらない比をとる．
 
-2時点法は途中の49時点を使わず，端点の値に左右される．次に，51時点すべてを使う推定方法を導入する．
+2時点からの推定は途中の49時点を使わず，端点の値に左右される．次に，51時点すべてを使う推定方法を導入する．
 
 ### 対数線形の最小二乗法
 
 正の観測値に指数関数モデルを当てはめるときは，**対数をとると直線で表せる**ことを利用する．次の順に，モデルの適用可能性と推定方法を考える．
 
 - まず，観測値の対数を時刻に対して描く．点がおおむね直線に並ぶ期間では，一定の相対増加率・減少率によるモデルが候補となる．
-- その期間の係数を求める際，2時点法では端点だけを使う．これに対し，対数線形の最小二乗法では**期間内の全観測値**に直線を当てはめ，途中の変動も含めた傾向を推定する．
+- その期間の係数を求める際，2時点からの推定では端点だけを使う．これに対し，対数線形の最小二乗法では**期間内の全観測値**に直線を当てはめ，途中の変動も含めた傾向を推定する．
 - ただし，当てはめで評価するのは対数の差であり，これは観測値とモデル値の比率の対数に等しい．したがって，この方法は**差の大きさより比率のずれを重視する場合**に適している．人口の規模が違っても，同じ比率のずれは目的関数に同じ大きさで寄与する．
 
 ```{tip} 適用の限界
@@ -514,7 +525,7 @@ N0_loglinear = np.exp(intercept)
 
 print(f"対数線形の最小二乗法による r  = {r_loglinear:.5f} /年")
 print(f"同じ方法で決めた N0          = {N0_loglinear:.1f} 万人（観測値は {N0:.1f} 万人）")
-print(f"2時点法との差                = {r_loglinear - r_two_point:+.5f} /年")
+print(f"2時点からの推定との差                = {r_loglinear - r_two_point:+.5f} /年")
 ```
 
 ```{dropdown} コードの補足
@@ -536,18 +547,20 @@ print(f"2時点法との差                = {r_loglinear - r_two_point:+.5f} /�
 
 ```python
 fig, ax = plt.subplots(figsize=(7, 4))
-ax.plot(year_obs, np.log(y_obs), color="black", marker="o", markersize=3, linestyle="none", label="ln(observed)")
-ax.plot(year_obs, intercept + slope * t_obs, label=f"least-squares line (r = {r_loglinear:.4f})")
-ax.axvline(1970, color="gray", linestyle=":", label="end of fitting period")
-ax.set_title("Log of population vs. year")
-ax.set_xlabel("Year")
-ax.set_ylabel("ln N")
+ax.plot(year_obs, np.log(y_obs), color="black", marker="o", markersize=3, linestyle="none", label="観測値の自然対数")
+ax.plot(year_obs, intercept + slope * t_obs, label=f"最小二乗法による直線（r = {r_loglinear:.4f}）")
+ax.axvline(1970, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_title("人口の対数と当てはめた直線")
+ax.set_xlabel("年")
+ax.set_ylabel("人口の自然対数（万人単位の数値）")
 ax.grid(True)
 ax.legend()
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "log_population_line.png", dpi=150)
 plt.show()
 ```
+
+![人口の自然対数と1920〜1970年のデータに当てはめた直線](figs/03/log_population_line.png)
 
 - 推定期間を変える場合：第1回と同様，`ax.axvline`の位置も変更する．
 
@@ -614,12 +627,12 @@ N0_loglinear = np.exp(intercept)
 N_model = exponential_solution(t_obs, N0_loglinear, r_loglinear)
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
-ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="observed")
-ax.plot(year_obs, N_model, label=f"exponential model (r = {r_loglinear:.4f})")
-ax.axvline(1970, color="gray", linestyle=":", label="end of fitting period")
-ax.set_title("Exponential growth model vs. observed population of Japan")
-ax.set_xlabel("Year")
-ax.set_ylabel("Population [10^4 persons]")
+ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+ax.plot(year_obs, N_model, label=f"指数成長モデル（r = {r_loglinear:.4f}）")
+ax.axvline(1970, color="gray", linestyle=":", label="推定期間の終わり")
+ax.set_title("日本の人口と指数成長モデルの比較")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 [万人]")
 ax.set_ylim(0, 20000)
 ax.grid(True)
 ax.legend()
@@ -627,6 +640,8 @@ fig.tight_layout()
 fig.savefig(FIGURE_DIR / "population_exponential_fit.png", dpi=150)
 plt.show()
 ```
+
+![日本の人口の観測値と1920〜1970年で推定した指数成長モデル](figs/03/population_exponential_fit.png)
 
 ### 残差を描く
 
@@ -641,14 +656,16 @@ fig, ax = plt.subplots(figsize=(8, 3.5))
 ax.plot(year_obs, residual, marker="o", markersize=3)
 ax.axhline(0, color="black", linewidth=0.8)
 ax.axvline(1970, color="gray", linestyle=":")
-ax.set_title("Residual: observed - model")
-ax.set_xlabel("Year")
-ax.set_ylabel("Residual [10^4 persons]")
+ax.set_title("人口モデルの残差（観測値−モデル値）")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
 ax.grid(True)
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "population_exponential_residual.png", dpi=150)
 plt.show()
 ```
+
+![1920〜1970年で推定した人口モデルの残差](figs/03/population_exponential_residual.png)
 
 `ax.axhline(0, ...)`は残差0の水平線を描く．基準モデルの残差の図から，次が読み取れる．
 
@@ -696,7 +713,7 @@ print(f"それ以降の期間（1971〜2020年）の MSE           = {mse_after:
 
 1. 残差が正の期間と負の期間を`README.md`に記入し，それぞれ観測値とモデル値の大小関係を説明せよ．
 2. 1945年と2020年の負の残差について，集計上の注意点と一定の増加率という仮定の限界を区別して説明せよ．原因の特定には追加資料が必要であることにも言及せよ．
-3. 2時点法の $r$ と1920年の観測値 $N_0$ を使い，比較図と残差図を描け．両推定方法の2020年のモデル値・観測値・絶対誤差を表に記入し，比較せよ．1時点の誤差だけで他の年への適用可能性を判断できるかを説明せよ．
+3. 1920年と1970年の観測値から求めた $r$ と1920年の観測値 $N_0$ を使い，比較図と残差図を描け．両推定方法の2020年のモデル値・観測値・絶対誤差を表に記入し，比較せよ．1時点の誤差だけで他の年への適用可能性を判断できるかを説明せよ．
 ````
 
 <!--
@@ -735,7 +752,7 @@ residual_two_point = y_obs - N_two_point
 fig, ax = plt.subplots(figsize=(8, 4.5))
 ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3,
         linestyle="none", label="観測値")
-ax.plot(year_obs, N_two_point, label="2時点法")
+ax.plot(year_obs, N_two_point, label="2時点からの推定")
 ax.plot(year_obs, N_model, linestyle="--", label="対数線形法")
 ax.axvline(1970, color="gray", linestyle=":")
 ax.set_xlabel("年")
@@ -747,7 +764,7 @@ fig.savefig(FIGURE_DIR / "exercise3_population_fit.png", dpi=150)
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
-ax.plot(year_obs, residual_two_point, label="2時点法")
+ax.plot(year_obs, residual_two_point, label="2時点からの推定")
 ax.plot(year_obs, residual, linestyle="--", label="対数線形法")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.axvline(1970, color="gray", linestyle=":")
@@ -762,27 +779,27 @@ plt.show()
 observed = y_obs[year_obs == 2020][0]
 model_two_point = N_two_point[year_obs == 2020][0]
 model_loglinear = N_model[year_obs == 2020][0]
-print("2時点法:", model_two_point, observed, abs(model_two_point - observed))
+print("2時点からの推定:", model_two_point, observed, abs(model_two_point - observed))
 print("対数線形法:", model_loglinear, observed, abs(model_loglinear - observed))
 ```
 
-![演習3・設問3：観測人口と2時点法・対数線形法によるモデル値](figs/03/exercise3_population_fit.png)
+![演習3・設問3：観測人口と2時点からの推定・対数線形法によるモデル値](figs/03/exercise3_population_fit.png)
 
 ![演習3・設問3：両推定方法の残差（観測値−モデル値）](figs/03/exercise3_population_residual.png)
 
 | 推定方法 | 2020年のモデル値 [万人] | 観測値 [万人] | 絶対誤差 [万人] |
 | --- | ---: | ---: | ---: |
-| 2時点法 | 19223.1 | 12614.6 | 6608.5 |
+| 2時点からの推定 | 19223.1 | 12614.6 | 6608.5 |
 | 対数線形法 | 19599.8 | 12614.6 | 6985.2 |
 
-- 比較：2020年の絶対誤差は2時点法の方が小さいが，両方法とも大幅に過大評価している．
+- 比較：2020年の絶対誤差は2時点からの推定の方が小さいが，両方法とも大幅に過大評価している．
 - 評価の限界：1時点だけの結果から他の年への適用可能性は判断できない．推定に使わなかった複数時点の残差やMSE・RMSEも調べる必要がある．対数線形法は2020年の誤差を最小にする方法ではない．
 ````
 -->
 
 ````{dropdown} コードの補足：推定方法を変えて比較する
 
-基準モデルの変数を上書きせず，2時点法の結果を別の変数に保存する．本文の描画コードをコピーし，描く配列を置き換えれば比較できる．
+基準モデルの変数を上書きせず，2時点からの推定の結果を別の変数に保存する．本文の描画コードをコピーし，描く配列を置き換えれば比較できる．
 
 ```python
 N_two_point = exponential_solution(t_obs, N0, r_two_point)
@@ -791,11 +808,11 @@ year = 2020
 observed = y_obs[year_obs == year][0]
 model_two_point = N_two_point[year_obs == year][0]
 model_loglinear = N_model[year_obs == year][0]
-print("2時点法:", model_two_point, observed, abs(model_two_point - observed))
+print("2時点からの推定:", model_two_point, observed, abs(model_two_point - observed))
 print("対数線形法:", model_loglinear, observed, abs(model_loglinear - observed))
 ```
 
-- 初期値：2時点法では観測値`N0`，対数線形法では推定値`N0_loglinear`を使う．係数だけでなく初期値も対応させる．
+- 初期値：2時点からの推定では観測値`N0`，対数線形法では推定値`N0_loglinear`を使う．係数だけでなく初期値も対応させる．
 - 図の保存：比較図・残差図のラベルとファイル名も変え，基準モデルの図を上書きしない．
 ````
 
@@ -893,7 +910,7 @@ for end_year in [1940, 1970]:
 
 ## まとめ
 
-- 観測値の単位・集計範囲を確認し，指数成長モデルのパラメタを**2時点法と対数線形の最小二乗法**で推定した．
+- 観測値の単位・集計範囲を確認し，指数成長モデルのパラメタを，**2時点の観測値を通る指数関数**と**対数線形の最小二乗法**によって求めた．
 - 推定したモデルを，**残差（観測値−モデル値）とMSE・RMSE**で評価した．数値計算の精度と，モデルが観測値を説明する精度は区別する．
 - 推定期間後の人口を過大評価したことから，**推定期間内の適合だけでは予測精度を保証できない**と確認した．係数の調整に加え，仮定の見直しが必要である．
 - 次回は，一人あたりの増加率が人口に対して線形に低下する**Logisticモデル**を導き，同じデータ・推定期間・誤差指標で比較する．
@@ -1096,7 +1113,7 @@ $$
 
 上の準備コードとモデルを用いて，以下に取り組め．コードと図はNotebookに，表と考察は`README.md`の課題2の解答欄に記入せよ．
 
-1. **パラメタ推定**：3月21日と28日の観測値から2時点法で $\lambda$ を求めよ．次に，3月21〜28日の全観測値から対数線形法で $\lambda$ と $C_0$ を求めよ．それぞれの見かけの半減期を計算し，表に記入せよ．
+1. **パラメタ推定**：3月21日と28日の観測値を通る指数関数から $\lambda$ を求めよ．次に，3月21〜28日の全観測値から対数線形法で $\lambda$ と $C_0$ を求めよ．それぞれの見かけの半減期を計算し，表に記入せよ．
 2. **モデルの評価**：両推定方法について4月3日までのモデル値を求め，観測値との比較図と残差図を作成せよ．残差は観測値−モデル値とし，推定対象期間の終わりを縦線で示せ．3月21〜28日と3月29日〜4月3日を分けてMSE・RMSEを求め，推定方法・評価期間による違いと残差の時間変化を説明せよ．作成した図は`reports/figures/`へ保存せよ．
 3. **推定期間の変更と外挿**：対数線形法で用いる観測期間を3月31日まで延長し，$\lambda$・$C_0$・見かけの半減期を再推定せよ．3月28日までで推定したモデルと，3月31日までで推定したモデルから，それぞれ4月10日の濃度を計算せよ．推定期間によるパラメタと外挿値の違いを説明し，このCSVでは4月10日の予測誤差を求められない理由を述べよ．
 4. **モデルの解釈**：設問1・3の見かけの半減期を，ヨウ素131の物理的半減期である約8日と比較せよ．毎日別の水を採取していることを踏まえ，放射性崩壊以外に濃度を変化させうる要因を挙げ，このデータだけでは要因を特定できない理由を200字程度で説明せよ．
@@ -1108,7 +1125,7 @@ $$
 
 **1．パラメタ推定**
 
-2時点法では$C_0=23$，$C(7)=12$とし，$\lambda=-\log(12/23)/7$を求める．対数線形法では，Bq/kg単位の濃度の数値を用いた対数上の傾きが$-\lambda$，切片が$\log C_0$となる．
+2時点からの推定では$C_0=23$，$C(7)=12$とし，$\lambda=-\log(12/23)/7$を求める．対数線形法では，Bq/kg単位の濃度の数値を用いた対数上の傾きが$-\lambda$，切片が$\log C_0$となる．
 
 ```python
 fit_decay = t_decay <= 7
@@ -1124,7 +1141,7 @@ decay_rate = -slope_decay
 C0_loglinear = np.exp(intercept_decay)
 half_life = np.log(2) / decay_rate
 
-print("2時点法（C0，λ，半減期）:", C0_two_point, decay_rate_two_point, half_life_two_point)
+print("2時点からの推定（C0，λ，半減期）:", C0_two_point, decay_rate_two_point, half_life_two_point)
 print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, half_life)
 ```
 
@@ -1132,7 +1149,7 @@ print("対数線形法（C0，λ，半減期）:", C0_loglinear, decay_rate, hal
 
 | 推定方法 | 推定対象（2011年） | C0 [Bq/kg] | λ [1/日] | 見かけの半減期 [日] |
 | --- | --- | --- | --- | --- |
-| 2時点法 | 3月21日・28日 | 23.0000 | 0.0929411 | 7.4579 |
+| 2時点からの推定 | 3月21日・28日 | 23.0000 | 0.0929411 | 7.4579 |
 | 対数線形法 | 3月21〜28日 | 21.5776 | 0.0936854 | 7.3987 |
 
 **2．モデルの評価**
@@ -1145,7 +1162,7 @@ residual_decay = c_obs - C_model
 
 fig, ax = plt.subplots(figsize=(8, 4.5))
 ax.plot(t_decay, c_obs, color="black", marker="o", linestyle="none", label="観測値")
-ax.plot(t_decay, C_two_point, label="2時点法")
+ax.plot(t_decay, C_two_point, label="2時点からの推定")
 ax.plot(t_decay, C_model, label="対数線形法")
 ax.axvline(7, color="gray", linestyle=":", label="推定期間の終わり")
 ax.set_xlabel("3月21日からの経過日数 [日]")
@@ -1157,7 +1174,7 @@ fig.savefig(FIGURE_DIR / "assignment2_decay_fit.png", dpi=150)
 plt.show()
 
 fig, ax = plt.subplots(figsize=(8, 3.5))
-ax.plot(t_decay, residual_two_point_decay, marker="o", label="2時点法")
+ax.plot(t_decay, residual_two_point_decay, marker="o", label="2時点からの推定")
 ax.plot(t_decay, residual_decay, marker="o", label="対数線形法")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.axvline(7, color="gray", linestyle=":")
@@ -1173,8 +1190,8 @@ mse_two_fit = mean_squared_error(c_obs[fit_decay], C_two_point[fit_decay])
 mse_two_after = mean_squared_error(c_obs[~fit_decay], C_two_point[~fit_decay])
 mse_log_fit = mean_squared_error(c_obs[fit_decay], C_model[fit_decay])
 mse_log_after = mean_squared_error(c_obs[~fit_decay], C_model[~fit_decay])
-print("2時点法・3月21〜28日（MSE，RMSE）:", mse_two_fit, np.sqrt(mse_two_fit))
-print("2時点法・3月29日以降（MSE，RMSE）:", mse_two_after, np.sqrt(mse_two_after))
+print("2時点からの推定・3月21〜28日（MSE，RMSE）:", mse_two_fit, np.sqrt(mse_two_fit))
+print("2時点からの推定・3月29日以降（MSE，RMSE）:", mse_two_after, np.sqrt(mse_two_after))
 print("対数線形法・3月21〜28日（MSE，RMSE）:", mse_log_fit, np.sqrt(mse_log_fit))
 print("対数線形法・3月29日以降（MSE，RMSE）:", mse_log_after, np.sqrt(mse_log_after))
 ```
@@ -1187,8 +1204,8 @@ print("対数線形法・3月29日以降（MSE，RMSE）:", mse_log_after, np.sq
 
 | 推定方法（3月21〜28日） | 評価期間（2011年） | MSE [(Bq/kg)^2] | RMSE [Bq/kg] |
 | --- | --- | --- | --- |
-| 2時点法 | 3月21〜28日 | 7.8117 | 2.7949 |
-| 2時点法 | 3月29日〜4月3日 | 3.9120 | 1.9779 |
+| 2時点からの推定 | 3月21〜28日 | 7.8117 | 2.7949 |
+| 2時点からの推定 | 3月29日〜4月3日 | 3.9120 | 1.9779 |
 | 対数線形法 | 3月21〜28日 | 7.2543 | 2.6934 |
 | 対数線形法 | 3月29日〜4月3日 | 2.3749 | 1.5411 |
 
@@ -1226,7 +1243,7 @@ print("3月31日までで推定した4月10日の濃度:", prediction_day20_exte
 
 **4．モデルの解釈**
 
-- 半減期の比較：2時点法で約7.46日，3月28日までの対数線形法で約7.40日，3月31日までの対数線形法で約5.97日となる．いずれも物理的半減期の約8日より短く，推定期間によっても変わる．
+- 半減期の比較：2時点からの推定で約7.46日，3月28日までの対数線形法で約7.40日，3月31日までの対数線形法で約5.97日となる．いずれも物理的半減期の約8日より短く，推定期間によっても変わる．
 - 考察の記述例：このデータは同じ試料を保存して測ったものではなく，毎日採取した別の水の濃度である．濃度は放射性崩壊に加え，水源への放射性物質の流入，降水などによる希釈，浄水処理での除去などにも影響されうる．したがって，推定した係数は複数の作用を含む見かけの減少率である．各要因の寄与を特定するには，水源の濃度・流量・処理条件などの追加資料が必要であり，この濃度系列だけから減少の原因や健康影響を判断することはできない．
 ````
 ````{dropdown} コードの補足：人口モデルのコードを課題2に利用する
@@ -1248,7 +1265,7 @@ fit_decay = t_decay <= 7
 ```
 
 - 対数をとる条件：元資料で不検出の有無を確認したうえで，`np.all(c_obs > 0)`により濃度がすべて正であることを確かめる．不検出を0として対数をとる処理は行わない．
-- 2時点法：本文の式 $r=\log(N_1/N_0)/(t_1-t_0)$ に濃度を代入し，符号を反転して $\lambda$ とする．初期値には3月21日の観測値を使う．
+- 2時点からの推定：本文の式 $r=\log(N_1/N_0)/(t_1-t_0)$ に濃度を代入し，符号を反転して $\lambda$ とする．初期値には3月21日の観測値を使う．
 - 対数線形法：次のように傾きの符号を反転する．Pythonの`lambda`は構文に使う予約語なので，変数名には`decay_rate`を使う．
 
 ```python
@@ -1261,8 +1278,8 @@ C_model = exponential_solution(t_decay, C0_loglinear, -decay_rate)
 half_life = np.log(2) / decay_rate
 ```
 
-- 解析解の再利用：`exponential_solution`は係数が負の場合にも使える．2時点法でも，その方法で求めた初期値と係数を引数に渡す．
-- 評価：`residual_decay = c_obs - C_model`とし，本文の描画コード・`mean_squared_error`・`np.sqrt`を再利用する．`fit_decay`と`~fit_decay`で評価期間を分ける．2時点法で使うのは端点2件のみだが，設問2では対数線形法と同じ期間の全件で評価する．
+- 解析解の再利用：`exponential_solution`は係数が負の場合にも使える．2時点からの推定でも，その方法で求めた初期値と係数を引数に渡す．
+- 評価：`residual_decay = c_obs - C_model`とし，本文の描画コード・`mean_squared_error`・`np.sqrt`を再利用する．`fit_decay`と`~fit_decay`で評価期間を分ける．2時点からの推定で使うのは端点2件のみだが，設問2では対数線形法と同じ期間の全件で評価する．
 - 図の表示：横軸を`3月21日からの経過日数 [日]`，縦軸を`ヨウ素131濃度 [Bq/kg]`または`残差 [Bq/kg]`に変える．縦線も年ではなく経過日数で指定し，保存ファイル名は人口の図と区別する．
 - 対数目盛：`ax.set_yscale("log")`で縦軸を対数目盛にする．この場合は`c_obs`をそのまま描き，`np.log(c_obs)`には置き換えない．
 - 期間の変更：推定対象を選ぶ条件を変更し，傾き・切片・初期値・半減期を計算し直す．3月21日を時刻の原点とする設定は変えない．変更前の結果も表に記録する．
