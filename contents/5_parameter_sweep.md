@@ -106,6 +106,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from scipy.integrate import solve_ivp
 
+plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
+
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "05"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
@@ -238,9 +240,9 @@ fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(r_grid, J_r)
 ax.plot(r_grid[i_best], J_r[i_best], marker="o", color="red", label=f"minimum: r = {r_grid[i_best]:.4f}")
 ax.set_yscale("log")
-ax.set_title("Objective function J(r) for the exponential model, 1920-1970")
-ax.set_xlabel("r [1/year]")
-ax.set_ylabel("J(r) = MSE [(10^4 persons)^2]")
+ax.set_title("指数成長モデルの目的関数 J(r)（1920〜1970年）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("J(r) = MSE [(万人)²]")
 ax.grid(True, which="both")
 ax.legend()
 fig.tight_layout()
@@ -336,12 +338,12 @@ $J$ の値は最小付近と端で1000倍以上違うので，色の尺度を対
 ```python
 fig, ax = plt.subplots(figsize=(7, 5))
 mesh = ax.pcolormesh(R_fine, K_grid_fine, J_fine, norm=LogNorm(), shading="auto", cmap="viridis")
-fig.colorbar(mesh, ax=ax, label="J(r, K) = MSE [(10^4 persons)^2]")
+fig.colorbar(mesh, ax=ax, label="J(r, K) = MSE [(万人)²]")
 ax.plot(r_best, K_best, marker="x", color="red", markersize=10, label=f"minimum: r = {r_best:.4f}, K = {K_best:.0f}")
 ax.plot(0.03, 15000.0, marker="o", color="white", markersize=7, label="hand-picked (session 4)")
-ax.set_title("Objective function of the logistic model, 1920-2020")
-ax.set_xlabel("r [1/year]")
-ax.set_ylabel("K [10^4 persons]")
+ax.set_title("Logisticモデルの目的関数（1920〜2020年）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("K [万人]")
 ax.legend(loc="upper right")
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "heatmap_r_K.png", dpi=150)
@@ -361,17 +363,17 @@ ax = axes[0]
 ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="observed")
 ax.plot(year_obs, y_best, label=f"logistic, grid search (r = {r_best:.4f}, K = {K_best:.0f})")
 ax.plot(year_obs, predict_logistic((0.03, 15000.0), t_obs, N0), linestyle="--", label="logistic, hand-picked (r = 0.03, K = 15000)")
-ax.set_title("Logistic model with grid-searched parameters")
-ax.set_ylabel("Population [10^4 persons]")
+ax.set_title("格子探索で推定したLogisticモデル")
+ax.set_ylabel("人口 [万人]")
 ax.grid(True)
 ax.legend()
 
 ax = axes[1]
 ax.plot(year_obs, y_obs - y_best, marker="o", markersize=2)
 ax.axhline(0, color="black", linewidth=0.8)
-ax.set_title("Residual: observed - model")
-ax.set_xlabel("Year")
-ax.set_ylabel("Residual [10^4 persons]")
+ax.set_title("残差（観測値−モデル値）")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
 ax.grid(True)
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "logistic_grid_best.png", dpi=150)
@@ -423,15 +425,15 @@ fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 for ax, J_map, title, (r_m, K_m) in zip(
     axes,
     [J_fine, J_fit],
-    ["fitted to 1920-2020", "fitted to 1920-1970"],
+    ["推定期間：1920〜2020年", "推定期間：1920〜1970年"],
     [(r_best, K_best), (r_fit_best, K_fit_best)],
 ):
     mesh = ax.pcolormesh(R_fine, K_grid_fine, J_map, norm=LogNorm(), shading="auto", cmap="viridis")
-    fig.colorbar(mesh, ax=ax, label="J [(10^4 persons)^2]")
+    fig.colorbar(mesh, ax=ax, label="J [(万人)²]")
     ax.plot(r_m, K_m, marker="x", color="red", markersize=10, label=f"minimum: r = {r_m:.4f}, K = {K_m:.0f}")
-    ax.set_title(f"Objective function, {title}")
-    ax.set_xlabel("r [1/year]")
-    ax.set_ylabel("K [10^4 persons]")
+    ax.set_title(f"目的関数（{title}）")
+    ax.set_xlabel("r [1/年]")
+    ax.set_ylabel("K [万人]")
     ax.legend(loc="upper right")
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "heatmap_period_comparison.png", dpi=150)

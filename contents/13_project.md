@@ -71,6 +71,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import least_squares
 
+plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
+
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "13"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
@@ -340,15 +342,15 @@ fig, (ax_fit, ax_res) = plt.subplots(2, 1, figsize=(8, 7), sharex=True)
 ax_fit.plot(years, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="observed")
 ax_fit.plot(years, y_model, linestyle="-", label=f"logistic model (r = {r_hat:.4f}, K = {K_hat:.0f})")
 ax_fit.axvline(1990, color="gray", linestyle=":", label="end of training period")
-ax_fit.set_title("Model fit and residuals (template)")
-ax_fit.set_ylabel("Population [10^4 persons]")
+ax_fit.set_title("モデルの当てはめと残差（テンプレート）")
+ax_fit.set_ylabel("人口 [万人]")
 ax_fit.grid(True)
 ax_fit.legend()
 ax_res.plot(years, y_obs - y_model, marker="o", markersize=3, linestyle="-")
 ax_res.axhline(0.0, color="black")
 ax_res.axvline(1990, color="gray", linestyle=":")
-ax_res.set_xlabel("Year")
-ax_res.set_ylabel("Residual [10^4 persons]")
+ax_res.set_xlabel("年")
+ax_res.set_ylabel("残差 [万人]")
 ax_res.grid(True)
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "report_template_fit.png", dpi=150)

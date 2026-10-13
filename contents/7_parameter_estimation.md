@@ -115,6 +115,8 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.optimize import least_squares
 
+plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
+
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "07"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
@@ -393,21 +395,21 @@ axes[0].plot(years, y_obs, color="black", marker="o", markersize=3, linestyle="n
 axes[0].plot(years, y_fit_all, color="tab:blue", label=f"logistic, fitted on <=1990 (r={r_train:.4f}, K={K_train:.0f})")
 axes[0].plot(years, y_exp_all, color="tab:orange", linestyle="--", label=f"exponential, fitted on <=1990 (r={result_exp.x[0]:.4f})")
 axes[0].axvspan(1995, 2020, color="gray", alpha=0.15, label="validation period")
-axes[0].set_ylabel("Population [10^4 persons]")
+axes[0].set_ylabel("人口 [万人]")
 axes[0].set_ylim(4000, 18000)
-axes[0].set_title("Parameter estimation with a training / validation split")
+axes[0].set_title("訓練期間と検証期間を分けたパラメタ推定")
 axes[0].legend(fontsize=8)
 
 axes[1].plot(years, residual_all, color="tab:blue", marker="o", markersize=3)
 axes[1].axhline(0, color="black", linewidth=0.8)
 axes[1].axvspan(1995, 2020, color="gray", alpha=0.15)
-axes[1].set_ylabel("Residual, logistic\n[10^4 persons]")
+axes[1].set_ylabel("Logisticモデルの残差\n[万人]")
 
 axes[2].plot(years, y_exp_all - y_obs, color="tab:orange", marker="o", markersize=3)
 axes[2].axhline(0, color="black", linewidth=0.8)
 axes[2].axvspan(1995, 2020, color="gray", alpha=0.15)
-axes[2].set_ylabel("Residual, exponential\n[10^4 persons]")
-axes[2].set_xlabel("Year")
+axes[2].set_ylabel("指数成長モデルの残差\n[万人]")
+axes[2].set_xlabel("年")
 
 for ax in axes:
     ax.grid(True)
@@ -519,14 +521,14 @@ fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 axes[0].plot(dam_year["date"], h_dam, color="black", label="observed water level")
 axes[0].plot(dam_year["date"], h_assumed, color="tab:green", linestyle="--", label=f"model, assumed alpha = {alpha_assumed:.0f}")
 axes[0].plot(dam_year["date"], h_fitted, color="tab:blue", label=f"model, estimated alpha = {alpha_hat:.0f}")
-axes[0].set_ylabel("Water level [m]")
-axes[0].set_title("Urayama Dam 2019: estimating the level-volume slope")
+axes[0].set_ylabel("水位 [m]")
+axes[0].set_title("浦山ダムの水位・貯水量関係の傾きの推定（2019年）")
 axes[0].legend()
 axes[1].plot(dam_year["date"], h_assumed - h_dam, color="tab:green", linestyle="--", label="residual, assumed alpha")
 axes[1].plot(dam_year["date"], h_fitted - h_dam, color="tab:blue", label="residual, estimated alpha")
 axes[1].axhline(0, color="black", linewidth=0.8)
-axes[1].set_ylabel("Model - observed [m]")
-axes[1].set_xlabel("Date")
+axes[1].set_ylabel("モデル値−観測値 [m]")
+axes[1].set_xlabel("日付")
 axes[1].legend()
 for ax in axes:
     ax.grid(True)

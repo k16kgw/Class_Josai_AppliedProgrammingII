@@ -122,6 +122,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
+plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
+
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "09"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
@@ -156,9 +158,9 @@ print("2019年の合計: {:.0f} 万人，2020年の合計: {:.0f} 万人".format
 ```python
 fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(visitors["t"], visitors["visitors_10k"], color="black", linewidth=1, marker="o", markersize=2, label="observed (monthly total)")
-ax.set_title("Monthly foreign visitors to Japan (JNTO)")
-ax.set_xlabel("Year")
-ax.set_ylabel("Visitors [10^4 persons/month]")
+ax.set_title("月別の訪日外客数（日本政府観光局）")
+ax.set_xlabel("年")
+ax.set_ylabel("訪日外客数 [万人/月]")
 ax.grid(True)
 ax.legend()
 fig.tight_layout()
@@ -184,9 +186,9 @@ print(monthly_mean.round(1))
 
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.bar(monthly_mean.index, monthly_mean.values, color="lightgray", edgecolor="black")
-ax.set_title("Average visitors by month (2012-2019)")
-ax.set_xlabel("Month")
-ax.set_ylabel("Visitors [10^4 persons/month]")
+ax.set_title("月ごとの平均訪日外客数（2012〜2019年）")
+ax.set_xlabel("月")
+ax.set_ylabel("訪日外客数 [万人/月]")
 ax.set_xticks(range(1, 13))
 ax.grid(True, axis="y")
 fig.tight_layout()
@@ -226,15 +228,15 @@ T = 1.0                            # 周期 [年]
 fig, axes = plt.subplots(1, 3, figsize=(12, 3.4))
 for A_demo in [1.0, 2.0]:
     axes[0].plot(t_demo, A_demo * np.sin(2 * np.pi * t_demo / T), label=f"A = {A_demo}")
-axes[0].set_title("Amplitude A (T = 1, phi = 0)")
+axes[0].set_title("振幅 A の比較（T = 1, phi = 0）")
 for T_demo in [1.0, 0.5]:
     axes[1].plot(t_demo, np.sin(2 * np.pi * t_demo / T_demo), label=f"T = {T_demo} year")
-axes[1].set_title("Period T (A = 1, phi = 0)")
+axes[1].set_title("周期 T の比較（A = 1, phi = 0）")
 for phi_demo in [0.0, np.pi / 2]:
     axes[2].plot(t_demo, np.sin(2 * np.pi * t_demo / T + phi_demo), label=f"phi = {phi_demo:.2f}")
-axes[2].set_title("Phase phi (A = 1, T = 1)")
+axes[2].set_title("位相 phi の比較（A = 1, T = 1）")
 for ax in axes:
-    ax.set_xlabel("Time [year]")
+    ax.set_xlabel("経過時間 [年]")
     ax.set_ylabel("s(t)")
     ax.grid(True)
     ax.legend(loc="upper right")
@@ -348,8 +350,8 @@ fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 6.5), sharex=True)
 ax_top.plot(t_all, y_all, color="black", linewidth=1, marker="o", markersize=2, label="observed")
 ax_top.plot(t_all, g_all, color="tab:blue", label="periodic model g(t)")
 ax_top.axvspan(2012, 2020, color="lightgray", alpha=0.4, label="fitting period")
-ax_top.set_title("Periodic model (baseline + trend + annual cycle) fitted to 2012-2019")
-ax_top.set_ylabel("Visitors [10^4 persons/month]")
+ax_top.set_title("周期モデル（基準値・トレンド・年周期）の当てはめ（2012〜2019年）")
+ax_top.set_ylabel("訪日外客数 [万人/月]")
 ax_top.set_ylim(-50, 450)
 ax_top.grid(True)
 ax_top.legend(loc="upper left")
@@ -357,8 +359,8 @@ ax_top.legend(loc="upper left")
 ax_bottom.plot(t_all, residual_all, color="tab:red", linewidth=1, marker="o", markersize=2)
 ax_bottom.axhline(0, color="black", linewidth=0.8)
 ax_bottom.axvspan(2012, 2020, color="lightgray", alpha=0.4)
-ax_bottom.set_xlabel("Year")
-ax_bottom.set_ylabel("Residual [10^4 persons/month]")
+ax_bottom.set_xlabel("年")
+ax_bottom.set_ylabel("残差 [万人/月]")
 ax_bottom.grid(True)
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "visitors_periodic_fit.png", dpi=150)
@@ -451,9 +453,9 @@ fig, ax = plt.subplots(figsize=(9, 4))
 ax.plot(t_fit, y_fit, color="black", linewidth=1, marker="o", markersize=2, label="observed")
 ax.plot(t_fit, periodic_target(t_fit, beta), color="tab:blue", label="target g(t)")
 ax.plot(t_fit, x_relax, color="tab:orange", linestyle="--", label=f"relaxation model, lambda = {lam} /year")
-ax.set_title("Relaxation toward a periodic target (2012-2019)")
-ax.set_xlabel("Year")
-ax.set_ylabel("Visitors [10^4 persons/month]")
+ax.set_title("周期的な目標値への緩和（2012〜2019年）")
+ax.set_xlabel("年")
+ax.set_ylabel("訪日外客数 [万人/月]")
 ax.grid(True)
 ax.legend(loc="upper left")
 fig.tight_layout()
@@ -549,7 +551,7 @@ try:
     raw.columns = ["date", "time", "demand_10MW"]
     raw["datetime"] = pd.to_datetime(raw["date"] + " " + raw["time"], format="%Y/%m/%d %H:%M")
     electricity = raw[["datetime", "demand_10MW"]].copy()
-    data_label = "TEPCO 2019 (downloaded)"
+    data_label = "2019年の実績データ（取得済み）"
     print("東京電力の実績データを取得した．出典：東京電力パワーグリッド「でんき予報」過去の電力使用実績データ")
 except Exception as error:
     print("取得に失敗した:", type(error).__name__)
@@ -564,7 +566,7 @@ except Exception as error:
     annual_cycle = 400 * np.cos(2 * np.pi * (day_of_year - 25) / 365) + 500 * np.exp(-((day_of_year - 220) / 30) ** 2)
     demand = 3300 + daily_cycle + weekly_cycle + annual_cycle + rng.normal(0, 60, len(hours))
     electricity = pd.DataFrame({"datetime": hours, "demand_10MW": demand})
-    data_label = "synthetic data (NOT measured)"
+    data_label = "生成データ（実測値ではない）"
 
 electricity["hour"] = electricity["datetime"].dt.hour
 electricity["weekday"] = electricity["datetime"].dt.weekday
@@ -577,24 +579,24 @@ fig, axes = plt.subplots(1, 3, figsize=(13, 3.6))
 
 hourly = electricity[electricity["month"] == 8].groupby("hour")["demand_10MW"].mean()
 axes[0].plot(hourly.index, hourly.values, marker="o", markersize=3)
-axes[0].set_title("Daily cycle (August average)")
-axes[0].set_xlabel("Hour of day")
+axes[0].set_title("日周期（8月の平均）")
+axes[0].set_xlabel("時刻 [時]")
 
 weekly = electricity.groupby("weekday")["demand_10MW"].mean()
 axes[1].bar(weekly.index, weekly.values, color="lightgray", edgecolor="black")
-axes[1].set_title("Weekly cycle (Mon=0 ... Sun=6)")
-axes[1].set_xlabel("Day of week")
+axes[1].set_title("週周期（月曜=0〜日曜=6）")
+axes[1].set_xlabel("曜日（月曜=0〜日曜=6）")
 
 monthly = electricity.groupby("month")["demand_10MW"].mean()
 axes[2].plot(monthly.index, monthly.values, marker="s", markersize=4)
-axes[2].set_title("Annual cycle (monthly average)")
-axes[2].set_xlabel("Month")
+axes[2].set_title("年周期（月ごとの平均）")
+axes[2].set_xlabel("月")
 axes[2].set_xticks(range(1, 13))
 
 for ax in axes:
-    ax.set_ylabel("Demand [10 MW]")
+    ax.set_ylabel("電力需要 [万kW]")
     ax.grid(True)
-fig.suptitle(f"Electricity demand, TEPCO area: {data_label}")
+fig.suptitle(f"東京電力エリアの電力需要：{data_label}")
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "electricity_cycles.png", dpi=150)
 plt.show()
