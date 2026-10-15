@@ -81,7 +81,7 @@ mkdir -p notebooks reports/figures
 
 `data`は全授業回で共通して使用するデータの保存場所である．`01`には第1回の作業だけを置き，作成した図は`reports/figures`に保存する．
 
-2. 講義サイトの[授業用データ一覧](../data/README.md)から`population_japan.csv`をダウンロードし，`~/applied_programming_ii/data/`に置く．
+2. {download}`授業用CSV <../data/population_japan.csv>`をダウンロードし，ファイル名を`population_japan.csv`として，`~/applied_programming_ii/data/`に置く．出典・利用条件は[授業用データ一覧](../data/README.md)を確認する．
 
 3. JupyterLabまたはVS Codeで，`notebooks/modeling.ipynb`を新規作成する．
 
