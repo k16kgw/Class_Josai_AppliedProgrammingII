@@ -511,7 +511,7 @@ plt.show()
 ````
 
 
-````{dropdown} 演習2の解答例
+````{visible-answer} 演習2の解答例
 
 ```python
 r = 0.2
@@ -643,7 +643,7 @@ print(f"Euler法 h=0.01 の x(10) = {x_euler[-1]:.4f}，ステップ数 = {len(t
 ````
 
 
-````{dropdown} 演習3の解答例
+````{visible-answer} 演習3の解答例
 
 解析解は $x(t)=x(0)e^{rt}$ に $r=0.5$，$x(0)=30$ を代入して，$x(t)=30e^{0.5t}$ となる．
 
@@ -734,7 +734,7 @@ $$
 ````
 
 
-````{dropdown} 課題の解答例
+````{visible-answer} 課題の解答例
 
 **設問1：減衰モデルの計算**
 
@@ -1063,7 +1063,7 @@ $$
 ````
 
 
-````{dropdown} 発展問題1の解答例
+````{visible-answer} 発展問題1の解答例
 
 本文のインポートと`euler`・`exponential_rhs`・`exponential_solution`の定義を実行済みとする．
 
@@ -1264,7 +1264,7 @@ plt.show()
 ````
 
 
-````{dropdown} 発展演習：Euler法の不安定性の解答例
+````{visible-answer} 発展演習：Euler法の不安定性の解答例
 
 **設問1：増幅率と数値解の挙動**
 
@@ -1333,7 +1333,7 @@ $$
 ````
 
 
-````{dropdown} 発展問題2の解答例
+````{visible-answer} 発展問題2の解答例
 
 本文の`euler`と課題の`decay_rhs`を定義済みとする．
 

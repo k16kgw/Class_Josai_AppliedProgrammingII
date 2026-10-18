@@ -10,6 +10,8 @@ project:
   edit_url: null
   source_url: null
   downloads: []
+  plugins:
+    - plugins/answer-toggle.mjs
   bibliography:
     - references.bib
   numbering:
