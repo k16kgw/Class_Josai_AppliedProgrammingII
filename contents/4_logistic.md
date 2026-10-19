@@ -202,14 +202,31 @@ N0 = y_obs[0]                                     # 1920年の人口 [万人]
 print(f"観測値の数: {len(y_obs)}，初期値 N0 = {N0:.1f} 万人")
 ```
 
-- 配列の対応：`year_obs`は暦年，`t_obs`は1920年からの経過年数，`y_obs`は人口の観測値（万人）である．添字が同じ要素は同じ年に対応する．
+- 配列の対応：
+  - `year_obs`：暦年
+  - `t_obs`：1920年からの経過年数
+  - `y_obs`：人口の観測値（万人）
+  - 添字が同じ要素は同じ年に対応する．
 - 初期値：Logisticモデルでは1920年の観測値を`N0`として固定する．第3回の対数線形法で推定した初期値とは区別する．
 
 ## なぜ指数成長は続かないのか
 
 ### 一定の相対増加率という仮定を見直す
 
-第3回の残差は，推定した一定の相対増加率を長期に適用することの限界を示す．ただし，その原因は人口時系列だけでは特定できない．仮定の見直し方を次のように区別する．
+正の量$N(t)$について，その瞬間的な変化率を現在の量で割った
+
+$$
+\frac{1}{N(t)}\frac{dN}{dt}
+$$
+
+を**相対増加率**という．
+
+- 人口の場合には一人あたりの純増加を表す率．ここでは「一人あたりの増加率」と同じ意味で使う．$t$を年で測る場合，単位は1／年である．
+- 指数成長モデルとの対応：$N'=rN$では$N'/N=r$となり，相対増加率は一定である．一般のモデルでは，時刻や人口に応じて変化してよい．
+
+第3回では残差が時間と共に増大していくことを確認した．
+これは推定した**一定の相対増加率を長期に適用することの限界**を意味する．
+仮定を次のように見直す．
 
 | 検討する要因 | モデルでの表し方 |
 | --- | --- |
@@ -217,9 +234,9 @@ print(f"観測値の数: {len(y_obs)}，初期値 N0 = {N0:.1f} 万人")
 | 人口に依存する資源・空間の制約 | 一人あたりの増加率を人口の関数とする |
 | 国際人口移動 | 流入・流出を表す項を加える |
 
-今回は2行目を仮定として導入する．実際の人口変化の原因が資源制約であると断定するものではない．
+今回は「人口に依存する資源・空間の制約」を仮定として導入する．
 
-### データで確かめる：一人あたりの増加率は下がっているか
+### データからの確認：一人あたりの増加率は下がっているか
 
 指数成長モデルでは，一人あたりの増加率 $\dfrac{1}{N}\dfrac{dN}{dt}$ は定数 $r$ である．
 観測値からこの量を近似的に計算し，人口 $N$ に対して描いてみる．
@@ -229,14 +246,24 @@ print(f"観測値の数: {len(y_obs)}，初期値 N0 = {N0:.1f} 万人")
 step = 5   # 差分をとる間隔 [年]
 
 # 5年ごとの値を取り出す
-mask_5y = (year_obs % 5 == 0)
+mask_5y = (year_obs % step == 0)
 year_5y = year_obs[mask_5y]
 y_5y = y_obs[mask_5y]
 
 # 一人あたりの増加率 (N_{k+1} - N_k) / (step * N_k) を計算する
 per_capita_rate = (y_5y[1:] - y_5y[:-1]) / (step * y_5y[:-1])
 N_start = y_5y[:-1]          # 各区間の始めの人口
+```
 
+```{dropdown} コードの補足：区間ごとの増加率
+
+- `year_obs % step == 0`：年を`step`で割った余りが0となる観測値を選ぶ．今回は`step = 5`なので，1920年から5年ごとの値になる．
+- `y_5y[1:]`と`y_5y[:-1]`：それぞれ先頭と末尾を除き，隣り合う時点の人口を対応させる．
+```
+
+計算した人口と増加率を散布図にする．
+
+```python
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(N_start, per_capita_rate, marker="o", linestyle="none")
 for N_k, rate, yr in zip(N_start, per_capita_rate, year_5y[:-1]):
@@ -252,14 +279,15 @@ fig.savefig(FIGURE_DIR / "per_capita_rate_vs_N.png", dpi=150)
 plt.show()
 ```
 
-![人口と5年間の差分による相対増加率](figs/04/per_capita_rate_vs_N.png)
+```{dropdown} コードの補足：点・注記・基準線の描画
 
-```{dropdown} コードの補足：区間ごとの増加率
-
-- `year_obs % 5 == 0`：年を5で割った余りが0となる観測値を選ぶ．このデータでは1920年から5年ごとの値になる．
-- `y_5y[1:]`と`y_5y[:-1]`：それぞれ先頭と末尾を除き，隣り合う時点の人口を対応させる．
-- `zip(...)`：区間の始めの人口・増加率・年を同じ順番で取り出す．`ax.annotate`は図中に年の注記を付ける．
+- `zip(...)`：区間の始めの人口・増加率・年を同じ順番で取り出す．
+- `marker="o", linestyle="none"`：丸い点だけを描き，点どうしを線で結ばない．
+- `ax.annotate(...)`：指定した点に文字を添える．`textcoords="offset points", xytext=(4, 4)`は，文字を点から右・上に4ポイントずらす指定である．
+- `ax.axhline(0, ...)`：増加と減少の境界となる，縦軸の値が0の水平線を描く．
 ```
+
+![人口と5年間の差分による相対増加率](figs/04/per_capita_rate_vs_N.png)
 
 - 差分による近似：各区間の始めの人口で割った平均変化率であり，瞬間的な相対増加率そのものではない．
 - 観測された傾向：後半の人口が大きい時期には，増加率が低下して負になる．ただし，点は1本の直線上には並ばない．
@@ -281,7 +309,9 @@ plt.show()
 
 **追加する仮定：一人あたりの増加率は，人口が増えるにつれて直線的に下がり，人口がある値 $K$ に達するとゼロになる．**
 
-以下では $r>0$，$K>0$，$N_0>0$ とする．$K$ は純増加率が0となる正の平衡人口であり，資源制約を仮定したモデルでは**環境収容力**と呼ぶ．人口が一時的にも超えられない絶対的な上限ではない．
+以下では $r>0$，$K>0$，$N_0>0$ とする．$K$ は純増加率が0となる正の平衡人口であり，資源制約を仮定したモデルでは**環境収容力**と呼ぶ．
+
+定数$r,K>0$のLogisticモデルでは，$0<N_0<K$から出発した解は$K$を超えない．ただし，推定した$K$が現実の人口の絶対的な上限を表すとは限らない．
 
 ### 式を導く
 
@@ -468,7 +498,19 @@ N_numeric = sol.y[0]
 N_analytic = logistic_solution(t_eval, N0, r_trial, K_trial)
 
 print(f"数値解と解析解の最大差: {np.max(np.abs(N_numeric - N_analytic)):.3f} 万人")
+```
 
+```{dropdown} コードの補足：数値解と解析解
+
+- `args=(r_trial, K_trial)`：右辺の関数の追加引数に，$r$，$K$の順で渡す．
+- `sol.y[0]`：1つの状態変数である人口の数値解を取り出す．
+- `np.max(np.abs(...))`：出力時刻上での数値解と解析解の最大絶対差を求める．観測値との残差とは異なる．
+- 演習1での変更：`logistic_solution`の初期値・係数を変更する．数値解も比べる場合は，`solve_ivp`の初期値と追加引数も対応させる．元の人口データを変更せず，試す値は別の変数に保存する．
+```
+
+得られた数値解と解析解を重ねて描く．水平線は収束値$K$を示す．
+
+```python
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(1920 + t_eval, N_analytic, color="black", label="解析解")
 ax.plot(1920 + t_eval, N_numeric, linestyle="--", label="solve_ivp")
@@ -483,22 +525,15 @@ fig.savefig(FIGURE_DIR / "logistic_analytic_vs_numeric.png", dpi=150)
 plt.show()
 ```
 
+```{dropdown} コードの補足：曲線の重ね描き
+
+- 複数の曲線は，同じ`ax`に`ax.plot`を繰り返して重ねる．凡例に変更した値を記し，保存名を図ごとに変える．
+```
+
 ![Logisticモデルの数値解と解析解](figs/04/logistic_analytic_vs_numeric.png)
 
 - この設定：$0<N_0<K/2$なので，初めは増加が加速し，$N=K/2$で変化率が最大となった後，増加が鈍って$K$に近づく．
 - 初期値が異なる場合：$K/2<N_0<K$では初めから増加が鈍る．すべての初期値でS字の両側が見えるわけではない．
-
-```{dropdown} コードの補足：数値解と解析解
-- `args=(r_trial, K_trial)`：右辺の関数の追加引数に，$r$，$K$の順で渡す．
-- `sol.y[0]`：1つの状態変数である人口の数値解を取り出す．
-- `np.max(np.abs(...))`：出力時刻上での数値解と解析解の最大絶対差を求める．観測値との残差とは異なる．
-```
-
-```{dropdown} コードの補足：演習1で再利用する箇所
-- `logistic_solution(t_eval, N0, r_trial, K_trial)`の引数を変更し，解析解の曲線を比較する．数値解も比べる場合は，`solve_ivp`の初期値と追加引数を対応させる．
-- 複数の曲線は，同じ`ax`に`ax.plot`を繰り返して重ねる．凡例に変更した値を記し，保存名を図ごとに変える．
-- 元の人口データを変更せず，試す初期値や係数は別の変数に保存する．
-```
 
 ````{note} 演習1：初期値・$K$・$r$ を変える
 
@@ -544,7 +579,13 @@ N0_exp = np.exp(intercept)
 
 N_exp = exponential_solution(t_obs, N0_exp, r_exp)
 N_log = logistic_solution(t_obs, N0, r_trial, K_trial)
+```
 
+次に，モデル値から残差とMSEを計算する．
+
+```python
+residual_exp = y_obs - N_exp
+residual_log = y_obs - N_log
 mse_exp = mean_squared_error(y_obs, N_exp)
 mse_log = mean_squared_error(y_obs, N_log)
 
@@ -552,6 +593,8 @@ print(f"指数成長モデル   r = {r_exp:.4f}                : MSE = {mse_exp:
 print(f"Logisticモデル   r = {r_trial:.4f}, K = {K_trial:.0f}: MSE = {mse_log:12.0f} （万人）^2，平方根 = {np.sqrt(mse_log):6.0f} 万人")
 print(f"2020年の観測値: {y_obs[-1]:.0f} 万人，指数成長モデル: {N_exp[-1]:.0f} 万人，Logisticモデル: {N_log[-1]:.0f} 万人")
 ```
+
+- コードの補足：期間別に評価する場合は，`fit_mask`と`~fit_mask`で観測値とモデル値を同じ条件で選び，`mean_squared_error`に渡す．
 
 - 基準値での結果：全期間のMSEは指数成長モデルが約516.7万，Logisticモデルが約28.0万（万人）$^2$となる．
 - 人口と同じ単位での比較：RMSEはそれぞれ約2273万人と約529万人である．この差だけでは，Logisticモデルの仮定の正しさや将来の予測精度は保証されない．
@@ -572,8 +615,8 @@ ax.grid(True)
 ax.legend()
 
 ax = axes[1]
-ax.plot(year_obs, y_obs - N_exp, linestyle="--", marker="o", markersize=2, label="指数成長モデル")
-ax.plot(year_obs, y_obs - N_log, linestyle="-", marker="s", markersize=2, label="Logisticモデル")
+ax.plot(year_obs, residual_exp, linestyle="--", marker="o", markersize=2, label="指数成長モデル")
+ax.plot(year_obs, residual_log, linestyle="-", marker="s", markersize=2, label="Logisticモデル")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.set_title("残差（観測値−モデル値）")
 ax.set_xlabel("年")
@@ -584,6 +627,15 @@ ax.legend()
 fig.tight_layout()
 fig.savefig(FIGURE_DIR / "exponential_vs_logistic.png", dpi=150)
 plt.show()
+```
+
+```{dropdown} コードの補足：上下に並べた図の描画
+
+- `plt.subplots(2, 1, ...)`：2行1列の描画領域を作る．`axes[0]`が上段，`axes[1]`が下段である．
+- `sharex=True`：上下の横軸の範囲と目盛りを共有し，同じ年の人口と残差を比較しやすくする．横軸の目盛りラベルは通常，下段だけに表示される．
+- `ax.set_ylim(0, 20000)`：上段の縦軸の表示範囲を0〜20000に設定する．計算した値自体は変えない．
+- 図の更新：`r_trial`と`K_trial`を変更したら，`N_log`，残差・MSE，描画の順で再実行する．基準値を再設定する行は実行しない．
+- 課題1での重ね描き：候補ごとのモデルを同じ`ax`に描き，凡例に$r,K$を記す．初期値はLogisticモデルでは1920年の観測値，指数成長モデルでは対数線形法の推定値を使う．
 ```
 
 ![指数成長モデルとLogisticモデルの観測値との比較および残差](figs/04/exponential_vs_logistic.png)
@@ -610,17 +662,15 @@ for K_value in K_values:
         print(f"{K_value:10.0f} {r_value:10.3f} {mse_try:12.0f} {np.sqrt(mse_try):10.0f} {N_try[-1]:10.0f}")
 ```
 
+```{dropdown} コードの補足：候補の組み合わせ
+
+- 候補の変更：`K_values`と`r_values`の値を変え，二重の`for`で各組のモデル値とMSEを再計算する．
+```
+
 同じ $K$ でも $r$ によって誤差は大きく変わり，同じ $r$ でも $K$ によって変わる．
 また，$K = 15000$，$r = 0.03$ の組と，$K = 13000$，$r = 0.04$ の組のように，異なる組が近い誤差を与えることがある．
 $K$ を小さくすると $r$ を大きくして立ち上がりを補う必要があり，2つのパラメタは互いに影響し合う．
 手で変えるだけでは，どこに最も良い組があるのかを見つけにくい．
-
-```{dropdown} コードの補足：演習2・課題1で再利用する箇所
-- 候補の変更：`K_values`と`r_values`の値を変え，二重の`for`で各組のモデル値とMSEを再計算する．
-- 図の更新：`r_trial`と`K_trial`を選んだ値に変更し，`N_log`の計算行と描画コードを再実行する．基準値を再設定する行はコピーしない．
-- 期間別の評価：第3回と同じく，`fit_mask`と`~fit_mask`で観測値とモデル値を同じ条件で選び，`mean_squared_error`に渡す．
-- 課題1の重ね描き：候補ごとのモデルを同じ`ax`に描き，凡例に$r,K$を記す．初期値はLogisticモデルでは1920年の観測値，指数成長モデルでは対数線形法の推定値を使う．
-```
 
 ````{note} 演習2：手でパラメタを合わせる
 
@@ -720,9 +770,9 @@ fig.savefig(FIGURE_DIR / "assignment1_model_comparison.png", dpi=150)
 plt.show()
 ```
 
-![課題1：観測人口と4つのモデルの比較](figs/04/assignment1_model_comparison.png)
+- コードの補足：本文の重ね描きを繰り返し，各$K$に対応する$r$を`zip`で1組ずつ取り出す．二重の`for`とは異なり，選んだ3組だけを描く．
 
-- コードの理由：本文の重ね描きを繰り返し，各$K$に対応する$r$を`zip`で1組ずつ取り出す．二重の`for`とは異なり，選んだ3組だけを描く．
+![課題1：観測人口と4つのモデルの比較](figs/04/assignment1_model_comparison.png)
 
 **2．期間別の評価**
 
@@ -743,7 +793,7 @@ for K_value, r_value in zip(K_values, r_values):
           N_try[-1])
 ```
 
-- コードの理由：観測値とモデル値を同じマスクで取り出し，評価期間だけを変えて本文のMSE関数を使う．モデルのパラメタは期間ごとに推定し直さない．
+- コードの補足：観測値とモデル値を同じマスクで取り出し，評価期間だけを変えて本文のMSE関数を使う．モデルのパラメタは期間ごとに推定し直さない．
 
 | モデル | $r$ [1/年] | $K$ [万人] | 全期間MSE | 1920〜1970年MSE | 1971〜2020年MSE | 2020年の値 [万人] |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -786,11 +836,12 @@ $K$はモデルの収束値であり，観測人口の最大値ではない．�
 - 提出物：
   - `README.md`
   - Notebookファイル`logistic.ipynb`
-- 提出期限：2026年10月24日(土)23:59
+- 提出期限：<span style="color:red">2026年10月24日(土)23:59</span>
 
 ## 自主学習用の発展課題
 
-以下は任意課題であり，105分の講義と通常の提出課題には含めない．
+以下の課題への取り組みは任意である．
+取り組んだ内容は`logistic.ipynb`に追記すること．
 
 ### 増加率が時間とともに下がるモデル
 
@@ -807,8 +858,11 @@ $0<N_0<K$，$r_0,c>0$なら，$t=r_0/c$で人口が最大となり，その後�
 def logistic_decreasing_r_rhs(t, N, r0, c, K):
     """増加率が r(t) = r0 - c t で下がるLogisticモデルの右辺．"""
     return (r0 - c * t) * N * (1 - N / K)
+```
 
+パラメタを指定し，観測時刻でのモデル値とMSEを求める．
 
+```python
 # 全期間の誤差が小さくなるように選んだ値（c > 0 の範囲で探索した結果）
 r0_trial, c_trial, K_trial2 = 0.020, 0.00018, 40000.0
 
@@ -816,15 +870,24 @@ sol_rt = solve_ivp(logistic_decreasing_r_rhs, (0.0, 100.0), [N0], t_eval=t_obs, 
 N_rt = sol_rt.y[0]
 print(f"r(t) が負になる年: {1920 + r0_trial / c_trial:.0f} 年")
 print(f"MSE = {mean_squared_error(y_obs, N_rt):.0f} （万人）^2，2020年の値 = {N_rt[-1]:.0f} 万人")
+```
 
+比較図のために2050年までの数値解と，一定の増加率を使うモデル値を計算する．
+
+```python
 # 2050年まで延ばして減少に転じる様子を見る
 t_long = np.arange(0.0, 131.0)
 sol_rt_long = solve_ivp(logistic_decreasing_r_rhs, (0.0, 130.0), [N0], t_eval=t_long, args=(r0_trial, c_trial, K_trial2))
+N_constant_r = logistic_solution(t_obs, N0, 0.03, 15000.0)
+```
 
+計算済みの2つのモデルを，観測値と重ねて描く．
+
+```python
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
 ax.plot(1920 + t_long, sol_rt_long.y[0], label="時間変化する増加率のLogisticモデル")
-ax.plot(year_obs, logistic_solution(t_obs, N0, 0.03, 15000.0), linestyle="--", label="一定の増加率のLogisticモデル")
+ax.plot(year_obs, N_constant_r, linestyle="--", label="一定の増加率のLogisticモデル")
 ax.set_title("増加率が時間とともに低下するLogisticモデル")
 ax.set_xlabel("年")
 ax.set_ylabel("人口 [万人]")
@@ -875,7 +938,7 @@ for c_trial in [0.00018, r0_trial / (2008 - 1920)]:
     print(f"c = {c_trial:.8f}, 1920〜1970年のMSE = {mse_rt:.0f} （万人）^2")
 ```
 
-- コードの理由：本文の数値計算で$c$だけを変更し，同じ1920〜1970年の観測値に対するMSEを比べる．
+- コードの補足：本文の数値計算で$c$だけを変更し，同じ1920〜1970年の観測値に対するMSEを比べる．
 - 計算結果：MSEは約78116から約56282（万人）$^2$に減少する．
 - 注意点：合わせたのは最大となる**年**であり，最大人口の値ではない．
 
