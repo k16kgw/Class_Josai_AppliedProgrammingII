@@ -414,7 +414,7 @@ print(f"最大絶対誤差: {error_check:.8f} [1/年]")
 ```
 ````
 
-````{hidden-answer} 演習1の解答例
+````{visible-answer} 演習1の解答例
 
 **1・2．差分の間隔と誤差**
 
@@ -436,12 +436,16 @@ print(f"最大絶対誤差: {error_check:.8f} [1/年]")
 間隔を5年から1年にすると，最大絶対誤差は約5分の1になる．この例では
 
 $$
-g_h(t)=\frac{e^{rh}-1}{h}\longrightarrow r
+\lim_{h\to0^+}g_h(t)
+=\lim_{h\to0^+}\frac{e^{rh}-1}{h}
+=r
 $$
 
-となり，間隔を狭めることで正しい相対増加率に近づく．
+となる．観測誤差のない指数成長モデルでは，差分の間隔を狭めると，差分から求めた相対増加率は，微分で定義される相対増加率$r$に収束する．
 
 **3．観測データの場合**
+
+観測誤差とは観測値と真の値との差であり，人口データでは調査時の数え漏れや重複集計などによって生じる．
 
 観測値の差には両時点の観測誤差も含まれる．その差を短い間隔で割ると誤差の影響が増幅されるため，実データでは間隔を狭めるだけで精度の改善を保証できない．差分による近似誤差と観測誤差の両方を考慮する必要がある．
 ````
@@ -710,11 +714,121 @@ plt.show()
 3. 初期値を1920年の観測値，$K=15000$として，$r$を0.02，0.03，0.05に変えて曲線を比較せよ．収束値とそこへ近づく速さの違いを`README.md`に記入せよ．
 ````
 
-```{hidden-answer} 演習2の解答例
-- $K$ より大きい初期値から出発すると，人口は単調に減って $K$ に近づく．$1 - N/K < 0$ で変化率が負になるためである．
-- $K$は長期的な収束値を決める．初期値は変わらないが，初期の変化率$rN_0(1-N_0/K)$は変わる．$N_0\ll K$の場合に限り，$K$の影響は小さくなる．
-- $r$ は $K$ に近づく速さを決める．$r$ が大きいほど早くS字の中央部分を通過する．長期的な収束値は変わらない．
+````{visible-answer} 演習2の解答例
+
+本文で定義した`logistic_solution`，`t_eval`，`N0`，`FIGURE_DIR`を用いる．本文の解析解の計算と描画をもとに，3通りの曲線を重ねる．追加・変更した行をハイライトしている．
+
+**1．初期値の変更**
+
+```{code-block} python
+:emphasize-lines: 3-5
+
+r_trial = 0.03
+K_trial = 15000.0
+N_3000 = logistic_solution(t_eval, 3000.0, r_trial, K_trial)
+N_10000 = logistic_solution(t_eval, 10000.0, r_trial, K_trial)
+N_18000 = logistic_solution(t_eval, 18000.0, r_trial, K_trial)
 ```
+
+- コードの補足：初期値に対応する第2引数だけを変え，3通りの解析解を別の変数に保存する．
+
+```{code-block} python
+:emphasize-lines: 2-4,6,12
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(1920 + t_eval, N_3000, label="初期人口 3000万人")
+ax.plot(1920 + t_eval, N_10000, label="初期人口 10000万人")
+ax.plot(1920 + t_eval, N_18000, label="初期人口 18000万人")
+ax.axhline(K_trial, color="gray", linestyle=":", label=f"K = {K_trial:.0f}")
+ax.set_title("初期人口によるLogisticモデルの変化")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 N [万人]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "exercise2_initial_population.png", dpi=150)
+plt.show()
+```
+
+- コードの補足：本文の`ax.plot`を3本の解析解に対応させ，凡例・タイトル・保存名を変更する．
+
+![初期人口を変更したLogisticモデル](figs/04/exercise2_initial_population.png)
+
+$K$より小さい初期値では人口が増加し，大きい初期値では人口が減少して，いずれも$K$に近づく．$N>K$では$1-N/K<0$となり，右辺$rN(1-N/K)$が負になるためである．
+
+**2．環境収容力の変更**
+
+```{code-block} python
+:emphasize-lines: 2-4
+
+r_trial = 0.03
+N_K12000 = logistic_solution(t_eval, N0, r_trial, 12000.0)
+N_K15000 = logistic_solution(t_eval, N0, r_trial, 15000.0)
+N_K20000 = logistic_solution(t_eval, N0, r_trial, 20000.0)
+```
+
+- コードの補足：初期値を観測値`N0`に固定し，$K$に対応する第4引数を変える．
+
+```{code-block} python
+:emphasize-lines: 2-5,11
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(1920 + t_eval, N_K12000, label="K = 12000万人")
+ax.plot(1920 + t_eval, N_K15000, label="K = 15000万人")
+ax.plot(1920 + t_eval, N_K20000, label="K = 20000万人")
+ax.set_title("環境収容力によるLogisticモデルの変化")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 N [万人]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "exercise2_carrying_capacity.png", dpi=150)
+plt.show()
+```
+
+- コードの補足：3通りの$K$を凡例に示す．$K$が曲線ごとに異なるため，本文の単一の$K$を示す水平線は削除する．
+
+![環境収容力を変更したLogisticモデル](figs/04/exercise2_carrying_capacity.png)
+
+初期値は全て同じで，長期的な収束値はそれぞれの$K$となる．初期の変化率は$rN_0(1-N_0/K)$なので，$N_0,r$を固定すると，$K$が大きいほど初期の増加が速い．
+
+**3．内的自然増加率の変更**
+
+```{code-block} python
+:emphasize-lines: 2-4
+
+K_trial = 15000.0
+N_r002 = logistic_solution(t_eval, N0, 0.02, K_trial)
+N_r003 = logistic_solution(t_eval, N0, 0.03, K_trial)
+N_r005 = logistic_solution(t_eval, N0, 0.05, K_trial)
+```
+
+- コードの補足：初期値と$K$を固定し，$r$に対応する第3引数を変える．
+
+```{code-block} python
+:emphasize-lines: 2-4,6,12
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(1920 + t_eval, N_r002, label="r = 0.02／年")
+ax.plot(1920 + t_eval, N_r003, label="r = 0.03／年")
+ax.plot(1920 + t_eval, N_r005, label="r = 0.05／年")
+ax.axhline(K_trial, color="gray", linestyle=":", label=f"K = {K_trial:.0f}")
+ax.set_title("内的自然増加率によるLogisticモデルの変化")
+ax.set_xlabel("年")
+ax.set_ylabel("人口 N [万人]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "exercise2_growth_rate.png", dpi=150)
+plt.show()
+```
+
+- コードの補足：凡例に$r$の値を示し，共通の収束値$K$を水平線で示す．
+
+![内的自然増加率を変更したLogisticモデル](figs/04/exercise2_growth_rate.png)
+
+収束値は全て$K=15000$万人である．$r$が大きいほど，その収束値に近づく速さが大きい．
+````
 
 ## 同じデータ・同じ指標による2つのモデルの比較
 
@@ -757,20 +871,47 @@ residual_log = y_obs - N_log
 mse_exp = mean_squared_error(y_obs, N_exp)
 mse_log = mean_squared_error(y_obs, N_log)
 
-print(f"指数成長モデル   r = {r_exp:.4f}                : MSE = {mse_exp:12.0f} （万人）^2，平方根 = {np.sqrt(mse_exp):6.0f} 万人")
-print(f"Logisticモデル   r = {r_trial:.4f}, K = {K_trial:.0f}: MSE = {mse_log:12.0f} （万人）^2，平方根 = {np.sqrt(mse_log):6.0f} 万人")
-print(f"2020年の観測値: {y_obs[-1]:.0f} 万人，指数成長モデル: {N_exp[-1]:.0f} 万人，Logisticモデル: {N_log[-1]:.0f} 万人")
+from IPython.display import display
+
+comparison = pd.DataFrame({
+    "r [1/年]": [r_exp, r_trial],
+    "K [万人]": ["—", f"{K_trial:.0f}"],
+    "MSE [(万人)^2]": [mse_exp, mse_log],
+    "RMSE [万人]": [np.sqrt(mse_exp), np.sqrt(mse_log)],
+}, index=["指数成長モデル", "Logisticモデル"])
+display(comparison.round({
+    "r [1/年]": 4,
+    "MSE [(万人)^2]": 0,
+    "RMSE [万人]": 0,
+}))
+
+population_2020 = pd.DataFrame({
+    "観測値 [万人]": [y_obs[-1]],
+    "指数成長モデル [万人]": [N_exp[-1]],
+    "Logisticモデル [万人]": [N_log[-1]],
+}, index=["2020年"])
+display(population_2020.round(0))
 ```
 
-- コードの補足：期間別に評価する場合は，`fit_mask`と`~fit_mask`で観測値とモデル値を同じ条件で選び，`mean_squared_error`に渡す．
+```{dropdown} コードの補足：比較結果の表表示
 
-出力例（「平方根」はMSEの平方根，すなわちRMSE）：
-
-```text
-指数成長モデル   r = 0.0124                : MSE =      5166802 （万人）^2，平方根 =   2273 万人
-Logisticモデル   r = 0.0300, K = 15000: MSE =       280145 （万人）^2，平方根 =    529 万人
-2020年の観測値: 12615 万人，指数成長モデル: 19600 万人，Logisticモデル: 13842 万人
+- `pd.DataFrame({...}, index=...)`：列名と値から表を作り，`index`に行名を指定する．指数成長モデルには$K$がないため，その欄を`"—"`とする．
+- `display(...)`：Notebook上で表として表示する．
+- `.round({...})`：列ごとに表示する小数点以下の桁数を指定する．`.round(0)`は全ての数値列を整数の位に丸める．元の計算結果は変更しない．
+- `np.sqrt(...)`：MSEの平方根であるRMSEを求める．RMSEは人口と同じ単位で比較できる．
+- 期間別に評価する場合は，`fit_mask`と`~fit_mask`で観測値とモデル値を同じ条件で選び，`mean_squared_error`に渡す．
 ```
+
+出力例：
+
+| | r [1/年] | K [万人] | MSE [(万人)^2] | RMSE [万人] |
+| --- | ---: | ---: | ---: | ---: |
+| 指数成長モデル | 0.0124 | — | 5166802.0 | 2273.0 |
+| Logisticモデル | 0.0300 | 15000 | 280145.0 | 529.0 |
+
+| | 観測値 [万人] | 指数成長モデル [万人] | Logisticモデル [万人] |
+| --- | ---: | ---: | ---: |
+| 2020年 | 12615.0 | 19600.0 | 13842.0 |
 
 ### 図による比較
 
@@ -878,7 +1019,7 @@ $K$ を小さくすると $r$ を大きくして立ち上がりを補う必要�
 3. 結果と微分方程式を用い，次の2点をそれぞれ1〜2行で説明せよ：観測人口の最大値だけでは$K$を決められない理由，および$0<N_0<K$，$r>0$を固定したモデルが増加後の減少を表せない理由．
 ````
 
-````{hidden-answer} 演習3の解答例
+````{visible-answer} 演習3の解答例
 
 **設問1・2：候補の比較**
 
@@ -936,7 +1077,9 @@ r_values = [0.020, 0.025, 0.030, 0.035, 0.040, 0.045]
 
 ````{warning} 課題1：2種類のモデルの適合度比較
 
-比較するモデルは**指数成長モデルとLogisticモデルの2種類**である．指数成長モデルは1通り，Logisticモデルは$K$ごとに選んだ3通りのパラメタ設定を使うため，図に描くモデルの曲線は計4本となる．
+**指数成長モデルとLogisticモデルの2種類**を比較する．
+指数成長モデルは1通り，Logisticモデルは$K$ごとに選んだ3通りのパラメタ設定を使う．
+このとき以下の問いに答えよ．
 
 1. 指数成長モデル（第3回の対数線形法で求めた$r$と$N_0$）と，Logisticモデル（$K = 12000$，$13000$，$15000$ 万人の3通り，$r$ はそれぞれ演習3で見つけた最も良い値）を，観測値と重ねた1枚の図に描き，`reports/figures/`に保存せよ．
 2. 計4通りの設定について，全期間・1920〜1970年・1971〜2020年のMSEを計算せよ．横軸を設定，縦軸をMSEとし，期間ごとに色を分けた比較図を作成してNotebookに掲載せよ．パラメタの決定方法と初期値の扱いはREADMEに簡潔に記せ．
