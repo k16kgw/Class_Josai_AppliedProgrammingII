@@ -4,3 +4,12 @@
 .myst-fm-downloads-dropdown {
   display: none !important;
 }
+
+/* In explanatory copies, keep the whole program visible while focusing attention. */
+.code-focus .myst-code-body [data-line-number] {
+  opacity: 0.28;
+}
+
+.code-focus .myst-code-body [data-highlight="true"] {
+  opacity: 1;
+}

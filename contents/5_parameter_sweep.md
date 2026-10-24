@@ -264,7 +264,9 @@ $$
 
 ### モデル予測と目的関数の実装
 
-- パラメタを引数にとって予測を返す関数`predict_logistic`と，目的関数を返す関数`objective_logistic`を用意する．
+- 次の2つの関数を用意する．
+  - `predict_logistic`：パラメタを引数にとって予測を返す関数
+  - `objective_logistic`：目的関数を返す関数
 - 今回は解析解が分かっているので，予測には`logistic_solution`を使う．
 解析解が分からないモデルでは`solve_ivp`を使うが，手順は同じである．
 
@@ -357,7 +359,34 @@ fig.savefig(FIGURE_DIR / "error_curve_r_linear.png", dpi=150)
 plt.show()
 ```
 
-- **コードの補足**：縦軸の標準設定は線形目盛であり，MSEの差が等しければ図上の高さの差も等しい．赤い点は，評価した候補の中でMSEが最小の位置を表す．
+````{dropdown} コードの補足：最小値の位置への印の追加
+
+曲線に最小値の位置を示す印を重ねる．強調した行が，印を追加する処理に対応する．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 3
+:class: code-focus
+
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(r_grid, J_r)
+ax.plot(r_grid[i_best], J_r[i_best], marker="o", color="red", label=f"最小値：r = {r_grid[i_best]:.4f}")
+ax.set_title("指数成長モデルの目的関数（線形目盛，1920〜1970年）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("J(r) = MSE [(万人)²]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "error_curve_r_linear.png", dpi=150)
+plt.show()
+```
+
+- **座標の取り出し**：直前の計算で求めた`i_best`を両方の配列に使い，MSEが最小となる候補と，そのMSEを取り出す．
+- **1点の描画**：強調した行の`ax.plot`には配列ではなく横座標・縦座標を1つずつ渡す．`marker="o", color="red"`で，その位置に赤い丸を描く．
+- **凡例の数値**：`{r_grid[i_best]:.4f}`は最良の候補を小数点以下4桁で表示する．
+
+縦軸の標準設定は線形目盛であり，MSEの差が等しければ図上の高さの差も等しい．
+````
 
 ![線形目盛で描いた指数成長モデルの目的関数](figs/05/error_curve_r_linear.png)
 
@@ -367,10 +396,12 @@ plt.show()
 
 値の比を読み取りやすくするため，`ax.set_yscale("log")`を加えて同じ結果を描き直す．対数目盛では， $10^4$ から $10^5$ への変化と， $10^5$ から $10^6$ への変化が同じ高さの差になる．
 
-強調した行が，線形目盛のコードから追加・変更した箇所である．
+強調した行が，目盛の設定を変更する処理である．
 
 ```{code-block} python
-:emphasize-lines: 4-5,8,11
+:linenos:
+:emphasize-lines: 4,8
+:class: code-focus
 
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(r_grid, J_r)
@@ -406,62 +437,117 @@ plt.show()
 
 ````{visible-answer} 演習1の解答例
 
-**1・2．条件を変更した計算と誤差曲線**
+**1．刻み幅の変更**
 
-本文の計算を3通りの `r_grid` で繰り返す．
+本文の計算コードをコピーし，`r_grid`の定義だけを変更する．
 
-```python
-r_cases = [
-    np.linspace(0.005, 0.020, 151),
-    np.linspace(0.005, 0.020, 16),
-    np.linspace(0.015, 0.030, 151),
-]
-case_names = ["本文の条件", "設問1：粗い刻み", "設問2：探索範囲の変更"]
-J_cases = []
+```{code-block} python
+:linenos:
+:emphasize-lines: 6
+:class: code-focus
+
 fit_mask = year_obs <= 1970
-for case_name, r_values in zip(case_names, r_cases):
-    J_values = np.zeros_like(r_values)
-    for i, r_value in enumerate(r_values):
-        y_hat = exponential_solution(t_obs[fit_mask], N0, r_value)
-        J_values[i] = mean_squared_error(y_obs[fit_mask], y_hat)
-    J_cases.append(J_values)
-    i_min_case = np.argmin(J_values)
-    print(f"{case_name}：r = {r_values[i_min_case]:.4f}，MSE = {J_values[i_min_case]:.0f}")
+t_fit = t_obs[fit_mask]
+y_fit = y_obs[fit_mask]
+
+# 探索範囲と刻み幅
+r_grid = np.linspace(0.005, 0.020, 16)
+
+J_r = np.zeros_like(r_grid)
+for i, r_value in enumerate(r_grid):
+    y_hat = exponential_solution(t_fit, N0, r_value)
+    J_r[i] = mean_squared_error(y_fit, y_hat)
+
+i_best = np.argmin(J_r)
+print(f"格子点の数: {len(r_grid)}")
+print(f"最小の J = {J_r[i_best]:.0f} （万人）^2 at r = {r_grid[i_best]:.4f} /年")
 ```
 
-- **コードの補足**：`zip`で条件名と候補配列を対応させ，本文と同じ計算を繰り返す．`append`で条件ごとのMSEの配列を保存する．
+- **コードの補足**：候補数を151から16に変更し，刻み幅を0.0001から0.001にする．
 
 出力例：
 
 ```text
-本文の条件：r = 0.0127，MSE = 17624
-設問1：粗い刻み：r = 0.0130，MSE = 25279
-設問2：探索範囲の変更：r = 0.0150，MSE = 439808
+格子点の数: 16
+最小の J = 25279 （万人）^2 at r = 0.0130 /年
 ```
 
 ```python
-fig, ax = plt.subplots(figsize=(8, 5))
-for case_name, r_values, J_values in zip(case_names, r_cases, J_cases):
-    ax.plot(r_values, J_values, marker=".", label=case_name)
-    i_min_case = np.argmin(J_values)
-    ax.plot(r_values[i_min_case], J_values[i_min_case], marker="o", markersize=8)
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(r_grid, J_r)
+ax.plot(r_grid[i_best], J_r[i_best], marker="o", color="red", label=f"最小値：r = {r_grid[i_best]:.4f}")
 ax.set_yscale("log")
-ax.set_title("探索範囲・刻み幅による誤差曲線の比較")
+ax.set_title("指数成長モデルの目的関数（刻み幅の変更）")
 ax.set_xlabel("r [1/年]")
-ax.set_ylabel("MSE [(万人)²]")
+ax.set_ylabel("J(r) = MSE [(万人)²]")
 ax.grid(True, which="both")
 ax.legend()
 fig.tight_layout()
-fig.savefig(FIGURE_DIR / "exercise1_error_curves.png", dpi=150)
+fig.savefig(FIGURE_DIR / "exercise1_coarse.png", dpi=150)
 plt.show()
 ```
 
-- **コードの補足**：本文の誤差曲線を条件ごとに重ね，丸印でそれぞれの最小値を示す．
+- **コードの補足**：本文の対数目盛の描画コードをそのまま使い，タイトルと保存名を変更する．
 
-![演習1：探索範囲と刻み幅による誤差曲線の比較](figs/05/exercise1_error_curves.png)
+![演習1・設問1：刻み幅の変更](figs/05/exercise1_coarse.png)
 
-1. 刻みを粗くすると，最良の $r$ は0.0127から0.0130に変わり，MSEは17624から25279に増える．候補が少なくなり，本文で得た最良の値を選べなくなるためである．
-2. 範囲を0.015〜0.030にすると，最小値は下端の $r=0.015$ に現れる．曲線は左へ向かうほど低下しており，さらに小さい $r$ を調べる必要がある．範囲外も含めた最小化点とは結論できない．
+最良の $r$ は本文の0.0127から0.0130に変わり，MSEは17624から25279に増える．刻みを粗くすると，本文で得た最良の値が候補から外れるためである．
+
+**2．探索範囲の変更**
+
+本文の計算コードをコピーし，`r_grid`の定義だけを変更する．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 6
+:class: code-focus
+
+fit_mask = year_obs <= 1970
+t_fit = t_obs[fit_mask]
+y_fit = y_obs[fit_mask]
+
+# 探索範囲と刻み幅
+r_grid = np.linspace(0.015, 0.030, 151)
+
+J_r = np.zeros_like(r_grid)
+for i, r_value in enumerate(r_grid):
+    y_hat = exponential_solution(t_fit, N0, r_value)
+    J_r[i] = mean_squared_error(y_fit, y_hat)
+
+i_best = np.argmin(J_r)
+print(f"格子点の数: {len(r_grid)}")
+print(f"最小の J = {J_r[i_best]:.0f} （万人）^2 at r = {r_grid[i_best]:.4f} /年")
+```
+
+- **コードの補足**：候補数を151のままにし，探索範囲を0.015〜0.030に変更する．
+
+出力例：
+
+```text
+格子点の数: 151
+最小の J = 439808 （万人）^2 at r = 0.0150 /年
+```
+
+```python
+fig, ax = plt.subplots(figsize=(7, 4))
+ax.plot(r_grid, J_r)
+ax.plot(r_grid[i_best], J_r[i_best], marker="o", color="red", label=f"最小値：r = {r_grid[i_best]:.4f}")
+ax.set_yscale("log")
+ax.set_title("指数成長モデルの目的関数（探索範囲の変更）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("J(r) = MSE [(万人)²]")
+ax.grid(True, which="both")
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "exercise1_range.png", dpi=150)
+plt.show()
+```
+
+- **コードの補足**：本文の対数目盛の描画コードをそのまま使い，タイトルと保存名を変更する．
+
+![演習1・設問2：探索範囲の変更](figs/05/exercise1_range.png)
+
+最小値は範囲の下端 $r=0.015$ に現れる．曲線は左へ向かうほど低下しているため，さらに小さい $r$ を調べる必要がある．範囲外も含めた最小化点とは結論できない．
 
 **3．READMEの記入例**
 
@@ -475,9 +561,51 @@ plt.show()
 
 Logisticモデルの $\theta = (r, K)$ を2次元の格子上で探す．
 $r$ の候補と $K$ の候補をそれぞれ配列で用意し，`np.meshgrid`ですべての組み合わせを作る．
-まず粗い格子で，`solve_ivp`を使って計算時間を測る．
+まず粗い格子で，`solve_ivp`を使って各候補のMSEを求め，最良の組を選ぶ．
+
+**1．格子探索の実装**
 
 ```python
+r_coarse = np.linspace(0.01, 0.06, 21)          # 0.0025 刻み
+K_coarse = np.linspace(10000.0, 20000.0, 21)    # 500 万人刻み
+
+R_coarse, K_grid_coarse = np.meshgrid(r_coarse, K_coarse)
+print("格子の形:", R_coarse.shape, "，格子点の数:", R_coarse.size)
+
+J_coarse = np.zeros_like(R_coarse)
+
+for i in range(R_coarse.shape[0]):
+    for j in range(R_coarse.shape[1]):
+        sol = solve_ivp(logistic_rhs, (0.0, 100.0), [N0], t_eval=t_obs, args=(R_coarse[i, j], K_grid_coarse[i, j]))
+        J_coarse[i, j] = mean_squared_error(y_obs, sol.y[0])
+
+i_min, j_min = np.unravel_index(np.argmin(J_coarse), J_coarse.shape)
+print(f"最小の J = {J_coarse[i_min, j_min]:.0f} （万人）^2 at r = {R_coarse[i_min, j_min]:.4f}, K = {K_grid_coarse[i_min, j_min]:.0f}")
+```
+
+```{dropdown} コードの補足：格子上の計算
+
+- `np.meshgrid`：2つの候補配列から，同じ形の格子座標を作る．`R_coarse[i, j]`と`K_grid_coarse[i, j]`が同じ格子点の $r$ と $K$ を与える．
+- 行と列の対応：行番号`i`が $K$ ，列番号`j`が $r$ に対応し，二重の`for`文で全ての組を計算する．
+- `np.unravel_index`：最小値の1次元の位置番号を，格子の行番号と列番号に変換する．
+```
+
+出力例（数値解を用いたMSEはライブラリのバージョンなどにより末尾が異なる場合がある）：
+
+```text
+格子の形: (21, 21) ，格子点の数: 441
+最小の J = 125820 （万人）^2 at r = 0.0275, K = 15000
+```
+
+**2．計算時間の測定**
+
+格子点数を増やす場合の所要時間を見積もるため，二重の`for`文の前後で時刻を記録する．上のコードに計測と表示を追加した3行を強調する．`time`は準備節で読み込み済みである．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 9,14,17
+:class: code-focus
+
 r_coarse = np.linspace(0.01, 0.06, 21)          # 0.0025 刻み
 K_coarse = np.linspace(10000.0, 20000.0, 21)    # 500 万人刻み
 
@@ -498,12 +626,11 @@ print(f"計算時間: {elapsed_coarse:.2f} 秒（1点あたり {1000 * elapsed_c
 print(f"最小の J = {J_coarse[i_min, j_min]:.0f} （万人）^2 at r = {R_coarse[i_min, j_min]:.4f}, K = {K_grid_coarse[i_min, j_min]:.0f}")
 ```
 
-```{dropdown} コードの補足：格子上の計算
+```{dropdown} コードの補足：計算時間の測定
 
-- `np.meshgrid`：2つの候補配列から，同じ形の格子座標を作る．`R_coarse[i, j]`と`K_grid_coarse[i, j]`が同じ格子点の $r$ と $K$ を与える．
-- 行と列の対応：行番号`i`が $K$ ，列番号`j`が $r$ に対応し，二重の`for`文で全ての組を計算する．
-- `np.unravel_index`：最小値の1次元の位置番号を，格子の行番号と列番号に変換する．
-- `time.perf_counter()`：計算の前後で取得した値の差から，経過時間を秒単位で求める．
+- **`time.perf_counter()`**：経過時間の測定に使う時計の値を秒単位で取得する．計算前の値を`start`に保存する．
+- **`elapsed_coarse`**：計算後の時計の値から`start`を引き，全格子点で数値解とMSEを計算する処理の経過時間を求める．
+- **1点あたりの時間**：経過時間を格子点数`R_coarse.size`で割る．1000を掛けると秒からミリ秒へ換算できる．
 ```
 
 出力例（計算時間は実行環境や実行ごとに異なる．数値解を用いたMSEもライブラリのバージョンなどにより末尾が異なる場合がある）：
@@ -520,7 +647,11 @@ print(f"最小の J = {J_coarse[i_min, j_min]:.0f} （万人）^2 at r = {R_coar
 格子点が約1万点になるので，今回は解析解を使って高速に計算する．
 解析解がないモデルでは`solve_ivp`を使うしかなく，計算時間は格子点の数に比例して増える．
 
-```python
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2,10,17
+:class: code-focus
+
 r_fine = np.linspace(0.01, 0.06, 101)           # 0.0005 刻み
 K_fine = np.linspace(10000.0, 20000.0, 101)     # 100 万人刻み
 
@@ -576,12 +707,35 @@ fig.savefig(FIGURE_DIR / "heatmap_r_K_linear.png", dpi=150)
 plt.show()
 ```
 
-```{dropdown} コードの補足：ヒートマップの描画
+````{dropdown} コードの補足：ヒートマップの描画
 
-- `ax.pcolormesh`：格子座標と目的関数値の配列を渡し，値の大きさを色で表す．`shading="auto"`は配列の形に応じて色の配置方法を選ぶ．
-- `fig.colorbar`：色と目的関数値の対応を示す．標準の線形目盛では，値の差が等しければ色尺度上の間隔も等しい．
-- `marker="x"`と`marker="o"`：格子上の最良の組と，第4回の基準値をそれぞれ異なる印で示す．
+`ax.pcolormesh`で格子上の値を色で表し，`fig.colorbar`で色と値の対応を示す．強調した2行が，これらの処理に対応する．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 2-3
+:class: code-focus
+
+fig, ax = plt.subplots(figsize=(7, 5))
+mesh = ax.pcolormesh(R_fine, K_grid_fine, J_fine, shading="auto", cmap="viridis")
+fig.colorbar(mesh, ax=ax, label="J(r, K) = MSE [(万人)²]")
+ax.plot(r_best, K_best, marker="x", color="red", markersize=10, label=f"最小値：r = {r_best:.4f}, K = {K_best:.0f}")
+ax.plot(0.03, 15000.0, marker="o", color="white", markersize=7, label="第4回の基準値")
+ax.set_title("Logisticモデルの目的関数（線形目盛）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("K [万人]")
+ax.legend(loc="upper right")
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "heatmap_r_K_linear.png", dpi=150)
+plt.show()
 ```
+
+- **`ax.pcolormesh`**：`R_fine`を横座標，`K_grid_fine`を縦座標とし，各位置の`J_fine`の値を色で表す．
+- **`shading="auto"`と`cmap="viridis"`**：前者は座標と値の配列の形に応じて色を配置する方法を選び，後者は低い値から高い値へ紫・緑・黄と変化する配色を指定する．
+- **`mesh`と`fig.colorbar`**：`mesh`には描画したヒートマップの情報が入る．これを`fig.colorbar`に渡して，同じ色尺度のカラーバーを作る．`ax=ax`はカラーバーを添える描画領域，`label`はカラーバーの説明を指定する．
+
+標準の線形目盛では，値の差が等しければ色尺度上の間隔も等しい．赤い×印は格子上の最良の組，白い丸印は第4回の基準値を表す．
+````
 
 ![線形目盛で描いたLogisticモデルの目的関数](figs/05/heatmap_r_K_linear.png)
 
@@ -675,51 +829,136 @@ plt.show()
 
 ````{visible-answer} 演習2の解答例
 
-**1・2．探索条件と計算時間の比較**
+**1．本文の探索結果**
 
-探索範囲は全て $r\in[0.01,0.06]$ ， $K\in[10000,20000]$ とする．本文の粗い格子の結果を表示し，解析解による計算を各格子点数で繰り返す．
+探索範囲は $r\in[0.01,0.06]$ ， $K\in[10000,20000]$ である．本文の出力から，数値解による21×21の格子では $(r,K)=(0.0275,15000)$ ，MSEは125820となる．解析解による101×101の格子では $(r,K)=(0.0275,14800)$ ，MSEは115107となる．計算時間は各自の出力を記録する．
 
-```python
-i_coarse_best, j_coarse_best = np.unravel_index(np.argmin(J_coarse), J_coarse.shape)
-print(f"数値解・21×21：r = {R_coarse[i_coarse_best, j_coarse_best]:.4f}，"
-      f"K = {K_grid_coarse[i_coarse_best, j_coarse_best]:.0f}，"
-      f"MSE = {np.min(J_coarse):.0f}，時間 = {elapsed_coarse:.4f} 秒")
+**2．格子点数と計算時間の比較**
 
-grid_sizes = [21, 51, 101]
-point_counts = []
-elapsed_times = []
-for grid_size in grid_sizes:
-    r_test = np.linspace(0.01, 0.06, grid_size)
-    K_test = np.linspace(10000.0, 20000.0, grid_size)
-    R_test, K_grid_test = np.meshgrid(r_test, K_test)
-    J_test = np.zeros_like(R_test)
-    start = time.perf_counter()
-    for i in range(R_test.shape[0]):
-        for j in range(R_test.shape[1]):
-            J_test[i, j] = objective_logistic((R_test[i, j], K_grid_test[i, j]), t_obs, y_obs, N0)
-    elapsed_test = time.perf_counter() - start
-    i_test, j_test = np.unravel_index(np.argmin(J_test), J_test.shape)
-    point_counts.append(R_test.size)
-    elapsed_times.append(elapsed_test)
-    print(f"解析解・{grid_size}×{grid_size}：r = {R_test[i_test, j_test]:.4f}，"
-          f"K = {K_grid_test[i_test, j_test]:.0f}，MSE = {J_test[i_test, j_test]:.0f}，"
-          f"格子点数 = {R_test.size}，時間 = {elapsed_test:.4f} 秒")
+本文の「細かい格子」のコードをコピーし，候補数を21，51，101に変えて順に実行する．各回の末尾に，格子点数と時間を別の変数に保存する2行を追加する．以下の計算時間は実行例であり，環境や実行ごとに異なる．
+
+**21×21の格子**
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2,18-19
+:class: code-focus
+
+r_fine = np.linspace(0.01, 0.06, 21)
+K_fine = np.linspace(10000.0, 20000.0, 21)
+
+R_fine, K_grid_fine = np.meshgrid(r_fine, K_fine)
+J_fine = np.zeros_like(R_fine)
+
+start = time.perf_counter()
+for i in range(R_fine.shape[0]):
+    for j in range(R_fine.shape[1]):
+        J_fine[i, j] = objective_logistic((R_fine[i, j], K_grid_fine[i, j]), t_obs, y_obs, N0)
+elapsed_fine = time.perf_counter() - start
+
+i_min, j_min = np.unravel_index(np.argmin(J_fine), J_fine.shape)
+r_best, K_best = R_fine[i_min, j_min], K_grid_fine[i_min, j_min]
+print(f"格子点の数: {R_fine.size}，計算時間: {elapsed_fine:.4f} 秒")
+print(f"最小の J = {J_fine[i_min, j_min]:.0f} （万人）^2 at r = {r_best:.4f}, K = {K_best:.0f}")
+print(f"参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると {R_fine.size * elapsed_coarse / R_coarse.size:.2f} 秒かかる")
+points_21 = R_fine.size
+time_21 = elapsed_fine
 ```
 
-- **コードの補足**：本文の細かい格子のコードで，候補数を `grid_size` に置き換える．格子点数と計算時間をリストに保存して次の図に使う．
+- **コードの補足**：2つの候補配列の要素数だけを変更し，格子点数を`points_21`，時間を`time_21`に保存する．
 
-出力例（計算時間は実行環境や実行ごとに異なる）：
+出力例：
 
 ```text
-数値解・21×21：r = 0.0275，K = 15000，MSE = 125820，時間 = 0.1689 秒
-解析解・21×21：r = 0.0275，K = 15000，MSE = 124741，格子点数 = 441，時間 = 0.0037 秒
-解析解・51×51：r = 0.0280，K = 14600，MSE = 115847，格子点数 = 2601，時間 = 0.0362 秒
-解析解・101×101：r = 0.0275，K = 14800，MSE = 115107，格子点数 = 10201，時間 = 0.0771 秒
+格子点の数: 441，計算時間: 0.0056 秒
+最小の J = 124741 （万人）^2 at r = 0.0275, K = 15000
+参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると 0.17 秒かかる
 ```
 
-数値解と解析解では，同じ21×21の格子でもMSEが少し異なる．これは `solve_ivp` による数値解の近似誤差によるものである．
+**51×51の格子**
 
-```python
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2,18-19
+:class: code-focus
+
+r_fine = np.linspace(0.01, 0.06, 51)
+K_fine = np.linspace(10000.0, 20000.0, 51)
+
+R_fine, K_grid_fine = np.meshgrid(r_fine, K_fine)
+J_fine = np.zeros_like(R_fine)
+
+start = time.perf_counter()
+for i in range(R_fine.shape[0]):
+    for j in range(R_fine.shape[1]):
+        J_fine[i, j] = objective_logistic((R_fine[i, j], K_grid_fine[i, j]), t_obs, y_obs, N0)
+elapsed_fine = time.perf_counter() - start
+
+i_min, j_min = np.unravel_index(np.argmin(J_fine), J_fine.shape)
+r_best, K_best = R_fine[i_min, j_min], K_grid_fine[i_min, j_min]
+print(f"格子点の数: {R_fine.size}，計算時間: {elapsed_fine:.4f} 秒")
+print(f"最小の J = {J_fine[i_min, j_min]:.0f} （万人）^2 at r = {r_best:.4f}, K = {K_best:.0f}")
+print(f"参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると {R_fine.size * elapsed_coarse / R_coarse.size:.2f} 秒かかる")
+points_51 = R_fine.size
+time_51 = elapsed_fine
+```
+
+- **コードの補足**：2つの候補配列の要素数だけを変更し，格子点数を`points_51`，時間を`time_51`に保存する．
+
+出力例：
+
+```text
+格子点の数: 2601，計算時間: 0.0322 秒
+最小の J = 115847 （万人）^2 at r = 0.0280, K = 14600
+参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると 0.98 秒かかる
+```
+
+**101×101の格子**
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 18-19
+:class: code-focus
+
+r_fine = np.linspace(0.01, 0.06, 101)
+K_fine = np.linspace(10000.0, 20000.0, 101)
+
+R_fine, K_grid_fine = np.meshgrid(r_fine, K_fine)
+J_fine = np.zeros_like(R_fine)
+
+start = time.perf_counter()
+for i in range(R_fine.shape[0]):
+    for j in range(R_fine.shape[1]):
+        J_fine[i, j] = objective_logistic((R_fine[i, j], K_grid_fine[i, j]), t_obs, y_obs, N0)
+elapsed_fine = time.perf_counter() - start
+
+i_min, j_min = np.unravel_index(np.argmin(J_fine), J_fine.shape)
+r_best, K_best = R_fine[i_min, j_min], K_grid_fine[i_min, j_min]
+print(f"格子点の数: {R_fine.size}，計算時間: {elapsed_fine:.4f} 秒")
+print(f"最小の J = {J_fine[i_min, j_min]:.0f} （万人）^2 at r = {r_best:.4f}, K = {K_best:.0f}")
+print(f"参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると {R_fine.size * elapsed_coarse / R_coarse.size:.2f} 秒かかる")
+points_101 = R_fine.size
+time_101 = elapsed_fine
+```
+
+- **コードの補足**：本文と同じ候補数で計算し，格子点数を`points_101`，時間を`time_101`に保存する．
+
+出力例：
+
+```text
+格子点の数: 10201，計算時間: 0.1192 秒
+最小の J = 115107 （万人）^2 at r = 0.0275, K = 14800
+参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると 3.85 秒かかる
+```
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2,5
+:class: code-focus
+
+point_counts = [points_21, points_51, points_101]
+elapsed_times = [time_21, time_51, time_101]
+
 fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(point_counts, elapsed_times, marker="o")
 ax.set_title("解析解を用いた格子探索の計算時間")
@@ -731,35 +970,36 @@ fig.savefig(FIGURE_DIR / "exercise2_computation_time.png", dpi=150)
 plt.show()
 ```
 
-- **コードの補足**：本文と同じ `ax.plot` に，記録した格子点数と計算時間のリストを渡す．
+- **コードの補足**：保存した値を同じ条件順に並べ，本文の`ax.plot`に渡す．タイトル・軸名・保存名を計算時間の比較に合わせる．
 
 ![演習2：格子点数と計算時間の関係](figs/05/exercise2_computation_time.png)
 
-格子点数を増やすと計算時間も増える．各点で同じ計算を繰り返すため，計算量は格子点数に比例するが，実測時間には他の処理や実行時の負荷による変動がある．
+格子点数を増やすと計算時間も概ね増える．各点で同じ計算を繰り返すため計算量は格子点数に比例するが，実測時間には実行時の負荷などによる変動がある．
 
 **3．数値解を用いる場合の時間の見積もり**
 
-```python
-seconds_per_point = elapsed_coarse / R_coarse.size
-print(f"数値解・101×101の見積もり：{seconds_per_point * 101**2:.2f} 秒")
-print(f"数値解・101×101×101の見積もり：{seconds_per_point * 101**3:.2f} 秒")
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2
+:class: code-focus
+
+print(f"2次元の見積もり：{101**2 * elapsed_coarse / R_coarse.size:.2f} 秒")
+print(f"3次元の見積もり：{101**3 * elapsed_coarse / R_coarse.size:.2f} 秒")
 ```
 
-- **コードの補足**：本文と同じく1点あたりの時間に格子点数を掛ける．3つのパラメタを各101点で調べる場合は `101**3` 点となる．
+- **コードの補足**：本文の所要時間の式で，格子点数を`101**2`と`101**3`に置き換える．1点あたりの時間は同じ値を使う．
 
-出力例（計算時間は実行環境や実行ごとに異なる）：
+出力例：
 
 ```text
-数値解・101×101の見積もり：3.91 秒
-数値解・101×101×101の見積もり：394.66 秒
+2次元の見積もり：3.85 秒
+3次元の見積もり：389.12 秒
 ```
-
-この実行例では，3次元の探索に約395秒，すなわち約6.6分かかる見積もりになる．
 
 **4．局所的に細かく探索する方法**
 
 - 利点：全体を細かくするより，少ない格子点で最良の組の周囲を詳しく調べられる．
-- 注意点：最初に選んだ範囲の外に，さらに小さいMSEを与える候補がないか，粗い探索結果も確認する．
+- 注意点：範囲外にさらに小さいMSEを与える候補がないか，粗い探索結果も確認する．
 ````
 
 ## 探索結果の解釈：谷の形と識別可能性
@@ -912,7 +1152,11 @@ $$
 
 本文の期間別の計算と同じ手順で， $K$ の上端を50000に変更する．全期間の結果を残すため，拡張後の配列には `_wide` を付ける．
 
-```python
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-3,5
+:class: code-focus
+
 print(f"低誤差領域の上限：{2 * np.min(J_fine):.0f} （万人）^2")
 print(f"図から求めた r の相対的な幅：{(0.036 - 0.021) / r_best:.2f}")
 print(f"図から求めた K の相対的な幅：{(17800 - 13200) / K_best:.2f}")
@@ -1041,6 +1285,209 @@ $m = 101$ なら， $p = 1$ で101点， $p = 2$ で約1万点， $p = 3$ で約
 4. 最良の組の $K \approx 14800$ 万人は，日本の人口の実際の最大値（約12800万人）より2000万人大きい．この推定値が実際の資源制約による環境収容力を表すと解釈することの妥当性を，第4回の演習3を踏まえて100字程度で記せ．
 ````
 
+````{visible-answer} 課題1の解答例
+
+**1．全期間のヒートマップ**
+
+本文の「細かい格子」の計算を再実行し，全期間・元の探索範囲での `J_fine`，`r_best`，`K_best` を用意する．
+
+```python
+r_fine = np.linspace(0.01, 0.06, 101)           # 0.0005 刻み
+K_fine = np.linspace(10000.0, 20000.0, 101)     # 100 万人刻み
+
+R_fine, K_grid_fine = np.meshgrid(r_fine, K_fine)
+J_fine = np.zeros_like(R_fine)
+
+start = time.perf_counter()
+for i in range(R_fine.shape[0]):
+    for j in range(R_fine.shape[1]):
+        J_fine[i, j] = objective_logistic((R_fine[i, j], K_grid_fine[i, j]), t_obs, y_obs, N0)
+elapsed_fine = time.perf_counter() - start
+
+i_min, j_min = np.unravel_index(np.argmin(J_fine), J_fine.shape)
+r_best, K_best = R_fine[i_min, j_min], K_grid_fine[i_min, j_min]
+print(f"格子点の数: {R_fine.size}，計算時間: {elapsed_fine:.2f} 秒")
+print(f"最小の J = {J_fine[i_min, j_min]:.0f} （万人）^2 at r = {r_best:.4f}, K = {K_best:.0f}")
+print(f"参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると {R_fine.size * elapsed_coarse / R_coarse.size:.0f} 秒かかる")
+```
+
+- **コードの補足**：本文と同じ探索範囲と刻み幅を使う．設問3の局所探索と比較するため，この結果を残す．
+
+出力例（計算時間は実行環境や実行ごとに異なる）：
+
+```text
+格子点の数: 10201，計算時間: 0.08 秒
+最小の J = 115107 （万人）^2 at r = 0.0275, K = 14800
+参考：粗い格子で solve_ivp を使った場合の1点あたりの時間で見積もると 4 秒かかる
+```
+
+```python
+fig, ax = plt.subplots(figsize=(7, 5))
+mesh = ax.pcolormesh(R_fine, K_grid_fine, J_fine, norm=LogNorm(), shading="auto", cmap="viridis")
+fig.colorbar(mesh, ax=ax, label="J(r, K) = MSE [(万人)²]")
+ax.plot(r_best, K_best, marker="x", color="red", markersize=10, label=f"最小値：r = {r_best:.4f}, K = {K_best:.0f}")
+ax.plot(0.03, 15000.0, marker="o", color="white", markersize=7, label="第4回の基準値")
+ax.set_title("Logisticモデルの目的関数（対数目盛）")
+ax.set_xlabel("r [1/年]")
+ax.set_ylabel("K [万人]")
+ax.legend(loc="upper right")
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "heatmap_r_K.png", dpi=150)
+plt.show()
+```
+
+- **コードの補足**：本文のヒートマップのコードを再利用する．赤い×印が格子上の最良の組，白い丸印が第4回の基準値である．
+
+![課題1・設問1：全期間の目的関数と最良の組](figs/05/heatmap_r_K.png)
+
+最良の組は $(r,K)=(0.0275,14800)$ となる．第4回の基準値 $(0.03,15000)$ より，MSEの小さい領域に位置している．
+
+**2．観測値・モデル値と残差の比較**
+
+```python
+y_best = predict_logistic((r_best, K_best), t_obs, N0)
+print(f"1920年のモデル値: {y_best[0]:.1f} 万人")
+print(f"2020年のモデル値: {y_best[-1]:.1f} 万人")
+```
+
+- **コードの補足**：本文と同じ `predict_logistic` で，最良の組に対する観測時刻ごとのモデル値を計算する．
+
+出力例：
+
+```text
+1920年のモデル値: 5596.3 万人
+2020年のモデル値: 13392.0 万人
+```
+
+```python
+fig, axes = plt.subplots(2, 1, figsize=(8, 7), sharex=True)
+ax = axes[0]
+ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+ax.plot(year_obs, y_best, label=f"格子探索（r = {r_best:.4f}, K = {K_best:.0f}）")
+ax.plot(year_obs, predict_logistic((0.03, 15000.0), t_obs, N0), linestyle="--", label="第4回の基準値（r = 0.03, K = 15000）")
+ax.set_title("格子探索で推定したLogisticモデル")
+ax.set_ylabel("人口 [万人]")
+ax.grid(True)
+ax.legend()
+
+ax = axes[1]
+ax.plot(year_obs, y_obs - y_best, marker="o", markersize=2)
+ax.axhline(0, color="black", linewidth=0.8)
+ax.set_title("残差（観測値−モデル値）")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
+ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "logistic_grid_best.png", dpi=150)
+plt.show()
+```
+
+- **コードの補足**：本文の比較図を再利用する．上段に観測値とモデル値，下段に観測値からモデル値を引いた残差を描く．
+
+![課題1・設問2：最良の組によるモデル値と残差](figs/05/logistic_grid_best.png)
+
+1970年代から2000年代前半には残差が正，2010年以降には負となる傾向が残る．最良の組でも，人口減少への転換は再現できていない．
+
+**3．局所探索との比較**
+
+本文の細かい格子の計算をコピーし，範囲を $r\in[0.025,0.030]$ ， $K\in[14000,16000]$ に狭める．各101点とすることで，刻み幅はそれぞれ0.00005と20万人になる．比較用に元の結果を残すため，局所探索の変数には `local` を付ける．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2,18
+:class: code-focus
+
+r_local = np.linspace(0.025, 0.030, 101)
+K_local = np.linspace(14000.0, 16000.0, 101)
+
+R_local, K_grid_local = np.meshgrid(r_local, K_local)
+J_local = np.zeros_like(R_local)
+
+start = time.perf_counter()
+for i in range(R_local.shape[0]):
+    for j in range(R_local.shape[1]):
+        J_local[i, j] = objective_logistic((R_local[i, j], K_grid_local[i, j]), t_obs, y_obs, N0)
+elapsed_local = time.perf_counter() - start
+
+i_min, j_min = np.unravel_index(np.argmin(J_local), J_local.shape)
+r_local_best, K_local_best = R_local[i_min, j_min], K_grid_local[i_min, j_min]
+print(f"格子点の数: {R_local.size}，計算時間: {elapsed_local:.2f} 秒")
+print(f"局所探索：r = {r_local_best:.5f}, K = {K_local_best:.0f}, MSE = {J_local[i_min, j_min]:.2f}")
+print(f"本文の細かい格子：r = {r_best:.5f}, K = {K_best:.0f}, MSE = {np.min(J_fine):.2f}")
+print(f"MSEの減少量：{np.min(J_fine) - J_local[i_min, j_min]:.2f}")
+```
+
+- **コードの補足**：候補の範囲を狭める部分と，MSEの減少量を計算する部分を強調している．二重の `for` 文で各候補のMSEを求める手順は本文と同じである．
+
+出力例（計算時間は実行環境や実行ごとに異なる）：
+
+```text
+格子点の数: 10201，計算時間: 0.08 秒
+局所探索：r = 0.02765, K = 14740, MSE = 115002.87
+本文の細かい格子：r = 0.02750, K = 14800, MSE = 115107.14
+MSEの減少量：104.27
+```
+
+```python
+y_local = predict_logistic((r_local_best, K_local_best), t_obs, N0)
+print(f"局所探索による2020年のモデル値: {y_local[-1]:.1f} 万人")
+```
+
+- **コードの補足**：本文と同じ方法で，局所探索による最良の組からモデル値を計算する．
+
+出力例：
+
+```text
+局所探索による2020年のモデル値: 13364.8 万人
+```
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 13
+:class: code-focus
+
+fig, axes = plt.subplots(2, 1, figsize=(8, 7), sharex=True)
+ax = axes[0]
+ax.plot(year_obs, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+ax.plot(year_obs, y_best, label="本文の細かい格子")
+ax.plot(year_obs, y_local, linestyle="--", label="局所探索")
+ax.set_title("探索範囲・刻み幅によるモデル値の比較")
+ax.set_ylabel("人口 [万人]")
+ax.grid(True)
+ax.legend()
+
+ax = axes[1]
+ax.plot(year_obs, y_obs - y_best, label="本文の細かい格子")
+ax.plot(year_obs, y_obs - y_local, linestyle="--", label="局所探索")
+ax.axhline(0, color="black", linewidth=0.8)
+ax.set_title("残差（観測値−モデル値）")
+ax.set_xlabel("年")
+ax.set_ylabel("残差 [万人]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "assignment1_local_comparison.png", dpi=150)
+plt.show()
+```
+
+- **コードの補足**：本文の上下2段の比較図を再利用し，上段の比較対象を局所探索のモデル値に置き換える．下段には局所探索の残差を追加し，元の残差と重ねる．
+
+![課題1・設問3：本文の細かい格子と局所探索によるモデル値・残差の比較](figs/05/assignment1_local_comparison.png)
+
+MSEは約104.27小さくなるが，減少率は約0.09%であり，2つのモデル曲線と残差はほぼ重なる．格子を細かくしても，年代ごとの残差の偏りはほとんど変わらない．
+
+**READMEの探索記録の例**
+
+- 探索範囲： $r\in[0.025,0.030]$ ， $K\in[14000,16000]$ ．
+- 刻み幅： $r$ は0.00005， $K$ は20万人．
+- 最良の組： $(r,K)=(0.02765,14740)$ ．
+- MSE：115002.87（万人） $^2$ ．本文の細かい格子の115107.14（万人） $^2$ より約104.27小さい．
+
+**4．環境収容力の解釈の例**
+
+推定した $K$ は人口推移への当てはまりから得た値であり，資源制約の測定値ではない．環境収容力と解釈するには，食料供給・輸入や居住可能面積などの資料と照合し，人口を制限する仕組みを検証する必要がある．
+````
+
 ````{warning} 課題2：識別可能性についての考察
 
 1920〜1970年の観測値だけで探したヒートマップを使って，次の問いに200字程度で答えよ．
@@ -1050,6 +1497,11 @@ $m = 101$ なら， $p = 1$ で101点， $p = 2$ で約1万点， $p = 3$ で約
 パラメタが識別できない状況で予測を示すとき，何を一緒に示すべきか．
 単一の予測値のみを示すことの問題点と，代わりにできることを述べよ．
 ````
+
+```{visible-answer} 課題2の解答例
+
+1970年までのデータには飽和に近い観測が少なく，異なる $r,K$ の組が近い適合度を与えるため，単一の予測値は不確かさを伝えにくい．推定期間・探索範囲・モデルの仮定を明記し，低誤差領域の複数の組による予測曲線を示す．示した予測の幅は統計的な信頼区間とは区別する．第3回の2020年予測は，観測値との比較により事後的に検証できる．未観測の将来への予測では，同様の検証がまだできないため，仮定の妥当性も併せて検討する．
+```
 
 ### 提出先・期限
 
