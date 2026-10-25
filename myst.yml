@@ -22,7 +22,7 @@ project:
     - file: contents/2_ode_simulation.md
     - file: contents/3_population_exponential.md
     - file: contents/4_logistic.md
-    - file: contents/5_parameter_sweep.md
+    # - file: contents/5_parameter_sweep.md
     # - file: contents/6_reservoir_balance.md
     # - file: contents/7_parameter_estimation.md
     # - file: contents/8_tank_model.md
