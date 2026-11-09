@@ -330,7 +330,7 @@ print(population_notes.loc[selected, ["year", "total_population_thousand", "note
 - 数値だけでなく，国勢調査値，推計値，補正値などの属性を残す
 - 統計の対象範囲が途中で変わっていないか確認する
 
-<!-- ## 浦山ダムの日別データ
+## 浦山ダムの日別データ
 
 ### 取得方法
 
@@ -359,6 +359,7 @@ print(population_notes.loc[selected, ["year", "total_population_thousand", "note
 - 同じ名称に見える量でも，瞬時値，日平均値，日合計値を区別する
 - 物理量の変換に追加の仮定が必要なら，単なる前処理として隠さず，モデル上の仮定として明示する
 
+<!-- 
 ## 秩父の日降水量データ
 
 ### 取得方法
