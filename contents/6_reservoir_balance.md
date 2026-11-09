@@ -186,8 +186,10 @@ print("欠損値の数:")
 print(dam.isna().sum())
 
 # 日付の間隔がすべて1日であることを確認する．
-intervals = dam["date"].diff().dt.days.dropna()
-print("日付の間隔（日）の種類:", sorted(intervals.unique().tolist()))
+intervals = dam["date"].diff().dt.days
+intervals = intervals.dropna()
+interval_types = intervals.unique().tolist()
+print("日付の間隔（日）の種類:", sorted(interval_types))
 ```
 
 ```{dropdown} コードの補足
@@ -245,8 +247,12 @@ dtype: int64
 year = 2019
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
 print(f"対象年: {year}年，観測日数: {len(dam_year)}日")
-print("流入量の最大値:", dam_year["inflow_m3s"].max(), "m^3/s  日付:", dam_year.loc[dam_year["inflow_m3s"].idxmax(), "date"].date())
-print("放流量の最大値:", dam_year["outflow_m3s"].max(), "m^3/s  日付:", dam_year.loc[dam_year["outflow_m3s"].idxmax(), "date"].date())
+inflow_max_index = dam_year["inflow_m3s"].idxmax()
+outflow_max_index = dam_year["outflow_m3s"].idxmax()
+inflow_max_date = dam_year.loc[inflow_max_index, "date"].date()
+outflow_max_date = dam_year.loc[outflow_max_index, "date"].date()
+print("流入量の最大値:", dam_year["inflow_m3s"].max(), "m^3/s  日付:", inflow_max_date)
+print("放流量の最大値:", dam_year["outflow_m3s"].max(), "m^3/s  日付:", outflow_max_date)
 ```
 
 - **コードの補足**：`.dt.year == year`：指定した年の行を選ぶ．`reset_index(drop=True)`で行番号を0から付け直す．
@@ -543,13 +549,14 @@ t_example = np.array([0.0, 1.0])
 q_example = np.array([80.0, 120.0])
 t_mid = 0.5
 
-q_formula = q_example[0] + (q_example[1] - q_example[0]) / (t_example[1] - t_example[0]) * (t_mid - t_example[0])
+slope = (q_example[1] - q_example[0]) / (t_example[1] - t_example[0])
+q_formula = q_example[0] + slope * (t_mid - t_example[0])
 q_interp = np.interp(t_mid, t_example, q_example)
 print(f"式による補間値: {q_formula:.1f} 千m^3/日")
 print(f"np.interpによる補間値: {q_interp:.1f} 千m^3/日")
 ```
 
-- **コードの補足**：`np.interp(求めたい時刻, 既知の時刻の配列, 対応する値の配列)`で線形補間する．既知の時刻は小さい順に並べ，重複させない．
+- **コードの補足**：`slope`は2点を結ぶ直線の傾きである．`np.interp(求めたい時刻, 既知の時刻の配列, 対応する値の配列)`では同じ補間を行う．既知の時刻は小さい順に並べ，重複させない．
 
 出力例：
 
@@ -599,7 +606,10 @@ def reservoir_rhs(t, V, t_data, qin_data, qout_data):
 
 
 # 2日分の仮の入力で，中間時刻の補間を確認する．
-rate_example = reservoir_rhs(0.5, 100.0, [0.0, 1.0], [80.0, 120.0], [60.0, 80.0])
+t_example = np.array([0.0, 1.0])
+qin_example = np.array([80.0, 120.0])
+qout_example = np.array([60.0, 80.0])
+rate_example = reservoir_rhs(0.5, 100.0, t_example, qin_example, qout_example)
 print(f"0.5日後の貯水量の変化率: {rate_example:.1f} 千m^3/日")
 ```
 
@@ -623,7 +633,8 @@ print(f"0.5日後の貯水量の変化率: {rate_example:.1f} 千m^3/日")
 入力が1日ごとに折れ曲がる関数なので，`max_step=1.0`を指定して計算の刻み幅が1日を超えないようにする．
 
 ```python
-month = dam[(dam["date"] >= "2019-10-01") & (dam["date"] <= "2019-10-31")].reset_index(drop=True)
+month_mask = (dam["date"] >= "2019-10-01") & (dam["date"] <= "2019-10-31")
+month = dam[month_mask].reset_index(drop=True)
 
 # 観測値をモデルの単位に揃える
 t_obs = np.arange(len(month), dtype=float)                       # 10月1日を0とした日数 [日]
@@ -635,13 +646,22 @@ V_obs = level_to_volume(month["water_level_m"].values)           # [千m^3]
 V0 = V_obs[0]
 t_span = (t_obs[0], t_obs[-1])
 
-sol = solve_ivp(reservoir_rhs, t_span, [V0], t_eval=t_obs, args=(t_obs, qin_obs, qout_obs), max_step=1.0)
+sol = solve_ivp(
+    reservoir_rhs,
+    t_span,
+    [V0],
+    t_eval=t_obs,
+    args=(t_obs, qin_obs, qout_obs),
+    max_step=1.0,
+)
 V_model = sol.y[0]
 
 print("成功したか:", sol.success)
 print(f"{'日付':>12} {'流入':>8} {'放流':>8} {'モデルV':>9} {'換算V':>9} {'差':>8}")
 for i in range(8, 18):
-    print(f"{str(month['date'][i].date()):>12} {qin_obs[i]:8.0f} {qout_obs[i]:8.0f} {V_model[i]:9.0f} {V_obs[i]:9.0f} {V_model[i] - V_obs[i]:8.0f}")
+    date = str(month["date"][i].date())
+    difference = V_model[i] - V_obs[i]
+    print(f"{date:>12} {qin_obs[i]:8.0f} {qout_obs[i]:8.0f} {V_model[i]:9.0f} {V_obs[i]:9.0f} {difference:8.0f}")
 ```
 
 ```{dropdown} コードの補足
@@ -711,18 +731,29 @@ def simulate_reservoir(dam_window):
     qin_data = m3s_to_1000m3_per_day(dam_window["inflow_m3s"].values)
     qout_data = m3s_to_1000m3_per_day(dam_window["outflow_m3s"].values)
     V_observed = level_to_volume(dam_window["water_level_m"].values)
-    solution = solve_ivp(reservoir_rhs, (t_data[0], t_data[-1]), [V_observed[0]], t_eval=t_data, args=(t_data, qin_data, qout_data), max_step=1.0)
+    V0 = V_observed[0]
+    t_span = (t_data[0], t_data[-1])
+    solution = solve_ivp(
+        reservoir_rhs,
+        t_span,
+        [V0],
+        t_eval=t_data,
+        args=(t_data, qin_data, qout_data),
+        max_step=1.0,
+    )
     return t_data, solution.y[0], V_observed
 
 
 t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)
 error_year = V_model_year - V_obs_year
+rmse_year = np.sqrt(np.mean(error_year ** 2))
+final_error_percent = 100 * error_year[-1] / V_EFFECTIVE
 
 print(f"初日の貯水量:            {V_obs_year[0]:9.0f} 千m^3")
 print(f"最終日の換算貯水量:      {V_obs_year[-1]:9.0f} 千m^3")
 print(f"最終日のモデル貯水量:    {V_model_year[-1]:9.0f} 千m^3")
-print(f"最終日の差:              {error_year[-1]:9.0f} 千m^3（有効貯水容量の {100 * error_year[-1] / V_EFFECTIVE:.1f} %）")
-print(f"差の二乗平均平方根 RMSE: {np.sqrt(np.mean(error_year ** 2)):9.0f} 千m^3")
+print(f"最終日の差:              {error_year[-1]:9.0f} 千m^3（有効貯水容量の {final_error_percent:.1f} %）")
+print(f"差の二乗平均平方根 RMSE: {rmse_year:9.0f} 千m^3")
 ```
 
 - **コードの補足**：`simulate_reservoir`：対象期間のデータから時刻・流量・初期値を用意し，時刻とモデル値と比較用の貯水量を返す．
@@ -775,21 +806,25 @@ plt.show()
 qin_year = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
 qout_year = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
 dt = np.diff(t_year)
-total_in = np.sum((qin_year[:-1] + qin_year[1:]) / 2 * dt)
-total_out = np.sum((qout_year[:-1] + qout_year[1:]) / 2 * dt)
+qin_mean = (qin_year[:-1] + qin_year[1:]) / 2
+qout_mean = (qout_year[:-1] + qout_year[1:]) / 2
+total_in = np.sum(qin_mean * dt)
+total_out = np.sum(qout_mean * dt)
 observed_change = V_obs_year[-1] - V_obs_year[0]
+net_inflow = total_in - total_out
+balance_difference = net_inflow - observed_change
 
 print(f"計算期間の流入水量:     {total_in:9.0f} 千m^3")
 print(f"計算期間の放流水量:     {total_out:9.0f} 千m^3")
-print(f"流入 - 放流:            {total_in - total_out:9.0f} 千m^3")
+print(f"流入 - 放流:            {net_inflow:9.0f} 千m^3")
 print(f"換算した貯水量の変化:   {observed_change:9.0f} 千m^3")
-print(f"収支と換算値の変化の差: {(total_in - total_out) - observed_change:9.0f} 千m^3")
+print(f"収支と換算値の変化の差: {balance_difference:9.0f} 千m^3")
 ```
 
 ```{dropdown} コードの補足
 
 - `np.diff(t_year)`：隣り合う代表時刻の差を求める．今回は全て1日である．
-- `qin_year[:-1]`と`qin_year[1:]`：各区間の始めと終わりの流量を対応させる．平均に`dt`を掛けると区間の水量になる．
+- `qin_year[:-1]`と`qin_year[1:]`：各区間の始めと終わりの流量を対応させる．`qin_mean`はその平均であり，`dt`を掛けると区間の水量になる．
 - `np.sum(...)`：各区間の水量を合計する．`solve_ivp`による貯水量の変化とは，数値積分の誤差の範囲で一致する．
 ```
 
@@ -830,8 +865,12 @@ print(f"収支と換算値の変化の差: {(total_in - total_out) - observed_ch
 year = 2020
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
 print(f"対象年: {year}年，観測日数: {len(dam_year)}日")
-print("流入量の最大値:", dam_year["inflow_m3s"].max(), "m^3/s  日付:", dam_year.loc[dam_year["inflow_m3s"].idxmax(), "date"].date())
-print("放流量の最大値:", dam_year["outflow_m3s"].max(), "m^3/s  日付:", dam_year.loc[dam_year["outflow_m3s"].idxmax(), "date"].date())
+inflow_max_index = dam_year["inflow_m3s"].idxmax()
+outflow_max_index = dam_year["outflow_m3s"].idxmax()
+inflow_max_date = dam_year.loc[inflow_max_index, "date"].date()
+outflow_max_date = dam_year.loc[outflow_max_index, "date"].date()
+print("流入量の最大値:", dam_year["inflow_m3s"].max(), "m^3/s  日付:", inflow_max_date)
+print("放流量の最大値:", dam_year["outflow_m3s"].max(), "m^3/s  日付:", outflow_max_date)
 ```
 
 - **コードの補足**：`year`だけを変更する．年の抽出条件は本文と同じである．
@@ -872,12 +911,14 @@ plt.show()
 ```python
 t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)
 error_year = V_model_year - V_obs_year
+rmse_year = np.sqrt(np.mean(error_year ** 2))
+final_error_percent = 100 * error_year[-1] / V_EFFECTIVE
 
 print(f"初日の貯水量:            {V_obs_year[0]:9.0f} 千m^3")
 print(f"最終日の換算貯水量:      {V_obs_year[-1]:9.0f} 千m^3")
 print(f"最終日のモデル貯水量:    {V_model_year[-1]:9.0f} 千m^3")
-print(f"最終日の差:              {error_year[-1]:9.0f} 千m^3（有効貯水容量の {100 * error_year[-1] / V_EFFECTIVE:.1f} %）")
-print(f"差の二乗平均平方根 RMSE: {np.sqrt(np.mean(error_year ** 2)):9.0f} 千m^3")
+print(f"最終日の差:              {error_year[-1]:9.0f} 千m^3（有効貯水容量の {final_error_percent:.1f} %）")
+print(f"差の二乗平均平方根 RMSE: {rmse_year:9.0f} 千m^3")
 ```
 
 - **コードの補足**：`dam_year`が2020年のデータなので，関数と誤差計算は本文のままでよい．
@@ -923,15 +964,19 @@ plt.show()
 qin_year = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
 qout_year = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
 dt = np.diff(t_year)
-total_in = np.sum((qin_year[:-1] + qin_year[1:]) / 2 * dt)
-total_out = np.sum((qout_year[:-1] + qout_year[1:]) / 2 * dt)
+qin_mean = (qin_year[:-1] + qin_year[1:]) / 2
+qout_mean = (qout_year[:-1] + qout_year[1:]) / 2
+total_in = np.sum(qin_mean * dt)
+total_out = np.sum(qout_mean * dt)
 observed_change = V_obs_year[-1] - V_obs_year[0]
+net_inflow = total_in - total_out
+balance_difference = net_inflow - observed_change
 
 print(f"計算期間の流入水量:     {total_in:9.0f} 千m^3")
 print(f"計算期間の放流水量:     {total_out:9.0f} 千m^3")
-print(f"流入 - 放流:            {total_in - total_out:9.0f} 千m^3")
+print(f"流入 - 放流:            {net_inflow:9.0f} 千m^3")
 print(f"換算した貯水量の変化:   {observed_change:9.0f} 千m^3")
-print(f"収支と換算値の変化の差: {(total_in - total_out) - observed_change:9.0f} 千m^3")
+print(f"収支と換算値の変化の差: {balance_difference:9.0f} 千m^3")
 ```
 
 - **コードの補足**：2020年は366個の代表時刻があり，最初から最後までの経過時間は365日である．
@@ -966,23 +1011,26 @@ dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
 t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)
 error_year = V_model_year - V_obs_year
 
-segments = []
+V_monthly = np.zeros(len(dam_year))
 for month_number in range(1, 13):
-    segment = dam_year[dam_year["date"].dt.month == month_number].reset_index(drop=True)
+    month_mask = dam_year["date"].dt.month == month_number
+    segment = dam_year[month_mask].reset_index(drop=True)
     t_seg, V_seg_model, V_seg_obs = simulate_reservoir(segment)
-    segments.append(pd.DataFrame({"date": segment["date"], "V_model": V_seg_model, "V_obs": V_seg_obs}))
-monthly_reset = pd.concat(segments, ignore_index=True)
-monthly_error = monthly_reset["V_model"] - monthly_reset["V_obs"]
+    V_monthly[month_mask] = V_seg_model
 
-print(f"1年通しで計算した場合の RMSE:     {np.sqrt(np.mean(error_year ** 2)):8.0f} 千m^3")
-print(f"毎月初期条件を置き直した場合の RMSE: {np.sqrt(np.mean(monthly_error ** 2)):8.0f} 千m^3")
+monthly_error = V_monthly - V_obs_year
+rmse_year = np.sqrt(np.mean(error_year ** 2))
+rmse_monthly = np.sqrt(np.mean(monthly_error ** 2))
+
+print(f"1年通しで計算した場合の RMSE:     {rmse_year:8.0f} 千m^3")
+print(f"毎月初期条件を置き直した場合の RMSE: {rmse_monthly:8.0f} 千m^3")
 ```
 
 ```{dropdown} コードの補足
 
-- `segments.append(...)`：月ごとの計算結果をリストに追加する．
-- `pd.concat(..., ignore_index=True)`：各月の結果を縦に連結し，行番号を付け直す．
-- 初期条件：各月の最初の観測水位から換算した貯水量で計算を開始し，その月の結果を比較する．
+- `np.zeros(len(dam_year))`：1年の日数と同じ長さの配列を0で用意する．
+- `month_mask`：対象月の日を選ぶ条件である．`V_monthly[month_mask] = V_seg_model`で，その月に対応する位置へ計算結果を入れる．
+- 初期条件：`simulate_reservoir`は，選んだ月の初日の観測水位から初期貯水量を設定する．
 ```
 
 出力例：
@@ -997,7 +1045,7 @@ print(f"毎月初期条件を置き直した場合の RMSE: {np.sqrt(np.mean(mon
 ```python
 fig, ax = plt.subplots(figsize=(8, 4))
 ax.plot(dam_year["date"], error_year, color="tab:red", label="1年通しの計算")
-ax.plot(monthly_reset["date"], monthly_error, color="tab:purple", label="毎月の初期値再設定")
+ax.plot(dam_year["date"], monthly_error, color="tab:purple", label="毎月の初期値再設定")
 ax.axhline(0, color="black", linewidth=0.8)
 ax.set_title("月ごとの初期値の再設定と誤差の累積")
 ax.set_xlabel("日付")
@@ -1111,7 +1159,8 @@ RMSEの減少量: 2022 千m^3
 :emphasize-lines: 1
 :class: code-focus
 
-month = dam[(dam["date"] >= "2019-11-01") & (dam["date"] <= "2019-11-30")].reset_index(drop=True)
+month_mask = (dam["date"] >= "2019-11-01") & (dam["date"] <= "2019-11-30")
+month = dam[month_mask].reset_index(drop=True)
 
 # 観測値をモデルの単位に揃える
 t_obs = np.arange(len(month), dtype=float)                       # 11月1日を0とした日数 [日]
@@ -1123,13 +1172,22 @@ V_obs = level_to_volume(month["water_level_m"].values)           # [千m^3]
 V0 = V_obs[0]
 t_span = (t_obs[0], t_obs[-1])
 
-sol = solve_ivp(reservoir_rhs, t_span, [V0], t_eval=t_obs, args=(t_obs, qin_obs, qout_obs), max_step=1.0)
+sol = solve_ivp(
+    reservoir_rhs,
+    t_span,
+    [V0],
+    t_eval=t_obs,
+    args=(t_obs, qin_obs, qout_obs),
+    max_step=1.0,
+)
 V_model = sol.y[0]
 
 print("成功したか:", sol.success)
 print(f"{'日付':>12} {'流入':>8} {'放流':>8} {'モデルV':>9} {'換算V':>9} {'差':>8}")
 for i in range(8, 18):
-    print(f"{str(month['date'][i].date()):>12} {qin_obs[i]:8.0f} {qout_obs[i]:8.0f} {V_model[i]:9.0f} {V_obs[i]:9.0f} {V_model[i] - V_obs[i]:8.0f}")
+    date = str(month["date"][i].date())
+    difference = V_model[i] - V_obs[i]
+    print(f"{date:>12} {qin_obs[i]:8.0f} {qout_obs[i]:8.0f} {V_model[i]:9.0f} {V_obs[i]:9.0f} {difference:8.0f}")
 ```
 
 - **コードの補足**：期間だけを変更する．月初の貯水量と流量の配列は，選んだ月から自動的に作られる．
@@ -1183,22 +1241,27 @@ plt.show()
 
 ```{code-block} python
 :linenos:
-:emphasize-lines: 13
+:emphasize-lines: 11,18
 :class: code-focus
 
 qin_year = m3s_to_1000m3_per_day(month["inflow_m3s"].values)
 qout_year = m3s_to_1000m3_per_day(month["outflow_m3s"].values)
 dt = np.diff(t_obs)
-total_in = np.sum((qin_year[:-1] + qin_year[1:]) / 2 * dt)
-total_out = np.sum((qout_year[:-1] + qout_year[1:]) / 2 * dt)
+qin_mean = (qin_year[:-1] + qin_year[1:]) / 2
+qout_mean = (qout_year[:-1] + qout_year[1:]) / 2
+total_in = np.sum(qin_mean * dt)
+total_out = np.sum(qout_mean * dt)
 observed_change = V_obs[-1] - V_obs[0]
+net_inflow = total_in - total_out
+balance_difference = net_inflow - observed_change
+difference_percent = 100 * abs(balance_difference) / V_EFFECTIVE
 
 print(f"計算期間の流入水量:     {total_in:9.0f} 千m^3")
 print(f"計算期間の放流水量:     {total_out:9.0f} 千m^3")
-print(f"流入 - 放流:            {total_in - total_out:9.0f} 千m^3")
+print(f"流入 - 放流:            {net_inflow:9.0f} 千m^3")
 print(f"換算した貯水量の変化:   {observed_change:9.0f} 千m^3")
-print(f"収支と換算値の変化の差: {(total_in - total_out) - observed_change:9.0f} 千m^3")
-print(f"差の絶対値が有効貯水容量に占める割合: {100 * abs((total_in - total_out) - observed_change) / V_EFFECTIVE:.2f} %")
+print(f"収支と換算値の変化の差: {balance_difference:9.0f} 千m^3")
+print(f"差の絶対値が有効貯水容量に占める割合: {difference_percent:.2f} %")
 ```
 
 - **コードの補足**：配列を置き換えても台形則の計算手順は同じである．`abs(...)`は絶対値を求め，正負によらない差の大きさを割合にする．
@@ -1260,7 +1323,9 @@ $$
 ```python
 def reservoir_rhs_with_loss(t, V, t_data, qin_data, qout_data, loss):
     """dV/dt = Q_in(t) - Q_out(t) - loss の右辺．loss は一定の損失 [千m^3/日]．"""
-    return np.interp(t, t_data, qin_data) - np.interp(t, t_data, qout_data) - loss
+    q_in = np.interp(t, t_data, qin_data)
+    q_out = np.interp(t, t_data, qout_data)
+    return q_in - q_out - loss
 
 
 t_data = np.arange(len(dam_year), dtype=float)
@@ -1269,9 +1334,17 @@ qout_data = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
 
 print(f"{'loss [千m^3/日]':>16} {'最終日の差':>12} {'RMSE':>10}")
 for loss in [0.0, 5.0, 10.0, 14.0, 20.0]:
-    sol_loss = solve_ivp(reservoir_rhs_with_loss, (t_data[0], t_data[-1]), [V_obs_year[0]], t_eval=t_data, args=(t_data, qin_data, qout_data, loss), max_step=1.0)
+    sol_loss = solve_ivp(
+        reservoir_rhs_with_loss,
+        (t_data[0], t_data[-1]),
+        [V_obs_year[0]],
+        t_eval=t_data,
+        args=(t_data, qin_data, qout_data, loss),
+        max_step=1.0,
+    )
     err = sol_loss.y[0] - V_obs_year
-    print(f"{loss:16.1f} {err[-1]:12.0f} {np.sqrt(np.mean(err ** 2)):10.0f}")
+    rmse_loss = np.sqrt(np.mean(err ** 2))
+    print(f"{loss:16.1f} {err[-1]:12.0f} {rmse_loss:10.0f}")
 ```
 
 - **コードの補足**：`loss`：右辺から差し引く一定の損失流量で，単位は千m³/日である．候補ごとに計算し直し，最終日の差と全期間のRMSEを比較する．
@@ -1316,18 +1389,27 @@ $$
 
 ```{code-block} python
 :linenos:
-:emphasize-lines: 1-2
+:emphasize-lines: 1-3
 :class: code-focus
 
-loss = error_year[-1] / (t_data[-1] - t_data[0])
+elapsed_days = t_data[-1] - t_data[0]
+loss = error_year[-1] / elapsed_days
 loss_m3s = loss * 1000 / SECONDS_PER_DAY
 print(f"最終日の差から求めた損失流量: {loss:.3f} 千m^3/日")
 print(f"m^3/sへの換算: {loss_m3s:.4f} m^3/s")
 
-sol_loss = solve_ivp(reservoir_rhs_with_loss, (t_data[0], t_data[-1]), [V_obs_year[0]], t_eval=t_data, args=(t_data, qin_data, qout_data, loss), max_step=1.0)
+sol_loss = solve_ivp(
+    reservoir_rhs_with_loss,
+    (t_data[0], t_data[-1]),
+    [V_obs_year[0]],
+    t_eval=t_data,
+    args=(t_data, qin_data, qout_data, loss),
+    max_step=1.0,
+)
 err = sol_loss.y[0] - V_obs_year
+rmse_loss = np.sqrt(np.mean(err ** 2))
 print(f"最終日の差: {err[-1]:.3f} 千m^3")
-print(f"RMSE: {np.sqrt(np.mean(err ** 2)):.0f} 千m^3")
+print(f"RMSE: {rmse_loss:.0f} 千m^3")
 ```
 
 - **コードの補足**：最終日の差を経過日数で割って`loss`を決める．m³/sへの変換は，本文の流量換算と逆の操作である．
