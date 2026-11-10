@@ -97,19 +97,19 @@ applied_programming_ii/
 
 ## 演習3：対象年を変えた収支計算
 
-1. 選んだ年・最終日の差・RMSE（図と収支の計算結果はNotebook）：
-2. 選んだ年のRMSEが2019年のRMSEに対して何倍か：
+1. 選んだ年：
+2. 最終日の差・RMSE： （Notebookに計算結果の図を出力）
 
 ## 演習4：初期値の再設定間隔の比較
 
-1. 3か月ごとに再設定した場合のRMSE：
-2. 比較図のNotebook内の場所：
+1. 3か月ごとの計算（Notebookにコードを記載して実行）
+2. 誤差の比較（Notebookに図を出力）
 
 ## 課題1：対象月と放流量を変えた収支計算
 
-1. 選んだ年月・図のNotebook内の場所：
+1. 選んだ年月： （Notebookに流量と貯水量の図を出力）
 2. 計算期間の流入・放流水量，換算貯水量の変化，収支の差と有効貯水容量に対する割合：
-3. 放流量を20%増やした場合の最終日の貯水量の減少量・追加の放流水量：
+3. 放流量を20%増やした場合の最終日の貯水量の減少量・追加の放流水量： （Notebookに比較図を出力）
 
 ## 課題2の考察
 
@@ -255,9 +255,11 @@ print("日付の間隔（日）の種類:", sorted(interval_types))
 
 流量と貯水位は算出過程で関係しているため，後の比較は独立な観測による検証ではなく，換算・補間を含むモデルとデータの整合性の確認になる．
 
+(reservoir-observed-data)=
 ### 2019年の観測値の可視化
 
 2019年を主な対象とする．台風19号の影響を受けた10月を含め，流量と貯水位の時間変化を調べる．
+cf. [令和元年東日本台風](https://ja.wikipedia.org/wiki/%E4%BB%A4%E5%92%8C%E5%85%83%E5%B9%B4%E6%9D%B1%E6%97%A5%E6%9C%AC%E5%8F%B0%E9%A2%A8)
 
 対象年を指定し，その年の行を`dam_year`に取り出して内容を確認する．
 
@@ -351,8 +353,12 @@ $$
 
 今回は記録された2種類の流量で出入りを代表させ，次の仮定を置く．
 
+```{tip} 仮定
+:class: simple
+
 - **入力の範囲**：CSVの流入量と放流量を使い，降雨・蒸発・地下水などの項を別には加えない．逆算された流入量には，これらの影響が含まれている可能性もある．
 - **時間方向の近似**：日平均流量を日ごとの代表時刻の値として配置し，隣接する値の間を線形補間する．日内の変動は再現しない．
+```
 
 計算結果と観測データに差が生じた場合は，これらの仮定と，次に定める水位から貯水量への換算を検討する．
 
@@ -380,6 +386,7 @@ $$
 - **右辺の特徴**：変化率は外部入力だけで決まり，現在の貯水量 $V$ には依存しない．第2回の初期値問題の特別な場合として，`solve_ivp`を使える．
 - **計算の位置付け**：計算期間全体の観測流量を与え，過去の貯水量の変化を再現する．将来の流入量・放流量はこの式からは求まらないため，そのまま将来予測にはならない．
 
+(reservoir-unit-conversion)=
 ### 単位の整合
 
 流入量と放流量の単位は m³/s である．
@@ -393,6 +400,8 @@ $$
 $$
 
 最大流入量が1日続いた場合の水量を，有効貯水容量と比較する．
+
+- **有効貯水容量**：最低水位から常時満水位までの間に貯められる水の量．洪水調節や水道・発電などの利水に使える容量を表す．最低水位より下の部分は，土砂の堆積などに備える容量であり，放流には使わない．浦山ダムの有効貯水容量は56,000千m³である．
 
 流量をm³/sから千m³/日に換算する関数を定義する．
 
@@ -436,7 +445,22 @@ print(f"流入量 1.0 m^3/s = {m3s_to_1000m3_per_day(1.0):.1f} 千m^3/日")
 
 ````{note} 演習1：一定流量による流入水量
 
-1. 流量3.5 m³/sの流入が7日間続くと仮定する．本文の換算関数と割合を求めるコードを組み合わせ，7日分の流入水量を千m³で求め，有効貯水容量に対する割合とともに表示せよ．結果を`README.md`に記せ．
+1. 流量3.5 m³/sの流入が7日間続くと仮定する．[単位の整合](#reservoir-unit-conversion)で定義した`m3s_to_1000m3_per_day`を使い，次の計算コードの【】を埋めて実行せよ．その下の表示コードも実行し，7日分の流入水量と有効貯水容量に対する割合を`README.md`に記せ．
+
+```python
+flow = 3.5
+days = 7
+flow_daily = 【flow を千m^3/日に換算した値】
+inflow_volume = 【flow_daily と days から求める7日分の流入水量 [千m^3]】
+volume_percent = 100 * inflow_volume / V_EFFECTIVE
+```
+
+求めた水量と割合を，次のコードで表示する．
+
+```python
+print(f"7日分の流入水量: {inflow_volume:.1f} 千m^3")
+print(f"有効貯水容量に対する割合: {volume_percent:.2f} %")
+```
 ````
 
 ````{visible-answer} 演習1の解答例
@@ -449,7 +473,7 @@ print(f"流入量 1.0 m^3/s = {m3s_to_1000m3_per_day(1.0):.1f} 千m^3/日")
 
 ```{code-block} python
 :linenos:
-:emphasize-lines: 1,2,4
+:emphasize-lines: 3,4
 :class: code-focus
 
 flow = 3.5
@@ -475,22 +499,27 @@ print(f"有効貯水容量に対する割合: {volume_percent:.2f} %")
 
 ````
 
+(reservoir-level-conversion)=
 ### 貯水位と貯水量の対応
 
 モデルの状態変数は貯水量 $V$ （千m³）だが，データにあるのは貯水位 $h$ （m）である．
 貯水量と貯水位の関係はダムごとに異なる曲線で表され，貯水池の形（水位が高いほど湖面が広い）に依存する．
 この曲線は今回のデータには含まれていない．
 
-以下では最低水位より上の水量を $V$ とする．最低水位で $V=0$ としても，貯水池全体が空になるという意味ではない．基準となる水量を差し引いても，貯水量の変化率は変わらない．換算には次の仮定を置く．
+以下では最低水位より上の水量を $V$ とする．最低水位で $V=0$ としても，貯水池全体が空になるという意味ではない．基準となる水量を差し引いても，貯水量の変化率は変わらない．換算には次の**仮定**を置く．
 
-- 貯水量は，最低水位 EL. 304.0 m で0，常時満水位 EL. 393.3 m で有効貯水容量 56,000 千m³ になる
-- その間では，貯水量は貯水位に対して線形に変化する
+```{tip} 仮定
+:class: simple
+
+- 貯水量は，最低水位（標高304.0 m）で0，常時満水位（標高393.3 m）で有効貯水容量 56,000 千m³ になる．
+- その間では，貯水量は貯水位に対して線形に変化する．
 
 $$
 V = V_{\mathrm{eff}} \cdot \frac{h - h_{\min}}{h_{\mathrm{full}} - h_{\min}},
 \qquad
 V_{\mathrm{eff}} = 56000,\ h_{\min} = 304.0,\ h_{\mathrm{full}} = 393.3
 $$
+```
 
 このとき，貯水位1 mあたりの貯水量は $56000 / 89.3 \approx 627$ 千m³ である．
 これは湖面の面積が約0.63 km²で水位によらず一定，と仮定したことに相当する．
@@ -559,8 +588,35 @@ print(dam_year[["date", "water_level_m", "volume_1000m3"]].head())
 
 水位と貯水量の線形換算を用い，水位が372 mから382 mまで上昇する場合を計算する．
 
-1. 本文の水位の換算コードを変更し，両水位に対応する貯水量と，その増加量を表示せよ．
-2. 流入量は3.5 m³/sで一定，放流などによる流出は0とする．演習1の流量の換算と設問1の増加量を組み合わせ，水位上昇に必要な日数を求めよ．設問1・2の数値を`README.md`に記せ．
+1. [貯水位と貯水量の対応](#reservoir-level-conversion)で定義した`level_to_volume`を使い，次の計算コードの【】を埋めて実行せよ．その下の表示コードも実行し，両水位に対応する貯水量と増加量を`README.md`に記せ．
+
+```python
+V_start = 【水位372 mを貯水量に換算した値】
+V_end = 【水位382 mを貯水量に換算した値】
+volume_change = 【V_start と V_end から求める貯水量の増加量】
+```
+
+両水位の貯水量と増加量を，次のコードで表示する．
+
+```python
+print(f"水位372 mでの貯水量: {V_start:.1f} 千m^3")
+print(f"水位382 mでの貯水量: {V_end:.1f} 千m^3")
+print(f"貯水量の増加: {volume_change:.1f} 千m^3")
+```
+
+2. 流入量は3.5 m³/sで一定，放流などによる流出は0とする．[単位の整合](#reservoir-unit-conversion)の換算関数と設問1の`volume_change`を使い，次の計算コードの【】を埋めて実行せよ．その下の表示コードも実行し，水位上昇に必要な日数を`README.md`に記せ．
+
+```python
+flow = 3.5
+flow_daily = m3s_to_1000m3_per_day(flow)
+required_days = 【volume_change と flow_daily から求める日数】
+```
+
+水位上昇に必要な日数を，次のコードで表示する．
+
+```python
+print(f"水位372 mから382 mまでに必要な日数: {required_days:.2f} 日")
+```
 ````
 
 ````{visible-answer} 演習2の解答例
@@ -907,6 +963,7 @@ plt.show()
 
 ## 1年間の計算と誤差の蓄積
 
+(reservoir-year-calculation)=
 ### 2019年の1年間
 
 同じ手順を2019年の1年間に広げる．
@@ -991,6 +1048,7 @@ plt.show()
 
 ![2019年の貯水量とモデル値との差](figs/06/reservoir_balance_2019.png)
 
+(reservoir-water-budget)=
 ### 収支の確認
 
 モデルと同じ期間で，流入・放流の水量と水位から換算した貯水量の変化を比較する．1月1日から12月31日の代表時刻までの経過時間は364日である．
@@ -1058,19 +1116,28 @@ print(f"収支と換算値の変化の差: {balance_difference:9.0f} 千m^3")
 
 ````{note} 演習3：対象年を変えた収支計算
 
-1. 2020〜2023年から1年を選べ．本文のデータ抽出・観測値の描画・1年間の計算・収支確認のコードを組み合わせ，選んだ年の観測値と計算結果の図，流入・放流水量と換算貯水量の変化をNotebookに示せ．最終日の差とRMSEも求め，選んだ年とともに`README.md`に記せ．
-2. 2019年の計算とRMSEを求めるコードを組み合わせ，選んだ年のRMSEが2019年のRMSEの何倍かを計算して表示せよ．結果を`README.md`に記せ．
+**設問1は下の補完コード，設問2は本文のコードを使う**．番号順に取り組め．
+
+1. [2019年の観測値の可視化](#reservoir-observed-data)のデータ抽出を参考に，2020〜2023年から1年を選び，次のコードの`year`に設定せよ．【】を埋めて実行し，選んだ年の行を取り出して内容を確認せよ．選んだ年を`README.md`に記せ．
+
+```python
+year = 2020
+dam_year = dam[【date 列の年が year に等しい行を選ぶ条件】].reset_index(drop=True)
+dam_year
+```
+
+2. **1年間の計算と描画**：[2019年の1年間](#reservoir-year-calculation)から，`t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)`で始まる計算コード，結果の表示コード，2段の図の描画コードをNotebookの新しいセルにコピーして実行せよ．設問1の`dam_year`を使い，貯水量の計算値・換算値と両者の差をNotebookに図として出力せよ．最終日の差とRMSEを`README.md`に記せ．
 ````
 
 ````{visible-answer} 演習3の解答例
 
-**1．2020年の計算と図**
+**1．対象年のデータ抽出**
 
 対象年を2020年に変更し，その年の行を`dam_year`に取り出して内容を確認する．
 
 ```{code-block} python
 :linenos:
-:emphasize-lines: 1
+:emphasize-lines: 1,2
 :class: code-focus
 
 year = 2020
@@ -1099,50 +1166,7 @@ dam_year
 [366 rows x 4 columns]
 ```
 
-対象年の観測日数，流量の最大値，最大となった日付を確認する．
-
-```python
-print(f"対象年: {year}年，観測日数: {len(dam_year)}日")
-inflow_max_index = dam_year["inflow_m3s"].idxmax()
-outflow_max_index = dam_year["outflow_m3s"].idxmax()
-inflow_max_date = dam_year.loc[inflow_max_index, "date"].date()
-outflow_max_date = dam_year.loc[outflow_max_index, "date"].date()
-print("流入量の最大値:", dam_year["inflow_m3s"].max(), "m^3/s  日付:", inflow_max_date)
-print("放流量の最大値:", dam_year["outflow_m3s"].max(), "m^3/s  日付:", outflow_max_date)
-```
-
-- **コードの補足**：`idxmax()`は最大値の行番号を返す．`.loc[行番号, "date"]`でその日付を取り出す．
-
-出力例：
-
-```text
-対象年: 2020年，観測日数: 366日
-流入量の最大値: 27.08 m^3/s  日付: 2020-09-06
-放流量の最大値: 11.88 m^3/s  日付: 2020-04-13
-```
-
-2020年の水位・流入量・放流量を描く．
-
-```python
-fig, axes = plt.subplots(3, 1, figsize=(8, 8), sharex=True)
-axes[0].plot(dam_year["date"], dam_year["water_level_m"], color="black")
-axes[0].set_ylabel("水位 [m]")
-axes[0].set_title(f"浦山ダム（{year}年）")
-axes[1].plot(dam_year["date"], dam_year["inflow_m3s"], color="tab:blue", label="流入量")
-axes[1].set_ylabel("流入量 [m³/s]")
-axes[2].plot(dam_year["date"], dam_year["outflow_m3s"], color="tab:orange", label="放流量")
-axes[2].set_ylabel("放流量 [m³/s]")
-axes[2].set_xlabel("日付")
-for ax in axes:
-    ax.grid(True)
-fig.tight_layout()
-fig.savefig(FIGURE_DIR / f"dam_observed_{year}.png", dpi=150)
-plt.show()
-```
-
-- **コードの補足**：本文と同じ描画コードを使い，年による水位や流量の特徴を比較する．
-
-![2020年の浦山ダムの観測値](figs/06/dam_observed_2020.png)
+**2．1年間の計算と描画**
 
 本文と同じ関数で2020年の貯水量を計算し，換算値との差とRMSEを求める．
 
@@ -1199,99 +1223,9 @@ plt.show()
 - **コードの補足**：下段の差は計算値から換算値を引いた値であり，負の値は過小評価を表す．
 
 ![2020年の貯水量と計算値・換算値の差](figs/06/reservoir_balance_2020.png)
-
-2020年の各日の流量を換算し，隣り合う代表時刻の間隔と両端の平均流量を求めて，先頭の値を確認する．
-
-```python
-qin_year = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_year = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-dt = np.diff(t_year)
-qin_mean = (qin_year[:-1] + qin_year[1:]) / 2
-qout_mean = (qout_year[:-1] + qout_year[1:]) / 2
-print("dt:", dt[:5])
-print("qin_mean:", qin_mean[:5])
-print("qout_mean:", qout_mean[:5])
-```
-
-- **コードの補足**：`np.diff(t_year)`は時刻の差を求める．`qin_year[:-1]`と`qin_year[1:]`で，区間の始めと終わりの流量を対応させる．
-
-出力例：
-
-```text
-dt: [1. 1. 1. 1. 1.]
-qin_mean: [85.968 85.968 79.488 79.488 79.488]
-qout_mean: [67.392 67.392 67.392 67.392 67.392]
-```
-
-平均流量に区間の長さを掛けて合計し，流入・放流水量と換算貯水量の変化を比較する．
-
-```python
-total_in = np.sum(qin_mean * dt)
-total_out = np.sum(qout_mean * dt)
-observed_change = V_obs_year[-1] - V_obs_year[0]
-net_inflow = total_in - total_out
-balance_difference = net_inflow - observed_change
-```
-
-- **コードの補足**：`np.sum(qin_mean * dt)`は，線形補間した流量を各区間で積分し，合計した水量である．
-
-収支と換算値の変化を同じ単位で表示する．
-
-```python
-print(f"計算期間の流入水量:     {total_in:9.0f} 千m^3")
-print(f"計算期間の放流水量:     {total_out:9.0f} 千m^3")
-print(f"流入 - 放流:            {net_inflow:9.0f} 千m^3")
-print(f"換算した貯水量の変化:   {observed_change:9.0f} 千m^3")
-print(f"収支と換算値の変化の差: {balance_difference:9.0f} 千m^3")
-```
-
-出力例：
-
-```text
-計算期間の流入水量:         78326 千m^3
-計算期間の放流水量:         95346 千m^3
-流入 - 放流:               -17020 千m^3
-換算した貯水量の変化:       -9639 千m^3
-収支と換算値の変化の差:     -7381 千m^3
-```
-
-**2．2019年とのRMSEの比較**
-
-本文の年別データの抽出と計算を2019年に適用し，先に求めた2020年のRMSEをその値で割る．
-
-2019年の計算結果と換算値から，比較の基準となるRMSEを求める．
-
-```{code-block} python
-:linenos:
-:emphasize-lines: 1,5
-:class: code-focus
-
-dam_reference = dam[dam["date"].dt.year == 2019].reset_index(drop=True)
-t_reference, V_model_reference, V_obs_reference = simulate_reservoir(dam_reference)
-error_reference = V_model_reference - V_obs_reference
-rmse_reference = np.sqrt(np.mean(error_reference ** 2))
-rmse_ratio = rmse_year / rmse_reference
-```
-
-2つの年のRMSEと，その比を表示する．
-
-```python
-print(f"2019年のRMSE: {rmse_reference:.0f} 千m^3")
-print(f"{year}年のRMSE: {rmse_year:.0f} 千m^3")
-print(f"2019年のRMSEに対する比: {rmse_ratio:.2f} 倍")
-```
-
-出力例：
-
-```text
-2019年のRMSE: 2907 千m^3
-2020年のRMSE: 6560 千m^3
-2019年のRMSEに対する比: 2.26 倍
-```
-
-この換算方法では，2020年のRMSEは2019年の約2.26倍となる．水位からの換算値との当てはまりを比較した値であり，真の貯水量に対する誤差とは区別する．
 ````
 
+(reservoir-monthly-reset)=
 ### 月ごとの初期値の再設定
 
 このモデルの右辺は $V$ に依存しないため，同じ入力を与えた2つの解の差は時間によらず一定となる．したがって，初期値の誤差を減少させる仕組みはない．
@@ -1369,15 +1303,47 @@ plt.show()
 
 ````{note} 演習4：初期値の再設定間隔の比較
 
-2019年について，初期値を3か月ごとに再設定して計算する．開始月の指定には，1，4，7，10を順に取り出す`range(1, 13, 3)`を使える．
+2019年について，初期値を3か月ごとに再設定して計算する．[月ごとの初期値の再設定](#reservoir-monthly-reset)で用意した2019年のデータと，1年通し・毎月の計算結果を使う．開始月の指定には，1，4，7，10を順に取り出す`range(1, 13, 3)`を使える．
 
-1. 月ごとの再設定のコードを変更し，1〜3月，4〜6月，7〜9月，10〜12月の4区間をそれぞれの初日の換算貯水量から計算せよ．全期間の計算値を1つの配列に格納し，換算値との差とRMSEを求めよ．RMSEを`README.md`に記せ．
-2. 本文の比較図に3か月ごとの計算結果を加え，1年通し・毎月・3か月ごとの3通りについて，換算値との差を1つのグラフに示せ．
+1. 本文の月ごとのループを参考に，次のコードの【】を埋めて実行せよ．1〜3月，4〜6月，7〜9月，10〜12月の4区間をそれぞれの初日の換算貯水量から計算し，1年分の計算値を`V_quarterly`に格納せよ．
+
+```python
+V_quarterly = np.zeros(len(dam_year))
+for month_number in 【開始月 1，4，7，10 を順に取り出す範囲】:
+    month_mask = 【開始月から3か月分の日を選ぶ条件】
+    segment = dam_year[month_mask].reset_index(drop=True)
+    t_seg, V_seg_model, V_seg_obs = simulate_reservoir(segment)
+    V_quarterly[month_mask] = V_seg_model
+```
+
+2. **換算値との差の描画**：設問1の`V_quarterly`を使い，次の差の計算コードと，その下の補完する描画コードを実行せよ．本文の誤差の比較図に3か月ごとの結果を加え，1年通し・毎月・3か月ごとの3通りを1つのグラフとしてNotebookに出力せよ．
+
+```python
+quarterly_error = V_quarterly - V_obs_year
+```
+
+本文と同じ描画コードに3か月ごとの結果を追加する．【】を埋めて実行せよ．
+
+```python
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(dam_year["date"], error_year, color="tab:red", label="1年通しの計算")
+ax.plot(dam_year["date"], monthly_error, color="tab:purple", label="毎月の初期値再設定")
+ax.plot(dam_year["date"], 【3か月ごとの計算と換算値との差】, color="tab:blue", label="3か月ごとの初期値再設定")
+ax.axhline(0, color="black", linewidth=0.8)
+ax.set_title("初期値の再設定間隔と換算値との差（2019年）")
+ax.set_xlabel("日付")
+ax.set_ylabel("計算値−換算値 [千m³]")
+ax.grid(True)
+ax.legend()
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "reservoir_reset_intervals.png", dpi=150)
+plt.show()
+```
 ````
 
 ````{visible-answer} 演習4の解答例
 
-**1．3か月ごとの再設定とRMSE**
+**1．3か月ごとの再設定**
 
 本文の月ごとのループを使い，開始月を3ずつ進める．各回に取り出す範囲も，1か月から3か月へ変更する．
 
@@ -1398,30 +1364,13 @@ for month_number in range(1, 13, 3):
 
 - **コードの補足**：`month_mask`の上限を`month_number + 3`未満にすると，開始月を含む3か月分を選べる．
 
-換算値との差から，3か月ごとの計算のRMSEを求める．
+**2．換算値との差の比較図**
+
+3か月ごとの計算結果から，同じ日の換算貯水量を引く．
 
 ```python
 quarterly_error = V_quarterly - V_obs_year
-rmse_quarterly = np.sqrt(np.mean(quarterly_error ** 2))
 ```
-
-再設定の間隔が異なる3通りのRMSEを表示する．
-
-```python
-print(f"1年通しのRMSE: {rmse_year:.0f} 千m^3")
-print(f"毎月再設定のRMSE: {rmse_monthly:.0f} 千m^3")
-print(f"3か月ごとに再設定したRMSE: {rmse_quarterly:.0f} 千m^3")
-```
-
-出力例：
-
-```text
-1年通しのRMSE: 2907 千m^3
-毎月再設定のRMSE: 885 千m^3
-3か月ごとに再設定したRMSE: 3345 千m^3
-```
-
-**2．換算値との差の比較図**
 
 本文の誤差の比較図に，3か月ごとに再設定した結果を重ねる．
 
@@ -1447,7 +1396,7 @@ plt.show()
 
 ![初期値の再設定間隔による比較](figs/06/reservoir_reset_intervals.png)
 
-各区間の初日には換算値との差が0になる．3か月ごとの計算では，10月の再設定後に正の差が蓄積し，年末には1年通しの場合より差が大きくなる．この年のRMSEは3か月ごとの方が大きく，再設定の頻度を増やせば必ずRMSEが下がるわけではない．
+各区間の初日には換算値との差が0になる．3か月ごとの計算では，10月の再設定後に正の差が蓄積し，年末には1年通しの場合より差が大きくなる．再設定後も，区間内では入力や換算の近似による差が蓄積する．
 ````
 
 ## モデルの限界と改善の問い
@@ -1464,11 +1413,11 @@ plt.show()
 
 ## まとめ
 
-- **保存則と仮定**：水の密度を一定とし，出入りを流入量と放流量で表すと，貯水量の変化率はその差になる．日平均流量は代表時刻に配置し，間を線形補間した．
-- **単位の換算**：1日は86400秒なので，1 m³/sは86400 m³/日，すなわち86.4千m³/日である．時間を日，貯水量を千m³にそろえて計算する．
-- **データの役割**：流入量・放流量は外部入力，初日の水位から換算した貯水量は初期条件，各日の換算貯水量は比較用データとなる．換算には，水位と貯水量を結ぶ線形の関係を仮定した．
-- **計算と換算値の差**：水位からの換算や流量の補間には近似が含まれ，流量の偏りは時間積分で蓄積する．係数を推定しないモデルでも差は生じる．観測済みの流量を使った再現計算を将来予測へ進めるには，将来の流入量と放流計画が必要になる．
-- **次回**：数値最適化を学び，Logisticモデルのパラメタと，水位から貯水量への換算係数を推定する．
+1. **蓄積量の変化は，入る量と出る量の差で決まる．** 水の密度を一定とし，出入りを流入量と放流量で表すと，貯水量の変化率は $dV/dt = Q_{\mathrm{in}}(t) - Q_{\mathrm{out}}(t)$ となる．現象の収支を整理することが，微分方程式を構築する手掛かりになる．
+
+2. **観測データをモデルで使うには，量・単位・時刻を対応させる．** 貯水位を貯水量へ換算し，流量の単位を千m³/日にそろえ，日ごとの流量を補間する．換算の関係や補間の方法には，データと数理モデルを結ぶ仮定が含まれる．
+
+3. **計算結果の意味は，使ったデータと仮定によって決まる．** 観測済みの流量を与えた計算は過去の貯水量の再現であり，将来予測には将来の流入量と放流計画が必要になる．また，今回の流入量は貯水位の変化と放流量から逆算されているため，計算と換算値の一致を，保存則の独立した検証とは扱えない．
 
 ## 課題
 
@@ -1975,7 +1924,19 @@ plt.show()
 正の損失項を加えると，すべての時刻の貯水量が低くなる．秋以降の正の差は小さくなる一方，夏の負の差はさらに負になるため，RMSEは約2907千m³から約4492千m³へ増える．**最終日の一致だけでは，全期間の当てはまりは保証されない**．
 ````
 
-## 補足（前は見れたサイトが見れなくなったとき）
+## 補足：閲覧できなくなったWebページの確認
 
-webarchiveというサイトがあり，過去のサイト情報を残しているサイトがある．
-ここで見たいサイトのURLを入力することで昔のバージョンではあるが，どのようなサイトだったかを確認することができる．
+データの出典や項目説明のページは，移転や閉鎖によって閲覧できなくなることがある．その場合は，Webページの過去の状態を保存しているアーカイブサービスで，以前の内容を確認できる．
+
+- **[Wayback Machine](https://web.archive.org/)**：米国の非営利団体Internet Archiveが運営するサービス．検索欄に見たいページのURLを入力すると，保存された日付の一覧がカレンダーで表示され，日付を選ぶとその時点のページが表示される．
+- **[国立国会図書館インターネット資料収集保存事業（WARP）](https://warp.ndl.go.jp/)**：国の機関や地方公共団体などのWebサイトを定期的に保存している．官公庁が公開する資料を探す場合に使える．
+
+Wayback Machineでは，`https://web.archive.org/web/*/`の後にURLを続けると，そのページの保存日の一覧を直接開ける．例えば，本文で参照した浦山ダムの操作状況のページは次のリンクで確認できる．
+
+- [https://web.archive.org/web/*/https://www.arakawadam.org/arasou/kanri/public/urayama.html](https://web.archive.org/web/*/https://www.arakawadam.org/arasou/kanri/public/urayama.html)
+
+利用する際は，次の点に注意する．
+
+- **保存されていないページがある**：すべてのページが保存されているわけではない．検索フォームから表示するデータベースの結果ページなどは，保存されていないことが多い．
+- **内容は保存時点のもの**：表示されるのは保存した日の内容であり，現在の情報とは異なる場合がある．レポートで引用するときは，アーカイブのURLと保存日を記す．
+- **ページの保存**：閲覧できるページは，[Save Page Now](https://web.archive.org/save)にURLを入力して保存を依頼できる．後で参照する出典は，閲覧できるうちに保存しておくとよい．
