@@ -117,9 +117,7 @@ applied_programming_ii/
 
 ```
 
-5. 以下のコードブロックをそれぞれNotebookのコードセルに入力し，上から順に実行せよ．
-
-計算・描画に使うライブラリを読み込み，日本語フォントを設定する．
+5. Notebookの最初のコードセルに以下を入力し，実行せよ．ライブラリ・日本語フォント・作業フォルダを設定し，CSVファイルの有無を確認する．
 
 ```python
 from pathlib import Path
@@ -130,27 +128,17 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
 plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
-```
 
-作業フォルダとデータの場所を指定し，図の保存先を作成する．
-
-```python
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "06"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
 FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-```
 
-- **コードの補足**：`mkdir(..., exist_ok=True)`は，保存先が既に存在する場合も処理を続ける．
-
-作業フォルダの場所と，CSVファイルがあるかを確認する．
-
-```python
 print("作業フォルダ:", PROJECT_DIR)
 print("ダムデータの有無:", (DATA_DIR / "dam_urayama_daily.csv").exists())
 ```
 
-- **コードの補足**：`.exists()`は，指定したファイルが存在すれば`True`を返す．
+- **コードの補足**：`mkdir(..., exist_ok=True)`は，保存先が既に存在する場合も処理を続ける．`.exists()`は，指定したファイルが存在すれば`True`を返す．
 
 出力例（`ユーザー名`の部分は実行環境によって異なる）：
 
