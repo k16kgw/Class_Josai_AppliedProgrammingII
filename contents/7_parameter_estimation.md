@@ -32,8 +32,8 @@
 | --- | --- | --- |
 | 1 | 準備と第5回との比較，同じ最小二乗問題（演習0） | 10分 |
 | 2 | 数値最適化，格子探索との比較，探索初期値（演習1） | 25分 |
-| 3 | 人口の訓練・検証，推定期間と残差（演習2・3） | 30分 |
-| 4 | ダムの観測モデルの推定，別の年への適用（演習4） | 30分 |
+| 3 | 人口の訓練・検証，推定期間と残差（演習2） | 30分 |
+| 4 | ダムの観測モデルの推定，別の年への適用（演習3） | 30分 |
 | 5 | 3つの確認事項，課題の説明 | 10分 |
 -->
 
@@ -100,22 +100,15 @@ applied_programming_ii/
 
 1. 最も小さいcostに到達した初期値と，推定値・評価回数：
 2. 異なる結果となった初期値とcostの比較：
-3. 追加した初期値での推定値・cost・終了理由：
-4. ヒートマップと複数開始点の比較で確かめること：
+3. 追加した初期値・推定値・cost・評価回数： （Notebookに同じ形式で出力）
 
-## 演習2：訓練期間の長さによる比較
+## 演習2：訓練期間と残差の比較
 
-1. 比較した訓練期間： （Notebookに推定値・RMSEと人口・残差の図を出力）
-2. Kの変化と，推定に使うデータの特徴：
-3. 訓練・検証のRMSEが最小の設定と，比較時の注意：
+1. 比較した訓練終了年： （Notebookに推定値・RMSEと人口・残差の図を出力）
+2. 1990年までで推定した場合の1945年・1980年の残差： （Notebookに数値を出力）
+3. 訓練RMSEが最小の訓練終了年・検証RMSEが最小の訓練終了年：
 
-## 演習3：残差の時系列の解釈
-
-1. 残差が正・負となる時期：
-2. 1940年代の変化について考えられる要因と，確認に必要な資料：
-3. 残差の傾向から判断できることと，判断できないこと：
-
-## 演習4：対象年による換算係数の比較
+## 演習3：対象年による換算係数の比較
 
 1. 選んだ年・2019年の係数を固定した場合と再推定した場合のRMSE： （Notebookに水位と残差の図を出力）
 2. 再推定した係数・観測水位の範囲と，2019年との比較：
@@ -186,6 +179,8 @@ print("ダムデータの有無:", (DATA_DIR / "dam_urayama_daily.csv").exists()
 
 格子探索から数値最適化へ変えたときの効果を調べるため，**モデル・データ・初期条件・誤差の測り方をそろえる**．この節では人口モデルの計算を準備し，第5回で得た係数によるMSEを比較の基準として求める．
 
+$t$ を1920年からの経過年数，$N(t)$ を人口（万人），$r$ を人口増加率（/年），$K$ を環境収容力（万人）とする．$N_0=N(0)$ は1920年の初期人口である．
+
 | 条件 | 共通にする内容 |
 | --- | --- |
 | データ | 1920〜2020年の年次人口．単位は万人 |
@@ -227,7 +222,7 @@ print(f"観測点: {len(t_obs)}，期間: {population['year'].min()}〜{populati
 
 第5回の細かい格子探索では解析解を使った．今回は数値最適化に使う`solve_ivp`で第5回の係数も評価し直す．**解の計算方法による差を探索方法の効果に混ぜない**ため，両方に同じ計算関数を使う．
 
-パラメタの組から観測時刻での人口を求める関数と平均二乗誤差の関数を定義する．
+推定するパラメタの組を $\theta=(r,K)$ と書く．この組から観測時刻での人口を求める関数と平均二乗誤差の関数を定義する．
 
 ```python
 def logistic_rhs(t, N, r, K):
@@ -274,7 +269,7 @@ print(f"第5回の格子上の最良の組 (r, K) = {theta_grid}: MSE = {mse_gri
 
 数値最適化では全ての候補を先に並べる代わりに，**現在の候補の近くで残差がどう変わるか**を調べ，次に試す候補を決める．今回の設定ではライブラリがパラメタを少しずらして残差の変化を数値的に調べる．
 
-1. 探索の開始値 $\theta_0$ を与える．
+1. パラメタの組 $\theta$ の探索開始値を $\theta_0$ として与える．
 2. その候補で微分方程式を解き，観測時刻の残差配列を求める．
 3. 候補の近くでの残差の変化を使い，二乗和を小さくする次の候補を計算する．
 4. 候補を評価・更新し，停止条件を満たすまで繰り返す．
@@ -283,7 +278,7 @@ print(f"第5回の格子上の最良の組 (r, K) = {theta_grid}: MSE = {mse_gri
 
 ### 残差と最小二乗の基準
 
-観測値 $y_i$ とモデル値 $\hat y(t_i;\theta)$ から，残差とその二乗和を定義する．
+観測点数を $n$ とし，$i=1,\ldots,n$ を観測点の番号とする．$t_i$ は観測時刻，$y_i$ は観測人口，$\hat y(t_i;\theta)$ はパラメタ $\theta$ で計算した人口を表す．残差を $e_i(\theta)$，残差二乗和を $J(\theta)$ として次のように定義する．
 
 $$
 e_i(\theta)=\hat y(t_i;\theta)-y_i,
@@ -323,7 +318,16 @@ theta_initial = [0.03, 13000.0]
 result = least_squares(residuals, theta_initial, args=(t_obs, y_obs, N0))
 ```
 
-- **コードの補足**：`args`で観測時刻・観測人口・固定した初期人口を残差関数へ渡す．
+```{dropdown} コードの補足：least_squaresの引数
+
+| 引数名 | このコードで渡す値 | 役割 |
+| --- | --- | --- |
+| `fun` | `residuals` | 候補のパラメタから残差配列を返す関数．関数名を渡す |
+| `x0` | `theta_initial` | 探索の開始値．`[r, K]`の順に並べる |
+| `args` | `(t_obs, y_obs, N0)` | 残差関数の第2引数以降へ渡す固定値．観測時刻・観測人口・初期人口の順に対応する |
+
+`fun`と`x0`は位置で指定している．ライブラリは候補の配列`theta`を更新しながら`residuals(theta, t_obs, y_obs, N0)`を呼び出す．探索の開始値`x0`と微分方程式の初期人口`N0`は別の量である．
+```
 
 停止条件を満たしたかを確認し，推定値・目的関数値・RMSE・評価回数を表示する．
 
@@ -336,12 +340,7 @@ print(f"RMSE: {np.sqrt(np.mean(result.fun ** 2)):.1f} 万人")
 print(f"残差関数の評価回数: {result.nfev}")
 ```
 
-```{dropdown} コードの補足
-
-- `result.x`・`result.fun`：推定されたパラメタと，その推定値での残差配列である．
-- `result.cost`：残差二乗和の半分，すなわち $J/2$ である．`result.nfev`は評価回数（探索中に残差関数を呼び出した回数）を表す．既定の手法では数値微分用の追加評価はこの回数に含まれない．
-- `result.success`・`result.message`：停止条件を満たしたかと終了理由を示す．出力の`ftol`は目的関数の減少量に関する停止条件を表す．
-```
+- **コードの補足**：`result.x`は推定された係数，`result.fun`はその係数での残差配列である．
 
 出力例：
 
@@ -353,7 +352,19 @@ RMSE: 339.1 万人
 残差関数の評価回数: 7
 ```
 
-この例では少ない探索評価で停止条件を満たしている．ただし`nfev`は全てのモデル評価を数えた値ではないため，格子探索の候補数との比をそのまま速度向上率とはみなさない．引数と戻り値の詳細は[SciPyの公式説明](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)で確認できる．
+`result.message`に含まれる主な停止理由は次のとおりである．
+
+| `result.message`の種類 | 停止理由 |
+| --- | --- |
+| `ftol` | 目的関数の減少量が小さくなり，停止条件を満たした |
+| `xtol` | パラメタの更新量が小さくなり，停止条件を満たした |
+| `gtol` | 目的関数の勾配に関する停止条件を満たした |
+| `ftol`と`xtol` | 目的関数の減少量とパラメタの更新量の両方が停止条件を満たした |
+| `maximum number of function evaluations` | 評価回数の上限に達した．停止条件を満たしたことを示す結果ではない |
+
+**`nfev`はnumber of function evaluationsの略**である．ここでのfunctionは残差関数を指す．今回の既定の手法では数値微分のための追加評価を含まないため，反復回数や全モデル評価回数とは区別する．
+
+`ftol`の既定値は`1e-8`で，目的関数の相対的な減少量などを使って停止を判定する．**残差や係数の誤差が`1e-8`以下になったという意味ではない**．停止理由・cost・RMSEを併せて確認する．引数と戻り値の詳細は[SciPyの公式説明](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)を参照する．
 
 ### 格子探索との比較と改善量の解釈
 
@@ -395,10 +406,10 @@ MSEの改善は約0.1%にとどまる．第5回の細かい格子がすでに良
 
 ```python
 initial_guesses = [
-    [0.03, 13000.0],
-    [0.01, 20000.0],
     [0.10, 10000.0],
     [0.05, 30000.0],
+    [0.03, 13000.0],
+    [0.01, 20000.0],
 ]
 
 print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
@@ -407,16 +418,16 @@ for guess in initial_guesses:
     print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
 ```
 
-- **コードの補足**：`for guess in initial_guesses`：探索の初期値を1組ずつ渡して推定を繰り返す．`cost`と評価回数も並べ，到達した点と計算量の違いを確認する．
+- **コードの補足**：各組は`[r, K]`の順で，開始値のrが大きい順に並べている．`for`文で1組ずつ独立に推定し，costと評価回数を比較する．
 
 出力例：
 
 ```text
             初期値 (r, K)       推定 r       推定 K         cost     評価回数
-       [0.03, 13000.0]    0.02759    14753.8    5807180.6        7
-       [0.01, 20000.0]    0.02759    14753.8    5807180.6       10
         [0.1, 10000.0]    0.06375    10000.0  157753795.5       22
        [0.05, 30000.0]    0.02759    14753.8    5807180.6        6
+       [0.03, 13000.0]    0.02759    14753.8    5807180.6        7
+       [0.01, 20000.0]    0.02759    14753.8    5807180.6       10
 ```
 
 ````{note} 演習1：探索初期値による推定結果の比較
@@ -428,27 +439,45 @@ for guess in initial_guesses:
 
 ````{visible-answer} 演習1の解答例
 
-**1・2．探索初期値の比較**
+**1．同程度の最小costに到達した初期値**
 
-`[0.03, 13000.0]`，`[0.01, 20000.0]`，`[0.05, 30000.0]`では，表示桁数の範囲で $r=0.02759$，$K=14753.8$ 万人，cost $=5807180.6$ を得る．評価回数は順に7，10，6回である．`[0.10, 10000.0]`では異なる値に到達し，costは約27.2倍になる．
+本文の出力例では次の3組が表示桁数の範囲で同じ $r=0.02759$，$K=14753.8$ 万人，cost $=5807180.6$ を与える．
 
-**3．追加した初期値**
+| 探索初期値 `[r, K]` | 評価回数 |
+| --- | ---: |
+| `[0.05, 30000.0]` | 6 |
+| `[0.03, 13000.0]` | 7 |
+| `[0.01, 20000.0]` | 10 |
 
-「残差関数の定義と推定の実行」のうち，探索初期値の設定・推定を行うセルと結果を表示するセルをコピーし，`theta_initial`を`[0.5, 6000.0]`に変更して実行する．
+**2．異なる推定値に到達した初期値**
 
-```text
-停止条件を満たしたか: False  状態: The maximum number of function evaluations is exceeded.
-推定値: r = 0.41007 /年,  K = 6304.3 万人
-目的関数（残差二乗和の半分）: 1011378002.6
-RMSE: 4475.2 万人
-残差関数の評価回数: 200
+`[0.10, 10000.0]`では $r=0.06375$，$K=10000.0$ 万人，cost $=157753795.5$ を得る．最小のcostとの比は $157753795.5/5807180.6\approx27.2$ である．
+
+**3．追加した初期値の出力と比較**
+
+本文のループ内と同じ処理を，追加の1組について実行する．見出しと表示形式も本文にそろえる．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1
+:class: code-focus
+
+guess = [0.5, 6000.0]
+print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
+res = least_squares(residuals, guess, args=(t_obs, y_obs, N0))
+print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
 ```
 
-評価回数の上限に達して終了した例である．この出力だけでは局所的な極小点・パラメタの尺度・数値微分の影響のどれが原因かは特定できない．
+- **コードの補足**：観測データと残差関数は本文と同じに保ち，探索初期値だけを変更する．
 
-**4．確認する点**
+出力例：
 
-ヒートマップは低誤差領域の位置と広がりを示す．複数開始点の比較は最適化の結果が開始点に依存するかを調べる．両者を組み合わせても，全範囲の最小値を得たことの証明にはならない．
+```text
+            初期値 (r, K)       推定 r       推定 K         cost     評価回数
+         [0.5, 6000.0]    0.41007     6304.3 1011377744.9      200
+```
+
+costは4組の最小値の約174.2倍で，評価回数も多い．この例では既定の評価回数の上限200回に達して終了している．`res.success`と`res.message`でも停止結果を確認できる．
 ````
 
 
@@ -464,11 +493,23 @@ RMSE: 4475.2 万人
 lower_bounds = [0.0, 6000.0]       # r >= 0, K >= 6000 万人
 upper_bounds = [1.0, 50000.0]      # r <= 1, K <= 50000 万人
 
-result_bounded = least_squares(residuals, [0.5, 6000.0], args=(t_obs, y_obs, N0), bounds=(lower_bounds, upper_bounds))
+result_bounded = least_squares(
+    residuals, [0.5, 6000.0], args=(t_obs, y_obs, N0),
+    bounds=(lower_bounds, upper_bounds),  # 追加箇所
+)
 print(f"範囲を指定した場合: r = {result_bounded.x[0]:.5f}, K = {result_bounded.x[1]:.1f}, cost = {result_bounded.cost:.1f}")
 ```
 
-- **コードの補足**：`bounds=(lower_bounds, upper_bounds)`：各パラメタの下限と上限を同じ順番で指定する．ここでは $r$ を0〜1， $K$ を6000〜50000万人に制限する．
+```{dropdown} コードの補足：boundsの指定
+
+| 指定 | 役割 | このコードでの意味 |
+| --- | --- | --- |
+| `lower_bounds` | 各パラメタの下限 | $r\geq0$，$K\geq6000$ 万人 |
+| `upper_bounds` | 各パラメタの上限 | $r\leq1$，$K\leq50000$ 万人 |
+| `bounds=(lower_bounds, upper_bounds)` | 下限と上限の組を渡す | どちらも`x0`と同じ`[r, K]`の順で並べる |
+
+探索の開始値も指定した範囲内に置く．この例では`[0.5, 6000.0]`が範囲内にある．
+```
 
 出力例：
 
@@ -481,7 +522,7 @@ print(f"範囲を指定した場合: r = {result_bounded.x[0]:.5f}, K = {result_
 
 ## 人口モデル：未使用期間への適用
 
-ここまでは第5回との比較のために1920〜2020年の全データを使った．MSEが小さくなったことはこの期間への当てはまりが改善したことを示す．しかし，2020年の人口も係数の選択に使っているため，その当てはまりから，1990年の時点で2020年を予測できたとは判断できない．
+ここまでは第5回との比較のために1920〜2020年の全データを使った．「格子探索との比較と改善量の解釈」でMSEが115105.5から114993.7へ下がることを確認した．この改善は**係数の選択に使った全期間への当てはまり**を表す．2020年の人口も推定に使っているため，1990年の時点で2020年を予測できたとは判断できない．
 
 そこで**推定に使うデータを過去の期間に限定し，その係数を固定して後の期間を計算する**．第5回で考えた外挿の不確かさを実際の未使用データとの誤差として評価する．
 
@@ -605,18 +646,20 @@ plt.show()
 
 ![訓練期間・検証期間の人口モデルと残差](figs/07/population_fit_1990.png)
 
-````{note} 演習2：訓練期間の長さによる比較
+````{note} 演習2：訓練期間と残差の比較
 
-1. 訓練期間の終わりを1970年，1990年，2010年の3通りとし，Logisticモデルの推定値と訓練・検証のRMSEを出力せよ．各条件で「観測値・モデル・残差の可視化」も再実行し，人口と残差の図をNotebookに示せ．
-2. 訓練期間を長くしたときの $K$ の変化を記し，人口増加の鈍化を示すデータとの関係を説明せよ．
-3. 訓練RMSEが最小の設定と検証RMSEが最小の設定を答えよ．ただし設定ごとに検証対象の年と期間の長さが変わることも記せ．
+1. 訓練終了年を1970，1990，2010の3通りとし，推定値と訓練・検証のRMSEを出力せよ．各条件で「観測値・モデル・残差の可視化」も再実行し，人口と残差の図をNotebookに出力せよ．
+2. 訓練終了年を1990に戻して再計算し，1945年と1980年の残差を出力せよ．それぞれの正負と，過大評価・過小評価のどちらに対応するかを確認せよ．
+3. 訓練RMSEが最小の設定と検証RMSEが最小の設定について，それぞれの訓練終了年を答えよ．
+
+検証対象の年は条件ごとに異なるため，同じ将来期間に対する予測精度の比較にはなっていない．
 ````
 
 ````{visible-answer} 演習2の解答例
 
-**1．条件を変える手順**
+**1．訓練期間ごとの計算と描画**
 
-「人口モデル：未使用期間への適用」の最初の3つのコードセルと「観測値・モデル・残差の可視化」の2つのコードセルをコピーする．最初の`train_end`だけを1970，1990，2010へ変更して各条件を実行する．1990年の図と出力は本文と同じになる．
+「人口モデル：未使用期間への適用」の最初の3つのコードセルと「観測値・モデル・残差の可視化」の2つのコードセルをコピーする．`train_end`だけを1970，1990，2010へ変更して各条件を実行する．
 
 | 訓練終了年 | 推定 $r$［/年］ | 推定 $K$［万人］ | 訓練RMSE［万人］ | 検証RMSE［万人］ |
 | --- | ---: | ---: | ---: | ---: |
@@ -624,44 +667,35 @@ plt.show()
 | 1990 | 0.01787 | 25872.2 | 141.0 | 2154.6 |
 | 2010 | 0.02467 | 16122.3 | 269.0 | 1112.2 |
 
-再実行した描画コードから，次の人口と残差の図を得る．
+再実行した描画コードから，次の図を得る．1990年の図は本文と同じになる．
 
 ![1970年までのデータによる推定と残差](figs/07/population_fit_1970.png)
 
 ![2010年までのデータによる推定と残差](figs/07/population_fit_2010.png)
 
-**2．Kの変化**
+**2．指定した年の残差**
 
-人口増加が鈍る後半のデータを含めると，推定される $K$ は小さくなる．ここで変えたのは推定データであり，探索方法ではない．
+`train_end = 1990`に戻して本文の5つのコードセルを再実行する．年の条件を使って残差を取り出す．
 
-**3．RMSEの比較**
+```python
+print(f"1945年の残差: {residual_all[population['year'] == 1945][0]:.1f} 万人")
+print(f"1980年の残差: {residual_all[population['year'] == 1980][0]:.1f} 万人")
+```
 
-訓練RMSEは1970年まで，検証RMSEは2010年までで推定した設定が最小になる．ただし検証期間はそれぞれ1975〜2020年，1995〜2020年，2015〜2020年と異なるため，同じ将来期間に対する精度の比較にはなっていない．
-````
+- **コードの補足**：年の条件に一致する要素を選び，`[0]`でその値を取り出す．残差はモデル値−観測値である．
 
-````{note} 演習3：残差の時系列の解釈
+出力例：
 
-`train_end = 1990`に戻し，訓練・検証期間の設定から人口と残差の描画までを順に再実行せよ．得られた図を使い，次を`README.md`に記せ．
+```text
+1945年の残差: 583.2 万人
+1980年の残差: -156.8 万人
+```
 
-1. 訓練期間のLogisticモデルの残差が正・負となる時期をそれぞれ挙げよ．
-2. 1940年代の人口の急な変化についてモデルに含まれていない要因を1つ挙げ，確認に必要な資料も記せ．図だけから原因を断定しないこと．
-3. 残差に時間的な偏りがある場合に見直す点を述べよ．偏りが目立たない場合でも，モデルが正しいと断定できるか答えよ．
-````
+1945年は正で過大評価，1980年は負で過小評価となる．
 
-````{visible-answer} 演習3の解答例
+**3．RMSEが最小の設定**
 
-**1．残差の符号**
-
-1990年までで推定した本文の図では例えば1925年・1945年・1970年・1990年は正，1935年・1950年・1980年は負である．特に1945年は約583万人の過大評価，1980年は約157万人の過小評価となる．時期によって同じ符号が続く傾向が見られる．
-
-**2．急な変化に関係しうる要因**
-
-戦争に伴う死亡や人口移動を候補として挙げる．定数 $r,K$ のLogisticモデルではこれらによる急な変化を個別に表していない．確認には当時の出生・死亡・人口移動の統計と人口データの集計範囲・推計方法の説明が必要になる．残差の図だけで，各要因の寄与は決められない．
-
-**3．残差の傾向とモデルの評価**
-
-- **偏りがある場合**：定数の係数で表す仮定，モデルに含めていない要因，観測・集計方法の変化を見直す．
-- **偏りが目立たない場合**：その図では明確な時間的傾向が見つからなかったと言える．モデルが正しいことや，将来の予測精度まで保証するものではないため，未使用期間の誤差も確認する．
+訓練RMSEは1970年まで，検証RMSEは2010年までで推定した設定が最小になる．
 ````
 
 ## ダムモデル：観測量への換算を含む推定
@@ -673,7 +707,9 @@ plt.show()
 ### 観測モデルと推定する係数
 
 第6回では貯水位 $h$ から貯水量 $V$ への換算を傾き約627千m³/mの線形関係とした．
-これはダムの諸元から仮定した値で，計算貯水量と水位からの換算値は最終的に約5,000千m³ずれた．この差に対し，今回は線形の換算関係を保ち，その傾きを未知のパラメタ $\alpha$ として推定する．損失項の追加や流量の補間方法の変更はこの比較には含めない．
+これはダムの諸元から仮定した値で，計算貯水量と水位からの換算値は最終的に約5,000千m³ずれた．この差に対し，今回は線形の換算関係を保ち，その傾きを未知のパラメタ $\alpha$ として推定する．収支式と流量の補間方法は第6回の設定を保つ．
+
+ここでは $t$ を対象年の初日からの経過日数，$h(t)$ を貯水位（m），$V(t)$ を貯水量（千m³）とする．$h_{\min}=304.0$ mは貯水量を0とする基準水位，$\alpha$ は水位差を貯水量へ換算する係数（千m³/m）である．$Q_{\mathrm{in}}(t)$ と $Q_{\mathrm{out}}(t)$ は流入流量と放流流量を千m³/日に換算した値を表す．
 
 $$
 V(t) = \alpha\,(h(t) - h_{\min}),
@@ -682,7 +718,7 @@ V(t) = \alpha\,(h(t) - h_{\min}),
 $$
 
 $V$ は直接観測されないので，残差は観測量である貯水位で定義する．
-モデルの貯水量を $\alpha$ で割って貯水位に戻し，時刻 $t_i$ の観測水位 $h_i$ との差を残差とする．
+モデルの貯水量を $\alpha$ で割って貯水位に戻した計算水位を $\hat h(t_i;\alpha)$ とし，時刻 $t_i$ の観測水位 $h_i$ との差を残差とする．
 
 $$
 \hat{h}(t_i;\alpha) = h_{\min} + \frac{V(t_i)}{\alpha},
@@ -690,7 +726,7 @@ $$
 e_i(\alpha) = \hat{h}(t_i;\alpha) - h_i
 $$
 
-初期貯水量も $V_0=\alpha(h_0-h_{\min})$ とし，候補の $\alpha$ ごとに設定し直す．したがって最初の観測水位は初期条件に使う．その後の水位変化が合うように係数を選ぶ．
+初日の観測水位を $h_0$，初期貯水量を $V_0$ とする．$V_0=\alpha(h_0-h_{\min})$ を候補の $\alpha$ ごとに設定し直し，初日以降の水位変化が合うように係数を選ぶ．
 
 | 処理 | 人口モデル | ダムモデル |
 | --- | --- | --- |
@@ -978,7 +1014,7 @@ plt.show()
 
 人口の例では検証期間の人口を初期条件や推定に使わずに計算した．ダムでは対象年全体の観測流量と初日の観測水位を与えている．したがってここで調べたのは観測入力の下で換算係数を別の年に適用できるかであり，将来の流量と水位をまとめて予測する性能ではない．
 
-````{note} 演習4：対象年による換算係数の比較
+````{note} 演習3：対象年による換算係数の比較
 
 2021〜2023年から1年を選び，「別の年への適用と再推定の区別」の`year`を変更して比較せよ．`alpha_reference`は2019年の推定値に固定すること．
 
@@ -987,7 +1023,7 @@ plt.show()
 3. 2つのRMSEのうち，2019年の係数を別の年へ適用した結果を表すのはどちらか答えよ．再推定したRMSEが小さいことから言えることと言えないことを説明せよ．
 ````
 
-````{visible-answer} 演習4の解答例
+````{visible-answer} 演習3の解答例
 
 **1．2021年への適用と再推定**
 
@@ -1034,16 +1070,55 @@ plt.show()
 4. 訓練終了を5年延ばして係数の変化を記せ．この変化を探索方法の効果や信頼区間と解釈できるか，第5回との比較条件にも触れて説明せよ．検証期間は各設定で訓練終了の5年後から2020年までとする．
 ````
 
-````{hidden-answer} 課題1の解答例
+````{visible-answer} 課題1の解答例
 
 **1．推定条件と結果**
 
-Logisticモデルの $r,K$ を推定する．初期人口は5596.3万人，目的関数は人口の残差二乗和である．探索初期値は`[0.03, 13000.0]`，範囲は $0\leq r\leq1$，$6000\leq K\leq50000$ 万人とする．
+Logisticモデルの $r,K$ を推定する．初期人口は5596.3万人，目的関数は人口の残差二乗和である．探索初期値は`[0.03, 13000.0]`，範囲は $0\leq r\leq1$，$6000\leq K\leq50000$ 万人とする．本文の関数と人口データを準備した状態から実行する．
 
-本文の訓練・検証の設定から描画までをコピーし，`train_end = 1980`に変更する．訓練は1920〜1980年，検証は1985〜2020年となる．
+訓練終了を1980年に変更し，推定用と検証用のデータを取り出す．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1
+:class: code-focus
+
+train_end = 1980
+valid_start = train_end + 5
+train_mask = population["year"] <= train_end
+valid_mask = population["year"] >= valid_start
+
+t_train, y_train = t_obs[train_mask], y_obs[train_mask]
+t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
+```
+
+訓練データだけで推定し，係数と停止結果を確認する．
+
+```python
+result_train = least_squares(residuals, [0.03, 13000.0], args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
+r_train, K_train = result_train.x
+print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
+print("停止結果:", result_train.success, result_train.message)
+```
+
+係数を固定して全期間を計算し，訓練・検証のRMSEを求める．
+
+```python
+# 推定したパラメタで全期間を計算する
+y_fit_all = simulate_logistic(result_train.x, t_obs, N0)
+rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
+rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
+print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
+print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
+print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
+```
+
+出力例：
 
 ```text
 訓練期間で推定: r = 0.01500 /年,  K = 48065.8 万人
+停止結果: True `ftol` termination condition is satisfied.
 訓練期間の RMSE:    115.6 万人
 検証期間の RMSE:   2851.2 万人
 2020年の予測: 17843.8 万人，観測: 12614.6 万人
@@ -1051,24 +1126,69 @@ Logisticモデルの $r,K$ を推定する．初期人口は5596.3万人，目�
 
 **2．探索初期値の比較**
 
-「初期値依存性」のループをコピーし，残差関数に渡すデータと範囲を訓練用に変更する．変更した推定の呼び出しを強調する．
+本文の4組をrの降順で試す．残差関数へ渡すデータを訓練期間に変更し，同じ範囲を指定する．
 
 ```{code-block} python
 :linenos:
-:emphasize-lines: 3
+:emphasize-lines: 12-13
 :class: code-focus
 
-# initial_guessesは本文の4組を使う．
+initial_guesses = [
+    [0.10, 10000.0],
+    [0.05, 30000.0],
+    [0.03, 13000.0],
+    [0.01, 20000.0],
+]
+
+print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
 for guess in initial_guesses:
-    res = least_squares(residuals, guess, args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
-    print(guess, res.x, res.cost, res.success, res.message)
+    res = least_squares(
+        residuals, guess,
+        args=(t_train, y_train, N0),
+        bounds=(lower_bounds, upper_bounds),
+    )
+    print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
+    print("停止結果:", res.success, res.message)
 ```
 
 4組とも $r\approx0.01500$，$K\approx48065.8$ 万人，cost $\approx407449.5$ を得る．いずれも停止条件を満たすが，探索範囲全体の最小値を得たことの証明にはならない．
 
 **3．残差と見直す仮定**
 
-再利用した描画コードから，次の人口と残差の図を得る．
+推定した係数の人口と観測人口の差を計算する．
+
+```python
+years = population["year"].values
+residual_all = y_fit_all - y_obs
+print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
+```
+
+本文と同じ2段の図で人口と残差を描く．
+
+```python
+fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+
+axes[0].plot(years, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+axes[0].plot(years, y_fit_all, color="tab:blue", label=f"Logisticモデル・{train_end}年までで推定（r={r_train:.4f}, K={K_train:.0f}）")
+axes[0].axvspan(valid_start, 2020, color="gray", alpha=0.15, label="検証期間")
+axes[0].set_ylabel("人口 [万人]")
+axes[0].set_ylim(4000, 1.05 * max(y_obs.max(), y_fit_all.max()))
+axes[0].set_title("訓練期間と検証期間を分けたパラメタ推定")
+axes[0].legend(fontsize=8)
+
+axes[1].plot(years, residual_all, color="tab:blue", marker="o", markersize=3)
+axes[1].axhline(0, color="black", linewidth=0.8)
+axes[1].axvspan(valid_start, 2020, color="gray", alpha=0.15)
+axes[1].set_ylabel("Logisticモデルの残差\n[万人]")
+
+axes[1].set_xlabel("年")
+
+for ax in axes:
+    ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / f"population_fit_{train_end}.png", dpi=150)
+plt.show()
+```
 
 ![1980年までのデータによる推定と残差](figs/07/population_fit_1980.png)
 
@@ -1076,7 +1196,14 @@ for guess in initial_guesses:
 
 **4．期間の変更と第5回との比較**
 
-`train_end = 1985`に変更して同じ計算を再実行すると，$r=0.01614$，$K=34675.4$ 万人，訓練RMSE約119.6万人，検証RMSE約2575.0万人を得る．$K$ の変化は約−13390万人だが，これは推定データを変えた2条件の差であり，信頼区間ではない．
+第1問の最初のセルを`train_end = 1985`に変更し，設定・推定・全期間の計算を再実行する．
+
+| 訓練終了年 | 推定 $r$［/年］ | 推定 $K$［万人］ | 訓練RMSE［万人］ | 検証RMSE［万人］ |
+| --- | ---: | ---: | ---: | ---: |
+| 1980 | 0.01500 | 48065.8 | 115.6 | 2851.2 |
+| 1985 | 0.01614 | 34675.4 | 119.6 | 2575.0 |
+
+$K$ の変化は約−13390万人だが，これは推定データを変えた2条件の差であり，信頼区間ではない．検証対象の年も変わるため，RMSEを同じ将来期間の予測精度としては比較できない．
 
 第5回は全期間のデータを使ったため，今回との推定値の差を探索方法だけの効果とは解釈できない．全期間・同じ数値解にそろえた本文の比較では，格子探索からのMSEの改善は約0.1%だった．
 ````
@@ -1089,7 +1216,7 @@ for guess in initial_guesses:
 2. 「2020年のダムデータで換算係数を推定し直すとRMSEが約0.320 mになったので，2019年の換算係数を2020年へ適用しても同程度の誤差になる．」
 ````
 
-````{hidden-answer} 課題2の解答例
+````{visible-answer} 課題2の解答例
 
 **1．人口の推定方法と予測性能**
 
@@ -1111,132 +1238,162 @@ for guess in initial_guesses:
 
 ## 自主学習用の発展課題
 
-### 換算係数と一定の損失流量の同時推定
+### 貯水池の形状とべき指数の推定
 
-本文では第6回と同じ収支式を保ち，換算係数だけを推定した．ここでは第6回の損失項を加え，換算係数 $\alpha$ と一定の損失流量 $c$ を同時に推定する．これは探索方法を変える比較から，**モデルの構造とパラメタ数を変える比較**への発展である．
+本文の線形換算に代えて，水位差が貯水量の**べき乗**で表されると仮定する．基準水位を $h_{\min}$ とし，$H=h-h_{\min}$ を用いる．絶対的な標高 $h$ ではなく水位差 $H$ をモデル化する．
+
+水位差と貯水量を比で表すため，次の基準値を定める．添字の $*$ は**固定した基準値**を表す．
+
+| 記号 | 意味 | 今回の設定 |
+| --- | --- | --- |
+| $H_*$ | **基準水位差**．常時満水位と基準水位 $h_{\min}$ の差 | $393.3-304.0=89.3$ m |
+| $V_*$ | **基準貯水量**．水位差 $H_*$ に対応させる貯水量 | 有効貯水容量56000千m³ |
+| $p$ | 水位差と貯水量の関係の曲がり方を表す**べき指数** | 無次元．観測データから推定 |
+
+このモデルは $V=V_*$ のとき $H=H_*$ となる関係を仮定する．$H_*$ と $V_*$ を固定し，指数 $p$ を推定する．
 
 $$
-\frac{dV}{dt}=Q_{\mathrm{in}}(t)-Q_{\mathrm{out}}(t)-c,
-\qquad V_0=\alpha(h_0-h_{\min}),
-\qquad \hat h(t)=h_{\min}+\frac{V(t)}{\alpha}.
+\frac{H(t)}{H_*}=\left(\frac{V(t)}{V_*}\right)^p,
+\qquad
+\hat h(t)=h_{\min}+H_*\left(\frac{V(t)}{V_*}\right)^p.
 $$
 
-正の $c$ は貯水量を減らす向きの補正で，単位は千m³/日である．ここでは $c\geq0$ として損失を表す．
+$H/H_*$ と $V/V_*$ はどちらも無次元なので，水位や貯水量の単位を変えても指数の意味は変わらない．$p=1$ は第6回の仮定 $V/H=V_*/H_*\approx627.1$ に対応し，本文で推定した線形係数 $\alpha\approx1027.0$ を使うモデルとは区別する．
 
-「別の年への適用と再推定の区別」のデータ抽出セルをコピーして`year = 2019`に変更し，流量と水位の配列を作り直す．換算関数と最低水位は本文の設定を使う．
+初期貯水量も同じ関係から計算する．収支式と流量の線形補間は本文と共通にする．
 
-損失項がない場合の比較には，本文で保存した2019年の係数を使う．
+$$
+V_0=V_*\left(\frac{h_0-h_{\min}}{H_*}\right)^{1/p},
+\qquad
+\frac{dV}{dt}=Q_{\mathrm{in}}(t)-Q_{\mathrm{out}}(t).
+$$
 
-```python
-alpha_hat = alpha_reference
-```
+**形状との対応**
 
-本文の水位計算に損失流量を追加し，2つのパラメタを受け取る残差関数を定義する．
+湖面積を $A(H)$ とすると $A(H)=dV/dH$ なので，この仮定は湖面積の水位による変化も定める．
 
-```{code-block} python
-:linenos:
-:emphasize-lines: 2
-:class: code-focus
+$$
+A(H)=\frac{V_*}{pH_*}\left(\frac{H}{H_*}\right)^{1/p-1}.
+$$
 
-def reservoir_rhs_with_loss(t, V, t_data, qin_data, qout_data, loss):
-    return np.interp(t, t_data, qin_data) - np.interp(t, t_data, qout_data) - loss
-```
+$V$ を千m³，$H$ をmで表す場合，この式の $A$ の単位は千m²である．次の表の記号 $\propto$ は比例を表す．
 
-- **コードの補足**：`loss`を千m³/日の一定流量として，流入量と放流量の差から引く．
+| 回転対称な貯水池の例 | 体積と水位差の関係 | 指数 $p$ |
+| --- | --- | --- |
+| 円柱型 | $V\propto H$ | $1$ |
+| 放物面型 | $V\propto H^2$ | $1/2$ |
+| 円錐型 | $V\propto H^3$ | $1/3$ |
 
-換算係数と損失流量を受け取り，損失項を加えたモデルの水位を計算する．
+![円柱型・放物面型・円錐型の貯水池とべき指数の対応](figs/07/reservoir_power_shape.png)
 
-```{code-block} python
-:linenos:
-:emphasize-lines: 2,4
-:class: code-focus
+図は形状と指数の対応を示す模式図である．計算では基準水位304 mを仮想的な貯水池の底とみなし，その上の貯水量を表す．実際の湖底形状をそのまま表した図ではない．
 
-def simulate_level_with_loss(theta, t_data, qin_data, qout_data, h_data):
-    alpha, loss = theta
-    V0 = alpha * (h_data[0] - LEVEL_MIN)
-    sol = solve_ivp(reservoir_rhs_with_loss, (t_data[0], t_data[-1]), [V0], t_eval=t_data, args=(t_data, qin_data, qout_data, loss), max_step=1.0)
-    return LEVEL_MIN + sol.y[0] / alpha
-```
+**計算の準備**
 
-- **コードの補足**：`alpha, loss = theta`で候補の2つの値を取り出し，`args`の最後に`loss`を加えて右辺へ渡す．
-
-2つのパラメタで計算した水位から，観測水位を引いた残差配列を返す．
+2019年のデータを取り出し，本文と同じ流量の単位にそろえる．
 
 ```python
-def residuals_level_with_loss(theta, t_data, qin_data, qout_data, h_data):
-    return simulate_level_with_loss(theta, t_data, qin_data, qout_data, h_data) - h_data
+year = 2019
+dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
+h_dam = dam_year["water_level_m"].values
+
+H_REF = 393.3 - LEVEL_MIN
+V_REF = 56000.0
 ```
 
-- **コードの補足**：`least_squares`へ渡すパラメタ配列は換算係数・損失流量の順に並べる．
+- **コードの補足**：尺度の`H_REF`と`V_REF`を固定し，関係の曲がり方を表す指数だけを変える．
+
+本文の`reservoir_rhs`を再利用し，候補の指数に応じた初期貯水量と水位を計算する．
+
+```python
+def simulate_level_power(power, t_data, qin_data, qout_data, h_data):
+    V0 = V_REF * ((h_data[0] - LEVEL_MIN) / H_REF) ** (1 / power)
+    sol = solve_ivp(
+        reservoir_rhs, (t_data[0], t_data[-1]), [V0],
+        t_eval=t_data, args=(t_data, qin_data, qout_data), max_step=1.0,
+    )
+    return LEVEL_MIN + H_REF * (sol.y[0] / V_REF) ** power
 
 
-````{note} 発展課題：2パラメタの推定と解釈
+def residuals_level_power(theta, t_data, qin_data, qout_data, h_data):
+    return simulate_level_power(theta[0], t_data, qin_data, qout_data, h_data) - h_data
+```
 
-1. 本文の換算係数の推定コードを変更し， $\alpha,c$ を同時に推定せよ．探索の初期値は `[alpha_assumed, 0.0]`，下限は `[100.0, 0.0]`，上限は `[5000.0, 100.0]` とせよ．推定値とRMSEを記し， $c$ をm³/sにも換算せよ．
-2. 損失項がない場合と加えた場合の水位・残差を描き，同じ訓練データでのRMSEが下がった理由を説明せよ．
-3. 推定した $c$ を蒸発量や漏水量と解釈できるか答え，確認に必要な資料を挙げよ．
+```{dropdown} コードの補足
+
+- `** (1 / power)`は観測水位から初期貯水量を求める逆変換である．
+- `** power`で貯水量を水位へ戻す．初期条件と計算後の換算に同じ指数を使う．
+- この式は $V\geq0$，$H\geq0$ を仮定する．以下では円錐型から円柱型に対応する $1/3\leq p\leq1$ を探索する．
+```
+
+````{note} 発展課題：べき指数の推定と形状の解釈
+
+1. 2019年の水位の残差二乗和を最小にする指数 $p$ を推定せよ．探索初期値は`[0.5]`，範囲は`([1 / 3], [1.0])`とし，推定値・RMSE・停止結果を示せ．
+2. 本文で推定した線形係数と今回のべき乗モデルについて，水位・残差を比較する図をNotebookに出力せよ．また $p=1$ でのRMSEも計算し，どの線形モデルに対応するか説明せよ．
+3. 推定した $p$ で水位が上がると湖面積がどう変わるか答えよ．この値だけから実際の貯水池の形状を断定できるか，確かめるために必要な資料も挙げよ．
 ````
 
-````{hidden-answer} 発展課題の解答例
+````{visible-answer} 発展課題の解答例
 
-**1．推定値と誤差**
+**1．べき指数の推定**
 
-残差関数・探索の初期値・範囲を2パラメタ用に変更し，水位の残差を最小にする組を求める．
-
-```{code-block} python
-:linenos:
-:emphasize-lines: 1-2
-:class: code-focus
-
-result_two = least_squares(residuals_level_with_loss, [alpha_assumed, 0.0], args=(t_dam, qin_dam, qout_dam, h_dam), bounds=([100.0, 0.0], [5000.0, 100.0]))
-alpha_two, loss_two = result_two.x
-print("停止結果:", result_two.success, result_two.message)
-print(f"alpha = {alpha_two:.1f} 千m^3/m")
-print(f"損失流量 = {loss_two:.3f} 千m^3/日 = {loss_two * 1000 / SECONDS_PER_DAY:.4f} m^3/s")
-print(f"RMSE = {np.sqrt(np.mean(result_two.fun ** 2)):.3f} m")
-```
-
-- **コードの補足**：1つの係数を推定した本文と同じ呼び出し方で，パラメタ配列を2要素にする．
-
-出力例：
-
-```text
-停止結果: True `xtol` termination condition is satisfied.
-alpha = 1045.1 千m^3/m
-損失流量 = 2.119 千m^3/日 = 0.0245 m^3/s
-RMSE = 0.238 m
-```
-
-**2．水位と残差の比較**
-
-それぞれの推定値で水位を計算し，RMSEを比較する．
+残差関数をべき乗モデルに変更し，指数を推定する．
 
 ```python
-h_single = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
-h_two = simulate_level_with_loss(result_two.x, t_dam, qin_dam, qout_dam, h_dam)
-print(f"損失項なしのRMSE: {np.sqrt(np.mean((h_single - h_dam) ** 2)):.3f} m")
-print(f"損失項ありのRMSE: {np.sqrt(np.mean((h_two - h_dam) ** 2)):.3f} m")
+result_power = least_squares(
+    residuals_level_power, [0.5],
+    args=(t_dam, qin_dam, qout_dam, h_dam),
+    bounds=([1 / 3], [1.0]),
+)
+power_hat = result_power.x[0]
+rmse_power = np.sqrt(np.mean(result_power.fun ** 2))
+print("停止結果:", result_power.success, result_power.message)
+print(f"推定した指数 p = {power_hat:.4f}，RMSE = {rmse_power:.3f} m")
 ```
 
 出力例：
 
 ```text
-損失項なしのRMSE: 0.472 m
-損失項ありのRMSE: 0.238 m
+停止結果: True `ftol` termination condition is satisfied.
+推定した指数 p = 0.5262，RMSE = 0.190 m
 ```
 
-本文と同じ2段の図で，損失項の有無による水位と残差の違いを示す．
+**2．線形モデルとの比較**
+
+本文で保存した2019年の線形係数と，推定した指数で水位を計算する．$p=1$ も同じ関数で確認する．
+
+```python
+h_linear = simulate_level(alpha_reference, t_dam, qin_dam, qout_dam, h_dam)
+h_power = simulate_level_power(power_hat, t_dam, qin_dam, qout_dam, h_dam)
+h_power_one = simulate_level_power(1.0, t_dam, qin_dam, qout_dam, h_dam)
+print(f"本文で推定した線形係数のRMSE: {np.sqrt(np.mean((h_linear - h_dam) ** 2)):.3f} m")
+print(f"べき乗モデルのRMSE: {rmse_power:.3f} m")
+print(f"p = 1のRMSE: {np.sqrt(np.mean((h_power_one - h_dam) ** 2)):.3f} m")
+```
+
+出力例：
+
+```text
+本文で推定した線形係数のRMSE: 0.472 m
+べき乗モデルのRMSE: 0.190 m
+p = 1のRMSE: 4.635 m
+```
+
+本文の水位・残差の描画を使い，線形換算とべき乗換算を比較する．
 
 ```python
 fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 axes[0].plot(dam_year["date"], h_dam, color="black", label="観測水位")
-axes[0].plot(dam_year["date"], h_single, color="tab:green", linestyle="--", label=f"損失項なし α = {alpha_hat:.0f}")
-axes[0].plot(dam_year["date"], h_two, color="tab:blue", label=f"損失項あり α = {alpha_two:.0f}")
+axes[0].plot(dam_year["date"], h_linear, color="tab:green", linestyle="--", label=f"線形換算 α = {alpha_reference:.0f}")
+axes[0].plot(dam_year["date"], h_power, color="tab:blue", label=f"べき乗換算 p = {power_hat:.3f}")
 axes[0].set_ylabel("水位 [m]")
-axes[0].set_title(f"一定の損失流量の追加による比較（{year}年）")
+axes[0].set_title(f"水位・貯水量関係の関数形による比較（{year}年）")
 axes[0].legend()
-axes[1].plot(dam_year["date"], h_single - h_dam, color="tab:green", linestyle="--", label="損失項なしの残差")
-axes[1].plot(dam_year["date"], h_two - h_dam, color="tab:blue", label="損失項ありの残差")
+axes[1].plot(dam_year["date"], h_linear - h_dam, color="tab:green", linestyle="--", label="線形換算の残差")
+axes[1].plot(dam_year["date"], h_power - h_dam, color="tab:blue", label="べき乗換算の残差")
 axes[1].axhline(0, color="black", linewidth=0.8)
 axes[1].set_ylabel("モデル値−観測値 [m]")
 axes[1].set_xlabel("日付")
@@ -1244,15 +1401,19 @@ axes[1].legend()
 for ax in axes:
     ax.grid(True)
 fig.tight_layout()
-fig.savefig(FIGURE_DIR / "dam_alpha_loss_2019.png", dpi=150)
+fig.savefig(FIGURE_DIR / "dam_power_estimation_2019.png", dpi=150)
 plt.show()
 ```
 
-![一定の損失流量を追加した水位モデルの比較](figs/07/dam_alpha_loss_2019.png)
+- **コードの補足**：流量・対象年・初日の観測水位はそろえ，換算関係の違いを比較する．
 
-損失項のないモデルは拡張したモデルで $c=0$ とした場合に含まれる．したがって同じデータで同じ目的関数を厳密に最小化できれば，パラメタを追加した側の最小値は増加しない．**訓練データへの当てはまりの改善だけでは将来予測や物理的な解釈の改善までは示せない**．
+![線形換算と推定したべき乗換算による水位と残差の比較](figs/07/dam_power_estimation_2019.png)
 
-**3．損失流量の解釈**
+$p=1$ は第6回の固定係数約627.1千m³/mに対応する．本文の推定係数約1027.0千m³/mとべき指数は，どちらも2019年の水位から求めた1パラメタの推定である．この例では関数形を変えると当てはまりが改善したが，その改善だけでは別の年への適用結果は分からない．
 
-<span style="color:red">推定値だけから，実際の蒸発量や漏水量とは判断できない．</span>水位から貯水量への換算や流量の補間の誤差も， $c$ によって補われる可能性がある．さらにCSVの流入量は貯水量変化と放流量から逆算されている．容量曲線，流量の算出方法，蒸発量・湖面積・漏水の観測資料と照合し，同じ出入りを二重に数えていないか確認する．
+**3．形状の解釈**
+
+$p\approx0.526$ は $1/2$ に近い．このモデルでは $A(H)\propto H^{1/p-1}$ の指数が正になるため，水位が高くなるほど湖面積が大きくなる形状を表す．放物面型に近い関係だが，実際の湖底が放物面であると断定はできない．
+
+基準水位・基準容量を固定した近似の下で求めた値であり，流量の補間や観測誤差も推定に影響する．さらに流入量は貯水量変化と放流量から逆算されている．実際の水位・容量曲線や測量資料と照合して形状の仮定を検討する．
 ````
