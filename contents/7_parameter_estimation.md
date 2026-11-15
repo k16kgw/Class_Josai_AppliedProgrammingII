@@ -111,8 +111,8 @@ applied_programming_ii/
 ## 演習3：対象年による換算係数の比較
 
 1. 選んだ年・2019年の係数を固定した場合と再推定した場合のRMSE： （Notebookに水位と残差の図を出力）
-2. 再推定した係数・観測水位の範囲と，2019年との比較：
-3. 別の年への適用結果と，再推定による当てはまりの違い：
+2. 再推定した係数・観測水位の範囲：
+3. 2つのRMSEの差： （Notebookに数値を出力）
 
 ## 課題1：訓練期間を選んだ推定結果の報告
 
@@ -121,10 +121,11 @@ applied_programming_ii/
 3. 残差から見直す仮定と根拠： （Notebookに人口と残差の図を出力）
 4. 訓練終了を5年延ばした場合の係数の変化・第5回との比較時の注意：
 
-## 課題2の考察
+## 課題2：ダムの係数の推定と別の年への適用
 
-1. 数値最適化と人口予測に関する主張への賛否・根拠：
-2. ダムの再推定と別の年への適用に関する主張への賛否・根拠：
+1. 2019年で推定した係数・RMSE・停止結果：
+2. 選んだ年・固定した係数と再推定した係数によるRMSE・再推定した係数：
+3. 2つのRMSEの差・別の年への適用結果として報告するRMSE： （Notebookに水位と残差の図を出力）
 ```
 
 5. 以下のコードをNotebookの最初のコードセルにまとめて入力し，実行せよ．計算・描画に使うライブラリと保存先を設定し，CSVファイルの有無を確認する．
@@ -270,7 +271,7 @@ print(f"第5回の格子上の最良の組 (r, K) = {theta_grid}: MSE = {mse_gri
 数値最適化では全ての候補を先に並べる代わりに，**現在の候補の近くで残差がどう変わるか**を調べ，次に試す候補を決める．今回の設定ではライブラリがパラメタを少しずらして残差の変化を数値的に調べる．
 
 1. パラメタの組 $\theta$ の探索開始値を $\theta_0$ として与える．
-2. その候補で微分方程式を解き，観測時刻の残差配列を求める．
+2. 候補 $\theta$ を固定した初期値問題を解き，その解を各観測時刻で評価して観測値との差を求める．
 3. 候補の近くでの残差の変化を使い，二乗和を小さくする次の候補を計算する．
 4. 候補を評価・更新し，停止条件を満たすまで繰り返す．
 
@@ -278,14 +279,47 @@ print(f"第5回の格子上の最良の組 (r, K) = {theta_grid}: MSE = {mse_gri
 
 ### 残差と最小二乗の基準
 
-観測点数を $n$ とし，$i=1,\ldots,n$ を観測点の番号とする．$t_i$ は観測時刻，$y_i$ は観測人口，$\hat y(t_i;\theta)$ はパラメタ $\theta$ で計算した人口を表す．残差を $e_i(\theta)$，残差二乗和を $J(\theta)$ として次のように定義する．
+観測点数を $n$ とし，$i=1,\ldots,n$ を観測点の番号とする．$t_i$ は1920年からの経過年数で表した観測時刻，$y_i$ はその時刻の観測人口（万人）である．ここでは $0=t_1<\cdots<t_n$ とし，初期人口 $N_0=y_1$ を固定する．
+
+**候補を固定した初期値問題**
+
+候補 $\theta=(r,K)$ に対する人口を $N(t;\theta)$ と書く．これは観測期間全体で解が存在する候補について，次の初期値問題の一意な解を表す．セミコロンの後の $\theta$ は計算中に固定するパラメタである．
 
 $$
-e_i(\theta)=\hat y(t_i;\theta)-y_i,
-\qquad J(\theta)=\sum_{i=1}^{n}e_i(\theta)^2.
+\begin{cases}
+\displaystyle \frac{d}{dt}N(t;\theta)
+=rN(t;\theta)\left(1-\frac{N(t;\theta)}{K}\right),
+& 0\leq t\leq t_n,\\[4pt]
+N(0;\theta)=N_0.
+\end{cases}
 $$
 
-残差は正なら過大評価，負なら過小評価を表す．第5回とは符号が逆だが，二乗すると同じ値になる．
+候補を変えると右辺の $r,K$ が変わるため，**候補ごとに初期値問題を解き直す**．初期人口 $N_0$ はどの候補でも同じである．
+
+**観測時刻での残差配列**
+
+観測時刻でのモデル人口を $\hat y(t_i;\theta)=N(t_i;\theta)$ とする．各観測点の残差を $e_i(\theta)$，それを観測時刻順に並べた残差ベクトルを $\boldsymbol e(\theta)$ と定義する．
+
+$$
+e_i(\theta)=N(t_i;\theta)-y_i,
+\qquad
+\boldsymbol e(\theta)=
+\begin{pmatrix}
+N(t_1;\theta)-y_1\\
+\vdots\\
+N(t_n;\theta)-y_n
+\end{pmatrix}.
+$$
+
+コードの残差配列はこの $n$ 成分を1次元配列にしたものである．**観測点ごとに初期条件を設定し直すのではなく，1920年から解いた1本の曲線を各 $t_i$ で評価する**．残差は正なら過大評価，負なら過小評価を表す．第5回とは符号が逆だが，二乗すると同じ値になる．
+
+最小二乗法ではこの残差配列を二乗和にまとめる．残差二乗和を $J(\theta)$ と定義する．
+
+$$
+J(\theta)=\sum_{i=1}^{n}e_i(\theta)^2.
+$$
+
+実装では $e_i(\theta)$ を数値計算で得た $\widetilde e_i(\theta)$ に置き換える．以下の尺度の関係は数値計算した残差についても同じである．
 
 | 尺度 | 計算式 | 用途 |
 | --- | --- | --- |
@@ -352,19 +386,26 @@ RMSE: 339.1 万人
 残差関数の評価回数: 7
 ```
 
-`result.message`に含まれる主な停止理由は次のとおりである．
+`result.message`に含まれる主な停止理由は次のとおりである．`tol`は**tolerance**（許容値）の略である．`f`はfunction（目的関数），`x`は最適化変数を表す記号，`g`はgradient（勾配）に由来する．ここでの`x`は推定するパラメタの組 $\theta$ に対応する．
 
-| `result.message`の種類 | 停止理由 |
-| --- | --- |
-| `ftol` | 目的関数の減少量が小さくなり，停止条件を満たした |
-| `xtol` | パラメタの更新量が小さくなり，停止条件を満たした |
-| `gtol` | 目的関数の勾配に関する停止条件を満たした |
-| `ftol`と`xtol` | 目的関数の減少量とパラメタの更新量の両方が停止条件を満たした |
-| `maximum number of function evaluations` | 評価回数の上限に達した．停止条件を満たしたことを示す結果ではない |
+| `result.message`の種類 | 名前の意味 | 停止理由 |
+| --- | --- | --- |
+| `ftol` | function tolerance | 目的関数の減少量が相対的な許容値を下回り，近似モデルとの整合性も満たした |
+| `xtol` | x tolerance | パラメタの更新量がパラメタの大きさに応じた許容値を下回った |
+| `gtol` | gradient tolerance | 今回の既定の手法では範囲制約を考慮して調整した勾配の大きさが許容値を下回った |
+| `ftol`と`xtol` | 上の2条件 | 目的関数の減少量とパラメタの更新量の両方が停止条件を満たした |
+| `maximum number of function evaluations` | 残差関数の評価回数の上限 | 設定された上限まで評価して終了した．`success`は`False`となる |
 
 **`nfev`はnumber of function evaluationsの略**である．ここでのfunctionは残差関数を指す．今回の既定の手法では数値微分のための追加評価を含まないため，反復回数や全モデル評価回数とは区別する．
 
-`ftol`の既定値は`1e-8`で，目的関数の相対的な減少量などを使って停止を判定する．**残差や係数の誤差が`1e-8`以下になったという意味ではない**．停止理由・cost・RMSEを併せて確認する．引数と戻り値の詳細は[SciPyの公式説明](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)を参照する．
+**既定の`ftol=1e-8`は1回の更新によるcostの減少量を，更新前のcostの約1億分の1と比べる指定**である．目的関数を $F(\theta)=J(\theta)/2$ とし，更新前後の値を $F_{\mathrm{before}}$，$F_{\mathrm{after}}$ とする．減少量 $\Delta F=F_{\mathrm{before}}-F_{\mathrm{after}}$ について次の条件を調べる．
+
+$$
+\Delta F < \mathtt{ftol} \times F_{\mathrm{before}}
+=10^{-8} \times F_{\mathrm{before}}.
+$$
+
+例えば更新前のcostが $5807180.6$ なら，減少量の閾値は約 $0.0581$ である．さらに，次の候補を計算するための近似モデルが予測した減少量と実際の減少量が十分に整合していれば，`ftol`の停止条件を満たす．**現在のcostに対して改善が十分小さくなったこと**を判定している．当てはまりの良さは別にRMSEと残差の図で確認する．引数と戻り値の詳細は[SciPyの公式説明](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html)を参照する．
 
 ### 格子探索との比較と改善量の解釈
 
@@ -432,9 +473,18 @@ for guess in initial_guesses:
 
 ````{note} 演習1：探索初期値による推定結果の比較
 
-1. 4つの結果から，最も小さいcostに到達した初期値と対応する推定値・評価回数を記せ．表示桁数で一致する結果は同程度とみなせ．
+1. 本文の4つの結果から，最も小さいcostに到達した初期値と対応する推定値・評価回数を記せ．表示桁数で一致する結果は同程度とみなせ．
 2. 異なる推定値に到達した初期値を挙げ，costが最小の結果の何倍か求めよ．
-3. 探索初期値を`[0.5, 6000.0]`に変更し，上記と同様に`初期値 (r, K)，推定 r，推定 K，cost，評価回数`を出力して他の結果と比較せよ．
+3. 探索初期値を`[0.5, 6000.0]`に変更する．次の【】を埋めて実行し，本文と同じ形式で推定値・cost・評価回数を出力せよ．
+
+本文のループ内の処理をコピーし，追加の1組について計算する．
+
+```python
+guess = 【追加する探索初期値 [r, K]】
+print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
+res = least_squares(residuals, 【探索初期値】, args=(t_obs, y_obs, N0))
+print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
+```
 ````
 
 ````{visible-answer} 演習1の解答例
@@ -648,9 +698,30 @@ plt.show()
 
 ````{note} 演習2：訓練期間と残差の比較
 
-1. 訓練終了年を1970，1990，2010の3通りとし，推定値と訓練・検証のRMSEを出力せよ．各条件で「観測値・モデル・残差の可視化」も再実行し，人口と残差の図をNotebookに出力せよ．
-2. 訓練終了年を1990に戻して再計算し，1945年と1980年の残差を出力せよ．それぞれの正負と，過大評価・過小評価のどちらに対応するかを確認せよ．
-3. 訓練RMSEが最小の設定と検証RMSEが最小の設定について，それぞれの訓練終了年を答えよ．
+1. 訓練終了年を1970，1990，2010の3通りに変更する．次の【】を埋め，各条件で本文の推定・全期間の計算・可視化のコードを続けて実行せよ．推定値・訓練と検証のRMSE・人口と残差の図をNotebookに出力せよ．
+
+本文の期間設定をコピーし，訓練終了年を1つずつ変更する．
+
+```python
+train_end = 【1970，1990，2010のいずれか】
+valid_start = train_end + 5
+train_mask = population["year"] <= train_end
+valid_mask = population["year"] >= valid_start
+t_train, y_train = t_obs[train_mask], y_obs[train_mask]
+t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+```
+
+2. `train_end = 1990`に戻して推定・全期間の計算・可視化を再実行せよ．次の【】を埋めて1945年と1980年の残差を順に出力し，正負と過大評価・過小評価の対応を確認せよ．
+
+本文の期間抽出と同じく年の条件で残差を選び，`[0]`でその年の値を取り出す．
+
+```python
+target_year = 【1945 または 1980】
+year_mask = population["year"] == target_year
+print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
+```
+
+3. 訓練RMSEが最小の設定と検証RMSEが最小の設定について，それぞれの訓練終了年を記せ．
 
 検証対象の年は条件ごとに異なるため，同じ将来期間に対する予測精度の比較にはなっていない．
 ````
@@ -659,7 +730,7 @@ plt.show()
 
 **1．訓練期間ごとの計算と描画**
 
-「人口モデル：未使用期間への適用」の最初の3つのコードセルと「観測値・モデル・残差の可視化」の2つのコードセルをコピーする．`train_end`だけを1970，1990，2010へ変更して各条件を実行する．
+設問1の【】には1970，1990，2010を1つずつ入れる．各条件で本文の推定・全期間の計算・可視化のコードを続けて実行する．
 
 | 訓練終了年 | 推定 $r$［/年］ | 推定 $K$［万人］ | 訓練RMSE［万人］ | 検証RMSE［万人］ |
 | --- | ---: | ---: | ---: | ---: |
@@ -675,11 +746,12 @@ plt.show()
 
 **2．指定した年の残差**
 
-`train_end = 1990`に戻して本文の5つのコードセルを再実行する．年の条件を使って残差を取り出す．
+`train_end = 1990`に戻して本文の5つのコードセルを再実行する．年の条件を使って残差を取り出す．1945年の値を表示した後，`target_year = 1980`に変更して同じコードを実行する．
 
 ```python
-print(f"1945年の残差: {residual_all[population['year'] == 1945][0]:.1f} 万人")
-print(f"1980年の残差: {residual_all[population['year'] == 1980][0]:.1f} 万人")
+target_year = 1945
+year_mask = population["year"] == target_year
+print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
 ```
 
 - **コードの補足**：年の条件に一致する要素を選び，`[0]`でその値を取り出す．残差はモデル値−観測値である．
@@ -1016,18 +1088,37 @@ plt.show()
 
 ````{note} 演習3：対象年による換算係数の比較
 
-2021〜2023年から1年を選び，「別の年への適用と再推定の区別」の`year`を変更して比較せよ．`alpha_reference`は2019年の推定値に固定すること．
+1. 2021〜2023年から1年を選ぶ．次の【】を埋めた後，「別の年への適用と再推定の区別」の固定係数による計算・再推定・描画のコードを続けて実行せよ．選んだ年と2つのRMSEをREADMEに記し，水位と残差の図をNotebookに出力せよ．`alpha_reference`は2019年の推定値を保つこと．
 
-1. 2019年の係数を固定した水位と対象年で係数を再推定した水位についてRMSEを求めよ．選んだ年と2つのRMSEをREADMEに記し，水位と残差の比較図をNotebookに出力せよ．
-2. 再推定した係数と観測水位の範囲を記し，2019年と比較せよ．係数の違いを調べるために必要な資料を1つ挙げよ．
-3. 2つのRMSEのうち，2019年の係数を別の年へ適用した結果を表すのはどちらか答えよ．再推定したRMSEが小さいことから言えることと言えないことを説明せよ．
+本文の対象年と抽出条件を変更し，時刻・流量・水位を準備する．
+
+```python
+year = 【2021〜2023から選んだ年】
+dam_year = dam[【date 列の年が year に等しい行を選ぶ条件】].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
+h_dam = dam_year["water_level_m"].values
+print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
+```
+
+2. 再推定した係数と観測水位の範囲を記せ．
+3. 次の【】を埋め，固定した係数と再推定した係数によるRMSEの差を出力せよ．
+
+本文で計算した2つのRMSEの差を求める．
+
+```python
+print(f"固定した係数のRMSE − 再推定後のRMSE: {【2つのRMSEの差】: .3f} m")
+```
+
+固定した係数のRMSEが別の年への適用結果を表す．再推定後のRMSEはその年への当てはまりを表す．
 ````
 
 ````{visible-answer} 演習3の解答例
 
 **1．2021年への適用と再推定**
 
-「別の年への適用と再推定の区別」の`year = 2020`から描画までをコピーし，`year = 2021`に変更して実行する．`alpha_reference`を代入するセルは再実行せず，2019年の係数を保つ．
+設問1の【】を`2021`と`dam["date"].dt.year == year`で埋める．続けて本文の固定係数による計算・再推定・描画のコードを実行する．`alpha_reference`を代入するセルは再実行せず，2019年の係数を保つ．
 
 ```text
 対象年: 2021年，水位の範囲: 371.69 〜 376.62 m
@@ -1043,7 +1134,15 @@ plt.show()
 
 2019年の係数は約1027.0千m³/m，2021年で再推定した係数は約939.8千m³/mである．水位の範囲は2019年が371.35〜391.99 m，2021年が371.69〜376.62 mであり，2021年はより狭い水位域を通る．水位・容量曲線を入手し，各年の水位域における傾きと比較する．係数の違いをそのまま湖面の形の変化とみなすことはできない．
 
-**3．2つのRMSEの意味**
+**3．2つのRMSEの差**
+
+固定した係数のRMSEから再推定後のRMSEを引く．
+
+```python
+print(f"固定した係数のRMSE − 再推定後のRMSE: {rmse_reference - rmse_alpha: .3f} m")
+```
+
+出力は約0.238 mとなる．
 
 2019年の係数を別の年へ適用した結果は固定した係数による約0.265 mである．再推定後の約0.027 mは2021年に合わせて係数を選び直した結果を表す．その年への当てはまりは改善しているが，2021年の係数をさらに別の年でも使えることや，実際の湖面積を正確に測定したことまでは示していない．
 ````
@@ -1062,12 +1161,69 @@ plt.show()
 
 ````{warning} 課題1：訓練期間を選んだ推定結果の報告
 
-人口のLogisticモデルについて訓練期間の終わりを自分で1つ選び（1960年から2010年の間），次の推定と比較を行え．数値と考察は`README.md`の「課題1」に記し，図はNotebookに出力せよ．
+人口のLogisticモデルについて訓練期間を変え，推定値と未使用期間の誤差を比較する．数値と考察はREADMEに記し，コードと図はNotebookに残せ．
 
-1. モデル・推定するパラメタ・目的関数・訓練と検証の期間・探索初期値と範囲・微分方程式の初期条件を記し，推定値と両期間のRMSEを示せ．
-2. 本文と同じ4組の探索初期値から推定し，推定値・cost・停止結果を比較せよ．
-3. 人口と残差の図をNotebookに出力し，残差から見直す仮定を1つ挙げて根拠を記せ．
-4. 訓練終了を5年延ばして係数の変化を記せ．この変化を探索方法の効果や信頼区間と解釈できるか，第5回との比較条件にも触れて説明せよ．検証期間は各設定で訓練終了の5年後から2020年までとする．
+1. 訓練終了年を1960〜2010年から1つ選び，次の【】を埋めて実行せよ．モデル・推定するパラメタ・目的関数・訓練と検証の期間・探索初期値と範囲・微分方程式の初期条件を記し，推定値と両期間のRMSEを示せ．
+
+訓練・検証の期間を設定し，それぞれの時刻と観測人口を取り出す．
+
+```python
+train_end = 【選んだ訓練終了年】
+valid_start = 【訓練終了の5年後】
+train_mask = 【訓練期間の年を選ぶ条件】
+valid_mask = 【検証期間の年を選ぶ条件】
+【t_train と y_train に訓練期間のデータを代入する処理】
+【t_valid と y_valid に検証期間のデータを代入する処理】
+print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
+```
+
+訓練データだけを使い，本文と同じ探索初期値と範囲で推定する．
+
+```python
+result_train = least_squares(
+    【残差関数・探索初期値・訓練データの args・範囲の bounds】
+)
+r_train, K_train = 【推定したパラメタの配列】
+print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
+print("停止結果:", result_train.success, result_train.message)
+```
+
+推定した係数を固定して全期間を計算し，訓練・検証のRMSEを求める．
+
+```python
+y_fit_all = 【推定した係数と1920年の初期人口による全期間の計算】
+rmse_train = 【訓練期間の観測値と計算値から求めるRMSE】
+rmse_valid = 【検証期間の観測値と計算値から求めるRMSE】
+print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
+print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
+print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
+```
+
+2. 本文の`initial_guesses`にある4組から推定する．次の【】を埋め，推定値・cost・停止結果を比較せよ．
+
+訓練期間のデータと同じ範囲を使って開始点だけを変更する．
+
+```python
+print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
+for guess in initial_guesses:
+    res = least_squares(
+        【残差関数・現在の探索初期値・訓練データの args・範囲の bounds】
+    )
+    print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
+    print("停止結果:", res.success, res.message)
+```
+
+3. 次の【】を埋めて残差を求め，本文の人口と残差の描画コードを実行せよ．残差から見直す仮定を1つ挙げ，根拠を記せ．
+
+各年のモデル値と観測値の差を求める．
+
+```python
+years = population["year"].values
+residual_all = 【全期間のモデル値 − 観測値】
+print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
+```
+
+4. 訓練終了を5年延ばし，設問1の期間設定・推定・全期間の計算を再実行して係数の変化を記せ．この変化を探索方法の効果や信頼区間と解釈できるか，第5回との比較条件にも触れて簡潔に説明せよ．検証期間は各設定で訓練終了の5年後から2020年までとする．
 ````
 
 ````{visible-answer} 課題1の解答例
@@ -1208,23 +1364,146 @@ $K$ の変化は約−13390万人だが，これは推定データを変えた2�
 第5回は全期間のデータを使ったため，今回との推定値の差を探索方法だけの効果とは解釈できない．全期間・同じ数値解にそろえた本文の比較では，格子探索からのMSEの改善は約0.1%だった．
 ````
 
-````{warning} 課題2：推定と検証の区別
+````{warning} 課題2：ダムの係数の推定と別の年への適用
 
-次の主張についてそれぞれ賛成か反対かを明らかにし，今回の計算結果を根拠にして各200字程度で論じよ．
+本文で定義した`simulate_level`と`residuals_level`を使い，2019年で推定した係数を別の年へ適用せよ．選んだ年と指定した数値はREADMEに記し，コードと図はNotebookに残せ．
 
-1. 「第5回の格子探索より細かくパラメタを推定できたので，今回の人口モデルは2050年の人口予測にも使える．」
-2. 「2020年のダムデータで換算係数を推定し直すとRMSEが約0.320 mになったので，2019年の換算係数を2020年へ適用しても同程度の誤差になる．」
+1. 次の【】を埋めて2019年の換算係数を推定し，係数・RMSE・停止結果を記せ．
+
+2019年の行を取り出し，時刻・流入量・放流量・水位を準備する．
+
+```python
+year = 2019
+dam_year = 【year に一致する年の行を抽出し，行番号を振り直す処理】
+t_dam = 【初日を0とした経過日数の配列】
+qin_dam = 【流入量の配列を千m^3/日に換算する処理】
+qout_dam = 【放流量の配列を千m^3/日に換算する処理】
+h_dam = 【観測水位の配列】
+```
+
+水位の残差二乗和を最小にする係数を求め，別の年にも使う値として保存する．
+
+```python
+result_alpha = least_squares(
+    【残差関数・探索初期値・2019年のデータの args・範囲の bounds】
+)
+alpha_reference = 【推定した係数を取り出す処理】
+rmse_alpha = 【推定後の残差配列から求めるRMSE】
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"2019年の係数: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
+```
+
+2. 2020〜2023年から1年を選び，次の【】を埋めて計算せよ．固定した係数と再推定した係数によるRMSE，対象年で再推定した係数を記せ．
+
+対象年のデータを準備する．`alpha_reference`は設問1の値を保つ．
+
+```python
+year = 【2020〜2023から選んだ年】
+【dam_year・t_dam・qin_dam・qout_dam・h_dam を対象年のデータで準備する5行の処理】
+```
+
+2019年の係数を固定して水位とRMSEを求める．
+
+```python
+h_reference = 【2019年の係数を固定した対象年の水位の計算】
+rmse_reference = 【h_reference と h_dam から求めるRMSE】
+print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
+```
+
+対象年の観測水位を使って係数を再推定し，その係数による水位を計算する．
+
+```python
+result_alpha = least_squares(
+    【残差関数・探索初期値・対象年のデータの args・範囲の bounds】
+)
+alpha_hat = 【対象年で再推定した係数を取り出す処理】
+rmse_alpha = 【再推定後の残差配列から求めるRMSE】
+h_fitted = 【再推定した係数による対象年の水位の計算】
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
+```
+
+3. 本文の「別の年への適用と再推定の区別」の描画コードで水位と残差を比較せよ．2つのRMSEの差を計算し，別の年への適用結果として報告するRMSEを記せ．
 ````
 
 ````{visible-answer} 課題2の解答例
 
-**1．人口の推定方法と予測性能**
+**1．2019年の係数の推定**
 
-この根拠だけで2050年の予測に使えるという主張には反対である．数値最適化は同じモデル・データに対する係数の探し方を変えたもので，モデルに人口減少を表す仕組みを加えてはいない．全期間でのMSEの改善は約0.1%である．1990年までで推定した例では訓練RMSE約141万人に対して検証RMSEは約2155万人だった．2050年への適用を判断するには未使用期間の誤差と定数の係数を将来も使う仮定を検討する必要がある．
+本文と同じ条件で2019年のデータを準備する．
 
-**2．ダムの固定した係数と再推定した係数**
+```python
+year = 2019
+dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
+h_dam = dam_year["water_level_m"].values
+```
 
-反対である．約0.320 mは2020年の水位を使って換算係数を約1087.3千m³/mに選び直した後の当てはまりを表す．2019年で推定した約1027.0千m³/mを固定して2020年へ適用した場合，RMSEは約0.896 mだった．両者は同じ流量と初日の水位を使うが，係数の選択に使ったデータが違う．別の年への適用結果として報告するのは固定した係数の誤差であり，再推定後の誤差を代わりに使うことはできない．
+2019年で推定した係数を`alpha_reference`に保存する．
+
+```python
+result_alpha = least_squares(
+    residuals_level, [alpha_assumed],
+    args=(t_dam, qin_dam, qout_dam, h_dam),
+    bounds=([100.0], [5000.0]),
+)
+alpha_reference = result_alpha.x[0]
+rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"2019年の係数: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
+```
+
+係数は約1027.0千m³/m，RMSEは約0.472 mとなる．`result_alpha.success`は`True`で，この実行例では`ftol`の停止条件を満たす．
+
+**2．2020年への適用と再推定**
+
+設問2では2020年を選び，データを取り出す5行は設問1と同じ処理にする．
+
+```python
+year = 2020
+dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
+h_dam = dam_year["water_level_m"].values
+```
+
+固定した係数で水位とRMSEを計算する．
+
+```python
+h_reference = simulate_level(alpha_reference, t_dam, qin_dam, qout_dam, h_dam)
+rmse_reference = np.sqrt(np.mean((h_reference - h_dam) ** 2))
+print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
+```
+
+同じ2020年の水位を使って係数を再推定する．
+
+```python
+result_alpha = least_squares(
+    residuals_level, [alpha_assumed],
+    args=(t_dam, qin_dam, qout_dam, h_dam),
+    bounds=([100.0], [5000.0]),
+)
+alpha_hat = result_alpha.x[0]
+rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
+h_fitted = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
+```
+
+固定した係数のRMSEは約0.896 m，再推定した係数は約1087.3千m³/m，再推定後のRMSEは約0.320 mとなる．
+
+**3．水位・残差の図とRMSEの差**
+
+設問2の計算に続けて本文の描画コードを実行すると，本文と同じ2020年の比較図を得る．RMSEの差は演習3と同じ式で求める．
+
+```python
+print(f"固定した係数のRMSE − 再推定後のRMSE: {rmse_reference - rmse_alpha: .3f} m")
+```
+
+差は約0.576 mである．別の年への適用結果として報告するのは，2019年の係数を固定した場合の約0.896 mである．再推定後の約0.320 mは2020年の水位を使って係数を選び直した後の当てはまりを表す．
 ````
 
 ### 提出先・期限
@@ -1331,7 +1610,22 @@ def residuals_level_power(theta, t_data, qin_data, qout_data, h_data):
 
 ````{note} 発展課題：べき指数の推定と形状の解釈
 
-1. 2019年の水位の残差二乗和を最小にする指数 $p$ を推定せよ．探索初期値は`[0.5]`，範囲は`([1 / 3], [1.0])`とし，推定値・RMSE・停止結果を示せ．
+1. 次の【】を埋め，2019年の水位の残差二乗和を最小にする指数 $p$ を推定せよ．探索初期値は`[0.5]`，範囲は`([1 / 3], [1.0])`とし，推定値・RMSE・停止結果を示せ．
+
+本文の係数推定を指数の推定に変更する．
+
+```python
+result_power = least_squares(
+    【べき乗モデルの残差関数】, [0.5],
+    args=(t_dam, qin_dam, qout_dam, h_dam),
+    bounds=【指数の下限と上限】,
+)
+power_hat = 【推定した指数を取り出す処理】
+rmse_power = 【推定後の残差配列から求めるRMSE】
+print("停止結果:", result_power.success, result_power.message)
+print(f"推定した指数 p = {power_hat:.4f}，RMSE = {rmse_power:.3f} m")
+```
+
 2. 本文で推定した線形係数と今回のべき乗モデルについて，水位・残差を比較する図をNotebookに出力せよ．また $p=1$ でのRMSEも計算し，どの線形モデルに対応するか説明せよ．
 3. 推定した $p$ で水位が上がると湖面積がどう変わるか答えよ．この値だけから実際の貯水池の形状を断定できるか，確かめるために必要な資料も挙げよ．
 ````
