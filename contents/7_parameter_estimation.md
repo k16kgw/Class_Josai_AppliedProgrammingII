@@ -101,6 +101,11 @@ applied_programming_ii/
 2. 探索初期値による違いと停止結果：
 3. 残差から見直す仮定と根拠： （Notebookに人口と残差の図を出力）
 
+## 課題2：ダムの前半での推定と後半での検証
+
+1. 前半で推定した換算係数・前半の訓練RMSE・後半の検証RMSE：
+2. 水位と残差の比較（Notebookに検証期間を背景色で示した図を出力）
+
 ```
 
 5. 以下のコードをNotebookの最初のコードセルにまとめて入力し，実行せよ．計算・描画に使うライブラリと保存先を設定し，CSVファイルの有無を確認する．
@@ -561,6 +566,7 @@ print(f"範囲を指定した場合: r = {result_bounded.x[0]:.5f}, K = {result_
 
 **範囲指定だけでは大域的な最小値は保証されない**．複数の開始値や粗い格子探索の結果と照合する．
 
+(estimation-population-validation)=
 ## 人口モデル：未使用期間への適用
 
 **推定に使ったデータへの当てはまりと，未使用期間の予測精度を分けて調べる**．
@@ -809,6 +815,7 @@ $$
 
 第6回と同じく，流入量は貯水位の変化と放流量から逆算された値である．この当てはめは独立な観測による容量曲線の検証とは区別する．
 
+(estimation-dam-preparation)=
 ### データの準備と残差関数
 
 2019年の水位と流量を取り出し，第6回と同じ単位にそろえる．
@@ -822,7 +829,6 @@ dam = pd.read_csv(DATA_DIR / "dam_urayama_daily.csv", parse_dates=["date"])
 ```python
 year = 2019
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-```
 ```
 
 - **コードの補足**：年を指定する条件で行を選び，`reset_index(drop=True)`で行番号を0から付け直す．
@@ -840,7 +846,6 @@ LEVEL_MIN = 304.0
 def m3s_to_1000m3_per_day(flow_m3s):
     """流量 [m^3/s] を [千m^3/日] に換算する．"""
     return flow_m3s * SECONDS_PER_DAY / 1000
-```
 ```
 
 - **コードの補足**：1 m³/sは86.4千m³/日に相当する．`LEVEL_MIN`は第6回と同じ最低水位304.0 mである．
@@ -906,6 +911,7 @@ def residuals_level(theta, t_data, qin_data, qout_data, h_data):
 
 - **コードの補足**：`theta[0]`で1つの推定パラメタを取り出す．残差は人口の例と同じくモデル値−観測値で，単位はmである．
 
+(estimation-dam-estimate)=
 ### 換算係数の推定と水位の比較
 
 第6回の係数での誤差を計算してから，水位の残差二乗和を最小にする係数を推定する．探索範囲100〜5000千m³/mは計算上の範囲であり，真の係数がこの範囲にあることを保証するものではない．
@@ -1366,12 +1372,179 @@ plt.show()
 
 ````
 
+````{warning} 課題2：ダムの前半での推定と後半での検証
+
+2019年の1〜6月を訓練期間，7〜12月を検証期間とし，前半で推定した換算係数を固定して後半へ適用する．本文のデータ抽出・期間分割・推定・描画のコードを組み合わせる．
+
+1. [ダムのデータの準備](#estimation-dam-preparation)の`year = 2019`による抽出と，`t_dam = ...`で始まる配列の準備をコピーして実行せよ．[人口モデルの期間分割](#estimation-population-validation)を参考に，次の【】を埋めて前半のデータだけを残差関数へ渡し，換算係数を推定せよ．その係数を固定して1年間の水位を計算し，前半・後半のRMSEを求めよ．推定した係数と両方のRMSEをREADMEに記せ．初期値は1月1日の観測水位から設定し，7月1日も同じ解を継続して計算すること．
+
+日付の条件で前半・後半を分け，推定に使う時刻・流量・水位を取り出す．
+
+```python
+train_mask = 【6月30日までの行を選ぶ条件】
+valid_mask = 【7月1日以降の行を選ぶ条件】
+t_train = t_dam[train_mask]
+qin_train = qin_dam[train_mask]
+qout_train = qout_dam[train_mask]
+h_train = h_dam[train_mask]
+```
+
+[換算係数の推定](#estimation-dam-estimate)の残差関数と同じ初期値・範囲を使い，渡すデータを前半に変更する．
+
+```python
+alpha_assumed = 56000.0 / (393.3 - 304.0)
+result_alpha_train = least_squares(
+    residuals_level, [alpha_assumed],
+    args=【前半の時刻・流入量・放流量・水位の配列の組】,
+    bounds=([100.0], [5000.0]),
+)
+alpha_train = 【推定した換算係数を取り出す処理】
+```
+
+本文の水位計算と人口モデルの誤差評価を組み合わせ，全期間の計算から両期間のRMSEを求める．
+
+```python
+h_fit_all = 【前半で推定した係数と全期間の入力による水位の計算】
+residual_dam = 【全期間の計算水位と観測水位の差】
+rmse_train = 【前半の残差から求めるRMSE】
+rmse_valid = 【後半の残差から求めるRMSE】
+```
+
+2. 本文のダムの水位・残差の2段の図を変更し，上段に観測水位と設問1の計算水位，下段に残差を描け．人口モデルで使った`axvspan`で，7月1日から12月31日までを検証期間として背景色で示し，Notebookに出力せよ．日付の指定には`pd.Timestamp("2019-07-01")`，`pd.Timestamp("2019-12-31")`を使え．
+
+- **日付の指定**：`pd.Timestamp`は，文字列から描画に使う日時の値を作る．
+
+検証期間にも観測された流入量・放流量を入力する．ここで評価するのは，観測入力の下で前半の換算係数を後半へ適用した結果である．
+````
+
+````{visible-answer} 課題2の解答例
+
+**1．前半での推定と，両期間のRMSE**
+
+本文のダムの関数を使い，対象データを2019年に戻す．
+
+2019年の行を取り出し，時刻・流量・水位の配列を準備する．
+
+```python
+year = 2019
+dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
+h_dam = dam_year["water_level_m"].values
+```
+
+人口モデルと同じく条件で期間を分け，前半のデータを取り出す．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1,2
+:class: code-focus
+
+train_mask = dam_year["date"] <= "2019-06-30"
+valid_mask = dam_year["date"] >= "2019-07-01"
+t_train = t_dam[train_mask]
+qin_train = qin_dam[train_mask]
+qout_train = qout_dam[train_mask]
+h_train = h_dam[train_mask]
+```
+
+- **コードの補足**：前半の時刻も1月1日を0とした日数である．配列の抽出方法は人口モデルと同じである．
+
+本文の係数推定の引数を前半の配列に変更する．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 4
+:class: code-focus
+
+alpha_assumed = 56000.0 / (393.3 - 304.0)
+result_alpha_train = least_squares(
+    residuals_level, [alpha_assumed],
+    args=(t_train, qin_train, qout_train, h_train),
+    bounds=([100.0], [5000.0]),
+)
+alpha_train = result_alpha_train.x[0]
+```
+
+- **コードの補足**：残差関数へ渡す観測水位は前半だけなので，後半の水位は係数の推定に使われない．
+
+推定した係数で1年間を計算し，同じ解から訓練・検証のRMSEを求める．
+
+```python
+h_fit_all = simulate_level(alpha_train, t_dam, qin_dam, qout_dam, h_dam)
+residual_dam = h_fit_all - h_dam
+rmse_train = np.sqrt(np.mean(residual_dam[train_mask] ** 2))
+rmse_valid = np.sqrt(np.mean(residual_dam[valid_mask] ** 2))
+```
+
+- **コードの補足**：`simulate_level`は1月1日の水位`h_dam[0]`から初期値を決める．7月1日に初期値を設定し直す処理は加えない．
+
+期間ごとの観測点数，停止結果，推定した係数とRMSEを表示する．
+
+```python
+print(f"訓練期間: 2019年1〜6月，{len(t_train)} 点")
+print(f"検証期間: 2019年7〜12月，{len(t_dam[valid_mask])} 点")
+print("停止結果:", result_alpha_train.success, result_alpha_train.message)
+print(f"前半で推定した係数: alpha = {alpha_train:.1f} 千m^3/m")
+print(f"前半の訓練RMSE: {rmse_train:.3f} m")
+print(f"後半の検証RMSE: {rmse_valid:.3f} m")
+```
+
+出力例：
+
+```text
+訓練期間: 2019年1〜6月，181 点
+検証期間: 2019年7〜12月，184 点
+停止結果: True `ftol` termination condition is satisfied.
+前半で推定した係数: alpha = 1022.4 千m^3/m
+前半の訓練RMSE: 0.093 m
+後半の検証RMSE: 0.659 m
+```
+
+**2．水位・残差と検証期間の図**
+
+本文のダムの描画に，人口モデルの検証期間の背景表示を組み合わせる．
+
+上段に水位，下段に残差を描き，後半を背景色で示す．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 4,10
+:class: code-focus
+
+fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+axes[0].plot(dam_year["date"], h_dam, color="black", label="観測水位")
+axes[0].plot(dam_year["date"], h_fit_all, color="tab:blue", label=f"前半の係数を固定 α = {alpha_train:.0f}")
+axes[0].axvspan(pd.Timestamp("2019-07-01"), pd.Timestamp("2019-12-31"), color="gray", alpha=0.15, label="検証期間")
+axes[0].set_ylabel("水位 [m]")
+axes[0].set_title("前半で推定した換算係数による1年間の水位（2019年）")
+axes[0].legend()
+axes[1].plot(dam_year["date"], residual_dam, color="tab:blue")
+axes[1].axhline(0, color="black", linewidth=0.8)
+axes[1].axvspan(pd.Timestamp("2019-07-01"), pd.Timestamp("2019-12-31"), color="gray", alpha=0.15)
+axes[1].set_ylabel("計算水位−観測水位 [m]")
+axes[1].set_xlabel("日付")
+for ax in axes:
+    ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "dam_halfyear_validation_2019.png", dpi=150)
+plt.show()
+```
+
+- **コードの補足**：`axvspan`には年の数値の代わりに日時の値を渡し，2つの図で同じ検証期間を示す．
+
+![2019年前半で推定した換算係数と後半の検証結果](figs/07/dam_halfyear_validation_2019.png)
+
+前半の訓練RMSEは約0.093 m，後半の検証RMSEは約0.659 mである．前半に当てはまる係数でも，後半の水位を同じ精度で再現できるとは限らない．水位域によらず同じ換算係数を使う仮定や流量の補間を検討する手掛かりになるが，この比較だけではずれの原因を特定できない．
+````
+
 ### 提出先・期限
 
 - 提出場所：WebClass「第7回課題」
 - 提出物：
- - `README.md`
- - Notebookファイル`parameter_estimation.ipynb`
+  - `README.md`
+  - Notebookファイル`parameter_estimation.ipynb`
 - 提出期限：2026年11月21日(土)23:59
 
 
