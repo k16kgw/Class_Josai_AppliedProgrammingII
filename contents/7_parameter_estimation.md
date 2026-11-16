@@ -82,34 +82,25 @@ applied_programming_ii/
 
 ## 演習1：探索初期値による推定結果の比較
 
-1. 最も小さいcostに到達した初期値と，推定値・評価回数：
-2. 異なる推定値に到達した初期値・最小のcostに対する倍率：
-3. 追加した初期値による推定（Notebookに初期値・推定値・cost・評価回数を同じ形式で出力）
+1. 最小のcostに到達した初期値・異なる推定値に到達した初期値と，それぞれのcost：
+2. 追加した初期値による推定（Notebookに初期値・推定値・cost・評価回数を同じ形式で出力）
 
 ## 演習2：訓練期間と残差の比較
 
 1. 比較した訓練終了年： （Notebookに推定値・RMSEと人口・残差の図を出力）
 2. 1990年までで推定した場合の1945年・1980年の残差： （Notebookに数値を出力）
-3. 訓練RMSEが最小の訓練終了年・検証RMSEが最小の訓練終了年：
 
 ## 演習3：対象年による換算係数の比較
 
 1. 選んだ年・2019年の係数を固定した場合と再推定した場合のRMSE： （Notebookに水位と残差の図を出力）
 2. 再推定した係数・観測水位の範囲：
-3. 2つのRMSEの差： （Notebookに数値を出力）
 
 ## 課題1：訓練期間を選んだ推定結果の報告
 
 1. 推定条件・推定値・訓練と検証のRMSE：
 2. 探索初期値による違いと停止結果：
 3. 残差から見直す仮定と根拠： （Notebookに人口と残差の図を出力）
-4. 訓練終了を5年延ばした場合の係数の変化・第5回との比較時の注意：
 
-## 課題2：ダムの係数の推定と別の年への適用
-
-1. 2019年で推定した係数・RMSE・停止結果：
-2. 選んだ年・固定した係数と再推定した係数によるRMSE・再推定した係数：
-3. 2つのRMSEの差・別の年への適用結果として報告するRMSE： （Notebookに水位と残差の図を出力）
 ```
 
 5. 以下のコードをNotebookの最初のコードセルにまとめて入力し，実行せよ．計算・描画に使うライブラリと保存先を設定し，CSVファイルの有無を確認する．
@@ -482,9 +473,8 @@ for guess in initial_guesses:
 
 ````{note} 演習1：探索初期値による推定結果の比較
 
-1. 本文の4つの結果から，最も小さいcostに到達した初期値と対応する推定値・評価回数を記せ．表示桁数で一致する結果は同程度とみなせ．
-2. 異なる推定値に到達した初期値を挙げ，costが最小の結果の何倍か求めよ．
-3. 探索初期値を`[0.5, 6000.0]`に変更する．次の【】を埋めて実行し，本文と同じ形式で推定値・cost・評価回数を出力せよ．
+1. 本文の4つの結果から，最小のcostに到達した初期値と，異なる推定値に到達した初期値を挙げ，それぞれのcostをREADMEに記せ．表示桁数で一致する結果は同程度とみなせ．
+2. **探索初期値を`[0.5, 6000.0]`に変更**する．次の【】を埋めて実行し，本文と同じ形式で推定値・cost・評価回数をNotebookに出力せよ．
 
 本文のループ内の処理をコピーし，追加の1組について計算する．
 
@@ -498,21 +488,12 @@ print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res
 
 ````{visible-answer} 演習1の解答例
 
-**1．同程度の最小costに到達した初期値**
+**1．本文の探索結果の確認**
 
-本文の出力例では次の3組が表示桁数の範囲で同じ $r=0.02759$，$K=14753.8$ 万人，cost $=5807180.6$ を与える．
+- **同程度の最小cost**：`[0.05, 30000.0]`，`[0.03, 13000.0]`，`[0.01, 20000.0]`の3組で，costは約5807180.6となる．
+- **異なる推定値で終了した初期値**：`[0.10, 10000.0]`ではcostが約157753795.5となり，上の3組より大きい．
 
-| 探索初期値 `[r, K]` | 評価回数 |
-| --- | ---: |
-| `[0.05, 30000.0]` | 6 |
-| `[0.03, 13000.0]` | 7 |
-| `[0.01, 20000.0]` | 10 |
-
-**2．異なる推定値に到達した初期値**
-
-`[0.10, 10000.0]`では $r=0.06375$，$K=10000.0$ 万人，cost $=157753795.5$ を得る．最小のcostとの比は $157753795.5/5807180.6\approx27.2$ である．
-
-**3．追加した初期値の出力と比較**
+**2．初期値を変更した推定**
 
 本文のループ内と同じ処理を，追加の1組について実行する．見出しと表示形式も本文にそろえる．
 
@@ -538,7 +519,7 @@ print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res
          [0.5, 6000.0]    0.41007     6304.3 1011378002.6      200
 ```
 
-costは4組の最小値の約174.2倍で，評価回数も多い．この例では既定の評価回数の上限200回に達して終了している．`res.success`と`res.message`でも停止結果を確認できる．
+本文の最小costより大きく，評価回数は既定の上限200回に達している．`res.success`と`res.message`でも停止結果を確認できる．
 ````
 
 
@@ -640,7 +621,6 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 ```
 
 
-
 出力例：
 
 ```text
@@ -737,8 +717,6 @@ year_mask = population["year"] == target_year
 print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
 ```
 
-3. 訓練RMSEが最小の設定と検証RMSEが最小の設定について，それぞれの訓練終了年を記せ．
-
 検証対象の年は条件ごとに異なるため，同じ将来期間に対する予測精度の比較にはなっていない．
 ````
 
@@ -762,7 +740,7 @@ print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
 
 **2．指定した年の残差**
 
-`train_end = 1990`に戻して本文の5つのコードセルを再実行する．年の条件を使って残差を取り出す．1945年の値を表示した後，`target_year = 1980`に変更して同じコードを実行する．
+`train_end = 1990`に戻し，本文の期間設定・推定・全期間の計算・可視化を再実行する．年の条件を使って残差を取り出す．1945年の値を表示した後，`target_year = 1980`に変更して同じコードを実行する．
 
 ```python
 target_year = 1945
@@ -781,9 +759,6 @@ print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
 
 1945年は正で過大評価，1980年は負で過小評価となる．
 
-**3．RMSEが最小の設定**
-
-訓練RMSEは1970年まで，検証RMSEは2010年までで推定した設定が最小になる．
 ````
 
 ## ダムモデル：観測量への換算を含む推定
@@ -974,31 +949,13 @@ print(f"推定された湖面の面積に相当する値: {alpha_hat / 1000:.2f}
 推定した alpha = 1027.0 千m^3/m のとき，貯水位の RMSE = 0.47 m（評価回数 6）
 推定された湖面の面積に相当する値: 1.03 km^2
 ```
-仮定した係数と推定した係数でそれぞれ水位を計算し，最終日の値を比較する．
+仮定した係数と推定した係数で，図に示す水位を計算する．
 
 ```python
 h_assumed = simulate_level(alpha_assumed, t_dam, qin_dam, qout_dam, h_dam)
 h_fitted = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
 ```
 
-最終日の観測水位と，2つの係数での計算水位を比較する．
-
-```python
-print(f"最終日の観測水位: {h_dam[-1]:.2f} m")
-print(f"仮定した換算係数での水位: {h_assumed[-1]:.2f} m")
-print(f"推定した換算係数での水位: {h_fitted[-1]:.2f} m")
-```
-
-- **コードの補足**：`h_assumed`と`h_fitted`：それぞれ仮定した換算係数と推定した換算係数で，全期間の水位を計算する．`[-1]`で最終日の値を取り出す．
-
-
-出力例：
-
-```text
-最終日の観測水位: 391.99 m
-仮定した換算係数での水位: 399.91 m
-推定した換算係数での水位: 393.16 m
-```
 観測水位と計算水位を上段，それぞれの残差を下段に示す．
 
 ```python
@@ -1155,13 +1112,6 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 ```
 
 2. 再推定した係数と観測水位の範囲を記せ．
-3. 次の【】を埋め，固定した係数と再推定した係数によるRMSEの差を出力せよ．
-
-本文で計算した2つのRMSEの差を求める．
-
-```python
-print(f"固定した係数のRMSE − 再推定後のRMSE: {【2つのRMSEの差】: .3f} m")
-```
 
 固定した係数のRMSEが別の年への適用結果を表す．再推定後のRMSEはその年への当てはまりを表す．
 ````
@@ -1186,18 +1136,7 @@ print(f"固定した係数のRMSE − 再推定後のRMSE: {【2つのRMSEの差
 
 2019年の係数は約1027.0千m³/m，2021年で再推定した係数は約939.8千m³/mである．水位の範囲は2019年が371.35〜391.99 m，2021年が371.69〜376.62 mであり，2021年はより狭い水位域を通る．水位・容量曲線を入手し，各年の水位域における傾きと比較する．係数の違いをそのまま湖面の形の変化とみなすことはできない．
 
-**3．2つのRMSEの差**
 
-固定した係数のRMSEから再推定後のRMSEを引く．
-
-```python
-print(f"固定した係数のRMSE − 再推定後のRMSE: {rmse_reference - rmse_alpha: .3f} m")
-```
-
-出力は約0.238 mとなる．
-
-- **別の年への適用**：2019年の係数を固定したRMSEは約0.265 m．
-- **対象年への当てはめ**：2021年で再推定したRMSEは約0.027 m．この値は2021年の水位を使って係数を選び直した結果である．
 ````
 
 ## まとめ
@@ -1276,7 +1215,6 @@ residual_all = 【全期間のモデル値 − 観測値】
 print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
 ```
 
-4. 訓練終了を5年延ばし，設問1の期間設定・推定・全期間の計算を再実行して係数の変化を記せ．この変化を探索方法の効果や信頼区間と解釈できるか，第5回との比較条件にも触れて簡潔に説明せよ．検証期間は各設定で訓練終了の5年後から2020年までとする．
 ````
 
 ````{visible-answer} 課題1の解答例
@@ -1425,160 +1363,7 @@ plt.show()
 
 検証期間では人口を過大予測し，差が大きくなる．定数 $r,K$ で人口増加の鈍化を表し続ける仮定を見直し，出生・死亡・人口移動の統計と照合する．
 
-**4．期間の変更と第5回との比較**
 
-第1問の最初のセルを`train_end = 1985`に変更し，設定・推定・全期間の計算を再実行する．
-
-| 訓練終了年 | 推定 $r$［/年］ | 推定 $K$［万人］ | 訓練RMSE［万人］ | 検証RMSE［万人］ |
-| --- | ---: | ---: | ---: | ---: |
-| 1980 | 0.01500 | 48065.8 | 115.6 | 2851.2 |
-| 1985 | 0.01614 | 34675.4 | 119.6 | 2575.0 |
-
-$K$ の変化は約−13390万人だが，これは推定データを変えた2条件の差であり，信頼区間ではない．検証対象の年も変わるため，RMSEを同じ将来期間の予測精度としては比較できない．
-
-第5回は全期間のデータを使ったため，今回との推定値の差を探索方法だけの効果とは解釈できない．全期間・同じ数値解にそろえた本文の比較では，格子探索からのMSEの改善は約0.1%だった．
-````
-
-````{warning} 課題2：ダムの係数の推定と別の年への適用
-
-本文で定義した`simulate_level`と`residuals_level`を使い，2019年で推定した係数を別の年へ適用せよ．選んだ年と指定した数値はREADMEに記し，コードと図はNotebookに残せ．
-
-1. 次の【】を埋めて2019年の換算係数を推定し，係数・RMSE・停止結果を記せ．
-
-2019年の行を取り出し，時刻・流入量・放流量・水位を準備する．
-
-```python
-year = 2019
-dam_year = 【year に一致する年の行を抽出し，行番号を振り直す処理】
-t_dam = 【初日を0とした経過日数の配列】
-qin_dam = 【流入量の配列を千m^3/日に換算する処理】
-qout_dam = 【放流量の配列を千m^3/日に換算する処理】
-h_dam = 【観測水位の配列】
-```
-
-水位の残差二乗和を最小にする係数を求め，別の年にも使う値として保存する．
-
-```python
-result_alpha = least_squares(
-    【残差関数・探索初期値・2019年のデータの args・範囲の bounds】
-)
-alpha_reference = 【推定した係数を取り出す処理】
-rmse_alpha = 【推定後の残差配列から求めるRMSE】
-print("停止結果:", result_alpha.success, result_alpha.message)
-print(f"2019年の係数: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
-```
-
-2. 2020〜2023年から1年を選び，次の【】を埋めて計算せよ．固定した係数と再推定した係数によるRMSE，対象年で再推定した係数を記せ．
-
-対象年のデータを準備する．`alpha_reference`は設問1の値を保つ．
-
-```python
-year = 【2020〜2023から選んだ年】
-【dam_year・t_dam・qin_dam・qout_dam・h_dam を対象年のデータで準備する5行の処理】
-```
-
-2019年の係数を固定して水位とRMSEを求める．
-
-```python
-h_reference = 【2019年の係数を固定した対象年の水位の計算】
-rmse_reference = 【h_reference と h_dam から求めるRMSE】
-print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
-```
-
-対象年の観測水位を使って係数を再推定し，その係数による水位を計算する．
-
-```python
-result_alpha = least_squares(
-    【残差関数・探索初期値・対象年のデータの args・範囲の bounds】
-)
-alpha_hat = 【対象年で再推定した係数を取り出す処理】
-rmse_alpha = 【再推定後の残差配列から求めるRMSE】
-h_fitted = 【再推定した係数による対象年の水位の計算】
-print("停止結果:", result_alpha.success, result_alpha.message)
-print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
-```
-
-3. 本文の「別の年への適用と再推定の区別」の描画コードで水位と残差を比較せよ．2つのRMSEの差を計算し，別の年への適用結果として報告するRMSEを記せ．
-````
-
-````{visible-answer} 課題2の解答例
-
-**1．2019年の係数の推定**
-
-本文と同じ条件で2019年のデータを準備する．
-
-```python
-year = 2019
-dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
-```
-
-2019年で推定した係数を`alpha_reference`に保存する．
-
-```python
-result_alpha = least_squares(
-    residuals_level, [alpha_assumed],
-    args=(t_dam, qin_dam, qout_dam, h_dam),
-    bounds=([100.0], [5000.0]),
-)
-alpha_reference = result_alpha.x[0]
-rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
-print("停止結果:", result_alpha.success, result_alpha.message)
-print(f"2019年の係数: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
-```
-
-係数は約1027.0千m³/m，RMSEは約0.472 mとなる．`result_alpha.success`は`True`で，この実行例では`ftol`の停止条件を満たす．
-
-**2．2020年への適用と再推定**
-
-設問2では2020年を選び，データを取り出す5行は設問1と同じ処理にする．
-
-```python
-year = 2020
-dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
-```
-
-固定した係数で水位とRMSEを計算する．
-
-```python
-h_reference = simulate_level(alpha_reference, t_dam, qin_dam, qout_dam, h_dam)
-rmse_reference = np.sqrt(np.mean((h_reference - h_dam) ** 2))
-print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
-```
-
-同じ2020年の水位を使って係数を再推定する．
-
-```python
-result_alpha = least_squares(
-    residuals_level, [alpha_assumed],
-    args=(t_dam, qin_dam, qout_dam, h_dam),
-    bounds=([100.0], [5000.0]),
-)
-alpha_hat = result_alpha.x[0]
-rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
-h_fitted = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
-print("停止結果:", result_alpha.success, result_alpha.message)
-print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
-```
-
-固定した係数のRMSEは約0.896 m，再推定した係数は約1087.3千m³/m，再推定後のRMSEは約0.320 mとなる．
-
-**3．水位・残差の図とRMSEの差**
-
-設問2の計算に続けて本文の描画コードを実行すると，本文と同じ2020年の比較図を得る．RMSEの差は演習3と同じ式で求める．
-
-```python
-print(f"固定した係数のRMSE − 再推定後のRMSE: {rmse_reference - rmse_alpha: .3f} m")
-```
-
-差は約0.576 mである．別の年への適用結果として報告するのは，2019年の係数を固定した場合の約0.896 mである．再推定後の約0.320 mは2020年の水位を使って係数を選び直した後の当てはまりを表す．
 ````
 
 ### 提出先・期限
@@ -1670,8 +1455,6 @@ def simulate_level_power(power, t_data, qin_data, qout_data, h_data):
         t_eval=t_data, args=(t_data, qin_data, qout_data), max_step=1.0,
     )
     return LEVEL_MIN + H_REF * (sol.y[0] / V_REF) ** power
-
-- **コードの補足**：`alpha, loss = theta`で2つの値を取り出し，右辺の追加引数に`loss`を渡す．
 
 def residuals_level_power(theta, t_data, qin_data, qout_data, h_data):
     return simulate_level_power(theta[0], t_data, qin_data, qout_data, h_data) - h_data
