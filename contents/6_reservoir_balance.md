@@ -117,9 +117,7 @@ applied_programming_ii/
 
 ```
 
-5. 以下のコードブロックをそれぞれNotebookのコードセルに入力し，上から順に実行せよ．
-
-計算・描画に使うライブラリを読み込み，日本語フォントを設定する．
+5. Notebookの最初のコードセルに以下を入力し，実行せよ．ライブラリ・日本語フォント・作業フォルダを設定し，CSVファイルの有無を確認する．
 
 ```python
 from pathlib import Path
@@ -130,27 +128,17 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
 plt.rcParams["font.family"] = "Hiragino Sans"  # 日本語表示用（macOS）
-```
 
-作業フォルダとデータの場所を指定し，図の保存先を作成する．
-
-```python
 PROJECT_DIR = Path.home() / "applied_programming_ii" / "06"
 DATA_DIR = Path.home() / "applied_programming_ii" / "data"
 FIGURE_DIR = PROJECT_DIR / "reports" / "figures"
 FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-```
 
-- **コードの補足**：`mkdir(..., exist_ok=True)`は，保存先が既に存在する場合も処理を続ける．
-
-作業フォルダの場所と，CSVファイルがあるかを確認する．
-
-```python
 print("作業フォルダ:", PROJECT_DIR)
 print("ダムデータの有無:", (DATA_DIR / "dam_urayama_daily.csv").exists())
 ```
 
-- **コードの補足**：`.exists()`は，指定したファイルが存在すれば`True`を返す．
+- **コードの補足**：`mkdir(..., exist_ok=True)`は，保存先が既に存在する場合も処理を続ける．`.exists()`は，指定したファイルが存在すれば`True`を返す．
 
 出力例（`ユーザー名`の部分は実行環境によって異なる）：
 
@@ -463,7 +451,7 @@ print(f"有効貯水容量に対する割合: {volume_percent:.2f} %")
 ```
 ````
 
-````{hidden-answer} 演習1の解答例
+````{visible-answer} 演習1の解答例
 
 **1．7日分の流入水量と割合**
 
@@ -619,7 +607,7 @@ print(f"水位372 mから382 mまでに必要な日数: {required_days:.2f} 日"
 ```
 ````
 
-````{hidden-answer} 演習2の解答例
+````{visible-answer} 演習2の解答例
 
 **1．水位からの換算と貯水量の増加**
 
@@ -1137,7 +1125,7 @@ dam_year
 2. **1年間の計算と描画**：[2019年の1年間](#reservoir-year-calculation)から，`t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)`で始まる計算コード，結果の表示コード，2段の図の描画コードをNotebookの新しいセルにコピーして実行せよ．設問1の`dam_year`を使い，貯水量の計算値・換算値と両者の差をNotebookに図として出力せよ．最終日の差とRMSEを`README.md`に記せ．
 ````
 
-````{hidden-answer} 演習3の解答例
+````{visible-answer} 演習3の解答例
 
 **1．対象年のデータ抽出**
 
@@ -1345,7 +1333,7 @@ plt.show()
 ```
 ````
 
-````{hidden-answer} 演習4の解答例
+````{visible-answer} 演習4の解答例
 
 **1．3か月ごとの再設定**
 

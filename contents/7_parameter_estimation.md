@@ -153,7 +153,7 @@ print("ダムデータの有無:", (DATA_DIR / "dam_urayama_daily.csv").exists()
 
 - **コードの補足**：今回追加した`scipy.optimize.least_squares`は残差関数を使ってパラメタを推定する関数である．
 
-出力例（`ユーザー名`の部分は実行環境によって異なる）：
+出力例：
 
 ```text
 作業フォルダ: /Users/ユーザー名/applied_programming_ii/07
@@ -234,7 +234,14 @@ def logistic_rhs(t, N, r, K):
 def simulate_logistic(theta, t_eval, N0):
     """パラメタ theta = (r, K) でLogisticモデルを解き，時刻 t_eval での N を返す．"""
     r, K = theta
-    sol = solve_ivp(logistic_rhs, (t_eval[0], t_eval[-1]), [N0], t_eval=t_eval, args=(r, K), rtol=1e-6)
+    sol = solve_ivp(
+        logistic_rhs,
+        (t_eval[0], t_eval[-1]),
+        [N0],
+        t_eval=t_eval,
+        args=(r, K),
+        rtol=1e-06,
+    )
     return sol.y[0]
 
 
@@ -344,11 +351,18 @@ def residuals(theta, t_obs, y_obs, N0):
 
 - **コードの補足**：返す値は観測点数と同じ長さの配列である．二乗和への集約は`least_squares`が行う．
 
-第5回の格子探索を参考に，パラメタ探索の出発点を与えて推定する．微分方程式の初期条件 $N_0$ は最初の観測人口に固定している．
+- **探索の初期値**：反復計算を始めるパラメタの組．第5回の格子探索を参考に設定する．
+- **微分方程式の初期条件**：計算開始時の人口 $N_0$ ．最初の観測人口に固定する．
+
+探索の初期値を設定し，全期間の残差からパラメタを推定する．
 
 ```python
 theta_initial = [0.03, 13000.0]
+```
 
+同じ残差関数を使ってパラメタを推定する．
+
+```python
 result = least_squares(residuals, theta_initial, args=(t_obs, y_obs, N0))
 ```
 
@@ -379,6 +393,7 @@ print(f"残差関数の評価回数: {result.nfev}")
 出力例：
 
 ```text
+停止条件を満たしたか: True  状態: `ftol` termination condition is satisfied.
 停止条件を満たしたか: True  状態: `ftol` termination condition is satisfied.
 推定値: r = 0.02759 /年,  K = 14753.8 万人
 目的関数（残差二乗和の半分）: 5807180.6
@@ -452,7 +467,11 @@ initial_guesses = [
     [0.03, 13000.0],
     [0.01, 20000.0],
 ]
+```
 
+初期値の候補ごとに推定し，推定値・cost・評価回数を比較する．
+
+```python
 print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
 for guess in initial_guesses:
     res = least_squares(residuals, guess, args=(t_obs, y_obs, N0))
@@ -594,6 +613,13 @@ valid_mask = population["year"] >= valid_start
 
 t_train, y_train = t_obs[train_mask], y_obs[train_mask]
 t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+```
+
+- **コードの補足**：`train_mask`・`valid_mask`：推定用と検証用のデータを選ぶ条件である．ここでは1991〜1994年はどちらの誤差評価にも含めない．
+
+訓練・検証期間と，それぞれの観測点数を確認する．
+
+```python
 print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
 ```
 
@@ -604,6 +630,13 @@ print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期
 ```python
 result_train = least_squares(residuals, [0.03, 13000.0], args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
 r_train, K_train = result_train.x
+```
+
+- **コードの補足**：`result_train`：訓練期間の観測値だけを用いてパラメタを推定する．
+
+訓練期間から求めたパラメタを表示する．
+
+```python
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
 ```
 
@@ -616,6 +649,13 @@ print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人
 y_fit_all = simulate_logistic(result_train.x, t_obs, N0)
 rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
 rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
+```
+
+- **コードの補足**：`y_fit_all`：1920年の初期条件から全期間を計算し，訓練期間と検証期間に対応する値を取り出してRMSEを求める．
+
+訓練・検証のRMSEと，2020年の予測人口を表示する．
+
+```python
 print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
 print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
@@ -631,8 +671,6 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 出力例：
 
 ```text
-訓練期間: 71 点（1920〜1990年）， 検証期間: 26 点（1995〜2020年）
-訓練期間で推定: r = 0.01787 /年,  K = 25872.2 万人
 訓練期間の RMSE:    141.0 万人
 検証期間の RMSE:   2154.6 万人
 2020年の予測: 16101.1 万人，観測: 12614.6 万人
@@ -641,6 +679,7 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 - **推定値の変化**：1990年までで推定した $K$ は約25900万人で，全期間で推定した約14750万人より大きい．人口の増加が鈍る後半のデータを含めるかどうかで，推定値が変わる．
 - **未使用期間の誤差**：訓練RMSEは約140万人，検証RMSEは約2150万人である．訓練期間に近い曲線を得ても，その後の人口を同じ精度で予測できるとは限らない．
 
+(estimation-population-plot)=
 ### 観測値・モデル・残差の可視化
 
 推定結果を報告するときは推定値の数字だけでなく，データと推定モデルを重ねた図と残差の時系列を示す．
@@ -649,10 +688,15 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 ```python
 years = population["year"].values
 residual_all = y_fit_all - y_obs
-print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
 ```
 
 - **コードの補足**：`residual_all`はモデル値−観測値である．正なら過大予測，負なら過小予測を表す．
+
+全期間の残差の最小値と最大値を確認する．
+
+```python
+print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
+```
 
 出力例：
 
@@ -823,8 +867,14 @@ $$
 
 ```python
 dam = pd.read_csv(DATA_DIR / "dam_urayama_daily.csv", parse_dates=["date"])
+```
+
+対象年を指定し，その年のデータを取り出す．
+
+```python
 year = 2019
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+```
 ```
 
 - **コードの補足**：年を指定する条件で行を選び，`reset_index(drop=True)`で行番号を0から付け直す．
@@ -834,11 +884,15 @@ dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
 ```python
 SECONDS_PER_DAY = 24 * 60 * 60
 LEVEL_MIN = 304.0
+```
 
+流量を千m³/日に換算する関数を定義する．
 
+```python
 def m3s_to_1000m3_per_day(flow_m3s):
     """流量 [m^3/s] を [千m^3/日] に換算する．"""
     return flow_m3s * SECONDS_PER_DAY / 1000
+```
 ```
 
 - **コードの補足**：1 m³/sは86.4千m³/日に相当する．`LEVEL_MIN`は第6回と同じ最低水位304.0 mである．
@@ -850,7 +904,6 @@ t_dam = np.arange(len(dam_year), dtype=float)
 qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
 qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
 h_dam = dam_year["water_level_m"].values
-print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
 ```
 
 - **コードの補足**：流量は千m³/日，水位はmで扱う．時刻配列は第6回と同じく初日を0とした経過日数である．
@@ -861,7 +914,7 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 対象年: 2019年，水位の範囲: 371.35 〜 391.99 m
 ```
 
-候補の換算係数ごとに初期貯水量を設定し，収支モデルで得た貯水量を水位へ戻す．その水位と観測水位の差を残差関数で返す．
+第6回と同じく，補間した流入量と放流量の差を微分方程式の右辺にする．
 
 ```python
 def reservoir_rhs(t, V, t_data, qin_data, qout_data):
@@ -877,7 +930,14 @@ def reservoir_rhs(t, V, t_data, qin_data, qout_data):
 def simulate_level(alpha, t_data, qin_data, qout_data, h_data):
     """傾き alpha で貯水量を計算し，貯水位に戻して返す．初期条件は初日の観測貯水位から決める．"""
     V0 = alpha * (h_data[0] - LEVEL_MIN)
-    sol = solve_ivp(reservoir_rhs, (t_data[0], t_data[-1]), [V0], t_eval=t_data, args=(t_data, qin_data, qout_data), max_step=1.0)
+    sol = solve_ivp(
+        reservoir_rhs,
+        (t_data[0], t_data[-1]),
+        [V0],
+        t_eval=t_data,
+        args=(t_data, qin_data, qout_data),
+        max_step=1.0,
+    )
     return LEVEL_MIN + sol.y[0] / alpha
 ```
 
@@ -904,7 +964,13 @@ def residuals_level(theta, t_data, qin_data, qout_data, h_data):
 
 ```python
 alpha_assumed = 56000.0 / (393.3 - 304.0)
-rmse_assumed = np.sqrt(np.mean(residuals_level([alpha_assumed], t_dam, qin_dam, qout_dam, h_dam) ** 2))
+residual_assumed = residuals_level([alpha_assumed], t_dam, qin_dam, qout_dam, h_dam)
+rmse_assumed = np.sqrt(np.mean(residual_assumed ** 2))
+```
+
+第6回の換算係数と，水位のRMSEを表示する．
+
+```python
 print(f"第6回の仮定 alpha = {alpha_assumed:.1f} 千m^3/m のとき，貯水位の RMSE = {rmse_assumed:.2f} m")
 ```
 
@@ -916,6 +982,13 @@ print(f"第6回の仮定 alpha = {alpha_assumed:.1f} 千m^3/m のとき，貯水
 result_alpha = least_squares(residuals_level, [alpha_assumed], args=(t_dam, qin_dam, qout_dam, h_dam), bounds=([100.0], [5000.0]))
 alpha_hat = result_alpha.x[0]
 rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
+```
+
+- **コードの補足**：`bounds`で係数を100〜5000千m³/mに制限する．
+
+推定した換算係数と水位のRMSE，係数に対応する面積を確認する．
+
+```python
 print(f"推定した alpha = {alpha_hat:.1f} 千m^3/m のとき，貯水位の RMSE = {rmse_alpha:.2f} m（評価回数 {result_alpha.nfev}）")
 print(f"推定された湖面の面積に相当する値: {alpha_hat / 1000:.2f} km^2")
 ```
@@ -925,22 +998,26 @@ print(f"推定された湖面の面積に相当する値: {alpha_hat / 1000:.2f}
 出力例：
 
 ```text
-第6回の仮定 alpha = 627.1 千m^3/m のとき，貯水位の RMSE = 4.64 m
 推定した alpha = 1027.0 千m^3/m のとき，貯水位の RMSE = 0.47 m（評価回数 6）
 推定された湖面の面積に相当する値: 1.03 km^2
 ```
-
 仮定した係数と推定した係数でそれぞれ水位を計算し，最終日の値を比較する．
 
 ```python
 h_assumed = simulate_level(alpha_assumed, t_dam, qin_dam, qout_dam, h_dam)
 h_fitted = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
+```
+
+最終日の観測水位と，2つの係数での計算水位を比較する．
+
+```python
 print(f"最終日の観測水位: {h_dam[-1]:.2f} m")
 print(f"仮定した換算係数での水位: {h_assumed[-1]:.2f} m")
 print(f"推定した換算係数での水位: {h_fitted[-1]:.2f} m")
 ```
 
 - **コードの補足**：`h_assumed`と`h_fitted`：それぞれ仮定した換算係数と推定した換算係数で，全期間の水位を計算する．`[-1]`で最終日の値を取り出す．
+
 
 出力例：
 
@@ -949,7 +1026,6 @@ print(f"推定した換算係数での水位: {h_fitted[-1]:.2f} m")
 仮定した換算係数での水位: 399.91 m
 推定した換算係数での水位: 393.16 m
 ```
-
 観測水位と計算水位を上段，それぞれの残差を下段に示す．
 
 ```python
@@ -1001,6 +1077,11 @@ t_dam = np.arange(len(dam_year), dtype=float)
 qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
 qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
 h_dam = dam_year["water_level_m"].values
+```
+
+対象年と，観測水位の範囲を確認する．
+
+```python
 print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
 ```
 
@@ -1246,6 +1327,13 @@ valid_mask = population["year"] >= valid_start
 
 t_train, y_train = t_obs[train_mask], y_obs[train_mask]
 t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+```
+
+- **コードの補足**：パラメタの範囲と初期条件を固定して，推定に使う期間だけを変更する．
+
+訓練・検証期間と，それぞれの観測点数を確認する．
+
+```python
 print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
 ```
 
@@ -1254,6 +1342,11 @@ print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期
 ```python
 result_train = least_squares(residuals, [0.03, 13000.0], args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
 r_train, K_train = result_train.x
+```
+
+訓練期間から求めたパラメタを表示する．
+
+```python
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
 print("停止結果:", result_train.success, result_train.message)
 ```
@@ -1265,6 +1358,11 @@ print("停止結果:", result_train.success, result_train.message)
 y_fit_all = simulate_logistic(result_train.x, t_obs, N0)
 rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
 rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
+```
+
+訓練・検証のRMSEと，2020年の予測人口を表示する．
+
+```python
 print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
 print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
@@ -1316,6 +1414,11 @@ for guess in initial_guesses:
 ```python
 years = population["year"].values
 residual_all = y_fit_all - y_obs
+```
+
+全期間の残差の最小値と最大値を確認する．
+
+```python
 print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
 ```
 
@@ -1596,6 +1699,7 @@ def simulate_level_power(power, t_data, qin_data, qout_data, h_data):
     )
     return LEVEL_MIN + H_REF * (sol.y[0] / V_REF) ** power
 
+- **コードの補足**：`alpha, loss = theta`で2つの値を取り出し，右辺の追加引数に`loss`を渡す．
 
 def residuals_level_power(theta, t_data, qin_data, qout_data, h_data):
     return simulate_level_power(theta[0], t_data, qin_data, qout_data, h_data) - h_data
