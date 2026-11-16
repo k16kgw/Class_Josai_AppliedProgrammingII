@@ -442,6 +442,7 @@ MSEの減少率: 0.097%
 
 一方，変えたのは係数の探し方であり，定数 $r,K$ のLogisticモデルという仮定は同じである．探索を精密にしても人口減少への転換を表す仕組みは加わらない．将来期間への適用は後の訓練・検証の比較で別に評価する．
 
+(estimation-starting-points)=
 ### 初期値依存性
 
 **同じデータでも，探索の開始値によって結果が変わる場合がある**．第5回のヒートマップと照合しながら，4組の開始値で推定値・cost・評価回数を比較する．
@@ -528,6 +529,7 @@ print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res
 ````
 
 
+(estimation-parameter-bounds)=
 ### パラメタの範囲指定
 
 パラメタにはモデルの意味から決まる範囲がある．
@@ -1159,9 +1161,9 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 
 ````{warning} 課題1：訓練期間を選んだ推定結果の報告
 
-人口のLogisticモデルについて訓練期間を変え，推定値と未使用期間の誤差を比較する．数値と考察はREADMEに記し，コードと図はNotebookに残せ．
+人口のLogisticモデルについて，**本文のコードの訓練終了年を変更**して推定する．準備で読み込んだ人口データと，本文で定義した`residuals`・`simulate_logistic`・`mean_squared_error`を使う．数値と考察はREADMEに記し，コードと図はNotebookに残せ．
 
-1. 訓練終了年を1960〜2010年から1つ選び，次の【】を埋めて実行せよ．モデル・推定するパラメタ・目的関数・訓練と検証の期間・探索初期値と範囲・微分方程式の初期条件を記し，推定値と両期間のRMSEを示せ．
+1. [人口モデルの訓練・検証](#estimation-population-validation)の期間設定・推定・RMSEの計算をコピーし，訓練終了年を1960〜2010年から選んだ年へ変更せよ．次の【】は本文の対応する式・引数で埋め，順に実行せよ．モデル・推定するパラメタ・目的関数・両期間・探索初期値と範囲・微分方程式の初期条件，推定値と両期間のRMSEをREADMEに記せ．モデル・初期人口・探索初期値・範囲は本文と同じにすること．
 
 訓練・検証の期間を設定し，それぞれの時刻と観測人口を取り出す．
 
@@ -1179,7 +1181,9 @@ print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期
 
 ```python
 result_train = least_squares(
-    【残差関数・探索初期値・訓練データの args・範囲の bounds】
+    residuals, [0.03, 13000.0],
+    args=【訓練期間の時刻・人口・初期人口の組】,
+    bounds=(lower_bounds, upper_bounds),
 )
 r_train, K_train = 【推定したパラメタの配列】
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
@@ -1197,7 +1201,7 @@ print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
 ```
 
-2. 本文の`initial_guesses`にある4組から推定する．次の【】を埋め，推定値・cost・停止結果を比較せよ．
+2. [初期値依存性](#estimation-starting-points)の`initial_guesses`と`for`文をコピーせよ．**渡すデータを設問1の訓練データに変更**し，[範囲指定](#estimation-parameter-bounds)の`bounds`を加えよ．次の【】を埋めて実行し，推定値・cost・停止結果をREADMEで比較せよ．
 
 訓練期間のデータと同じ範囲を使って開始点だけを変更する．
 
@@ -1205,13 +1209,15 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
 for guess in initial_guesses:
     res = least_squares(
-        【残差関数・現在の探索初期値・訓練データの args・範囲の bounds】
+        residuals, guess,
+        args=【訓練期間の時刻・人口・初期人口の組】,
+        bounds=【本文と同じ下限・上限の組】,
     )
     print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
     print("停止結果:", res.success, res.message)
 ```
 
-3. 次の【】を埋めて残差を求め，本文の人口と残差の描画コードを実行せよ．残差から見直す仮定を1つ挙げ，根拠を記せ．
+3. [人口と残差の可視化](#estimation-population-plot)のコードをコピーし，設問1の計算結果を使って実行せよ．次の【】も本文の残差の式で埋め，人口と残差の図をNotebookに出力せよ．本文で扱った定数 $r,K$ の仮定について，図を根拠に見直す点をREADMEに2〜3文で記せ．
 
 各年のモデル値と観測値の差を求める．
 
@@ -1374,11 +1380,11 @@ plt.show()
 
 ````{warning} 課題2：ダムの前半での推定と後半での検証
 
-2019年の1〜6月を訓練期間，7〜12月を検証期間とし，前半で推定した換算係数を固定して後半へ適用する．本文のデータ抽出・期間分割・推定・描画のコードを組み合わせる．
+2019年の1〜6月を訓練期間，7〜12月を検証期間とし，前半で推定した換算係数を固定して後半へ適用する．**人口モデルの期間分割と，ダムモデルの推定・描画を組み合わせる**．関数は本文で定義した`simulate_level`と`residuals_level`を使う．
 
 1. [ダムのデータの準備](#estimation-dam-preparation)の`year = 2019`による抽出と，`t_dam = ...`で始まる配列の準備をコピーして実行せよ．[人口モデルの期間分割](#estimation-population-validation)を参考に，次の【】を埋めて前半のデータだけを残差関数へ渡し，換算係数を推定せよ．その係数を固定して1年間の水位を計算し，前半・後半のRMSEを求めよ．推定した係数と両方のRMSEをREADMEに記せ．初期値は1月1日の観測水位から設定し，7月1日も同じ解を継続して計算すること．
 
-日付の条件で前半・後半を分け，推定に使う時刻・流量・水位を取り出す．
+第6回の月の抽出と同じ日付の比較を使い，前半・後半を分ける．人口モデルの`t_obs[train_mask]`と同じ方法で，時刻・流量・水位を取り出す．
 
 ```python
 train_mask = 【6月30日までの行を選ぶ条件】
@@ -1401,7 +1407,7 @@ result_alpha_train = least_squares(
 alpha_train = 【推定した換算係数を取り出す処理】
 ```
 
-本文の水位計算と人口モデルの誤差評価を組み合わせ，全期間の計算から両期間のRMSEを求める．
+ダムの`simulate_level`で全期間を計算し，人口モデルと同じマスクによる抽出を使って，前半・後半の残差からRMSEを求める．表示には本文の推定値とRMSEの表示コードを変更して使え．
 
 ```python
 h_fit_all = 【前半で推定した係数と全期間の入力による水位の計算】
@@ -1410,9 +1416,15 @@ rmse_train = 【前半の残差から求めるRMSE】
 rmse_valid = 【後半の残差から求めるRMSE】
 ```
 
-2. 本文のダムの水位・残差の2段の図を変更し，上段に観測水位と設問1の計算水位，下段に残差を描け．人口モデルで使った`axvspan`で，7月1日から12月31日までを検証期間として背景色で示し，Notebookに出力せよ．日付の指定には`pd.Timestamp("2019-07-01")`，`pd.Timestamp("2019-12-31")`を使え．
+2. [ダムの水位・残差の描画](#estimation-dam-estimate)の`plt.subplots(2, 1, ...)`で始まるコードをコピーせよ．上段を観測水位と設問1の計算水位，下段を残差の図に変更せよ．[人口の描画](#estimation-population-plot)の`axvspan`もコピーし，背景色を付ける範囲を次の`valid_start`・`valid_end`に置き換え，Notebookに図を出力せよ．
 
-- **日付の指定**：`pd.Timestamp`は，文字列から描画に使う日時の値を作る．
+第6回のデータ確認で使った`min()`・`max()`を使い，検証期間の日付から背景表示の始めと終わりを求める．
+
+```python
+valid_dates = dam_year["date"][valid_mask]
+valid_start = valid_dates.min()
+valid_end = valid_dates.max()
+```
 
 検証期間にも観測された流入量・放流量を入力する．ここで評価するのは，観測入力の下で前半の換算係数を後半へ適用した結果である．
 ````
@@ -1506,6 +1518,14 @@ print(f"後半の検証RMSE: {rmse_valid:.3f} m")
 
 本文のダムの描画に，人口モデルの検証期間の背景表示を組み合わせる．
 
+検証期間の日付を取り出し，その最小値と最大値を描画範囲にする．
+
+```python
+valid_dates = dam_year["date"][valid_mask]
+valid_start = valid_dates.min()
+valid_end = valid_dates.max()
+```
+
 上段に水位，下段に残差を描き，後半を背景色で示す．
 
 ```{code-block} python
@@ -1516,13 +1536,13 @@ print(f"後半の検証RMSE: {rmse_valid:.3f} m")
 fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 axes[0].plot(dam_year["date"], h_dam, color="black", label="観測水位")
 axes[0].plot(dam_year["date"], h_fit_all, color="tab:blue", label=f"前半の係数を固定 α = {alpha_train:.0f}")
-axes[0].axvspan(pd.Timestamp("2019-07-01"), pd.Timestamp("2019-12-31"), color="gray", alpha=0.15, label="検証期間")
+axes[0].axvspan(valid_start, valid_end, color="gray", alpha=0.15, label="検証期間")
 axes[0].set_ylabel("水位 [m]")
 axes[0].set_title("前半で推定した換算係数による1年間の水位（2019年）")
 axes[0].legend()
 axes[1].plot(dam_year["date"], residual_dam, color="tab:blue")
 axes[1].axhline(0, color="black", linewidth=0.8)
-axes[1].axvspan(pd.Timestamp("2019-07-01"), pd.Timestamp("2019-12-31"), color="gray", alpha=0.15)
+axes[1].axvspan(valid_start, valid_end, color="gray", alpha=0.15)
 axes[1].set_ylabel("計算水位−観測水位 [m]")
 axes[1].set_xlabel("日付")
 for ax in axes:
@@ -1532,7 +1552,7 @@ fig.savefig(FIGURE_DIR / "dam_halfyear_validation_2019.png", dpi=150)
 plt.show()
 ```
 
-- **コードの補足**：`axvspan`には年の数値の代わりに日時の値を渡し，2つの図で同じ検証期間を示す．
+- **コードの補足**：`valid_start`・`valid_end`には日付列から取り出した日時の値が入り，人口モデルと同じ`axvspan`で期間を示せる．
 
 ![2019年前半で推定した換算係数と後半の検証結果](figs/07/dam_halfyear_validation_2019.png)
 
