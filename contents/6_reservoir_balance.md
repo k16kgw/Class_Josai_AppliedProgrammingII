@@ -451,7 +451,7 @@ print(f"有効貯水容量に対する割合: {volume_percent:.2f} %")
 ```
 ````
 
-````{hidden-answer} 演習1の解答例
+````{visible-answer} 演習1の解答例
 
 **1．7日分の流入水量と割合**
 
@@ -607,7 +607,7 @@ print(f"水位372 mから382 mまでに必要な日数: {required_days:.2f} 日"
 ```
 ````
 
-````{hidden-answer} 演習2の解答例
+````{visible-answer} 演習2の解答例
 
 **1．水位からの換算と貯水量の増加**
 
@@ -1125,7 +1125,7 @@ dam_year
 2. **1年間の計算と描画**：[2019年の1年間](#reservoir-year-calculation)から，`t_year, V_model_year, V_obs_year = simulate_reservoir(dam_year)`で始まる計算コード，結果の表示コード，2段の図の描画コードをNotebookの新しいセルにコピーして実行せよ．設問1の`dam_year`を使い，貯水量の計算値・換算値と両者の差をNotebookに図として出力せよ．最終日の差とRMSEを`README.md`に記せ．
 ````
 
-````{hidden-answer} 演習3の解答例
+````{visible-answer} 演習3の解答例
 
 **1．対象年のデータ抽出**
 
@@ -1333,7 +1333,7 @@ plt.show()
 ```
 ````
 
-````{hidden-answer} 演習4の解答例
+````{visible-answer} 演習4の解答例
 
 **1．3か月ごとの再設定**
 
