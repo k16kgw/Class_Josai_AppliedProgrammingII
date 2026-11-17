@@ -82,29 +82,31 @@ applied_programming_ii/
 
 ## 演習1：探索初期値による推定結果の比較
 
-1. 最小のcostに到達した初期値・異なる推定値に到達した初期値と，それぞれのcost：
-2. 追加した初期値による推定（Notebookに初期値・推定値・cost・評価回数を同じ形式で出力）
+1. 最小のcostに到達した初期値：
+2. 初期値を変更した推定（Notebookに推定結果を出力）
 
-## 演習2：訓練期間と残差の比較
+## 演習2：同じ検証期間での比較
 
-1. 比較した訓練終了年： （Notebookに推定値・RMSEと人口・残差の図を出力）
-2. 1990年までで推定した場合の1945年・1980年の残差： （Notebookに数値を出力）
+1. 推定と誤差評価（Notebookに計算結果を出力）
+2. 人口と残差の比較（Notebookに図を出力）
+3. 訓練期間のRMSEだけで予測精度を判断できるか：
 
 ## 演習3：対象年による換算係数の比較
 
-1. 選んだ年・2019年の係数を固定した場合と再推定した場合のRMSE： （Notebookに水位と残差の図を出力）
-2. 再推定した係数・観測水位の範囲：
+1. 水位と残差の比較（Notebookに図を出力）
+2. 対象年で再推定した換算係数：
 
 ## 課題1：訓練期間を選んだ推定結果の報告
 
-1. 推定条件・推定値・訓練と検証のRMSE：
-2. 探索初期値による違いと停止結果：
-3. 残差から見直す仮定と根拠： （Notebookに人口と残差の図を出力）
+1. 推定と誤差評価（Notebookに計算結果を出力）
+2. 探索初期値による違い（Notebookに比較表を出力）
+3. 人口と残差の比較（Notebookに図を出力）
+4. 見直す仮定：
 
 ## 課題2：ダムの前半での推定と後半での検証
 
-1. 前半で推定した換算係数・前半の訓練RMSE・後半の検証RMSE：
-2. 水位と残差の比較（Notebookに検証期間を背景色で示した図を出力）
+1. 推定と誤差評価（Notebookに計算結果を出力）
+2. 水位と残差の比較（Notebookに図を出力）
 
 ```
 
@@ -479,8 +481,8 @@ for guess in initial_guesses:
 
 ````{note} 演習1：探索初期値による推定結果の比較
 
-1. 本文の4つの結果から，最小のcostに到達した初期値と，異なる推定値に到達した初期値を挙げ，それぞれのcostをREADMEに記せ．表示桁数で一致する結果は同程度とみなせ．
-2. **探索初期値を`[0.5, 6000.0]`に変更**する．次の【】を埋めて実行し，本文と同じ形式で推定値・cost・評価回数をNotebookに出力せよ．
+1. 本文の4つの結果を比較し，<span style="color:red">最小のcostに到達した初期値をREADMEに記せ</span>．表示桁数で一致する結果は同程度とみなせ．
+2. 探索初期値を`[0.5, 6000.0]`に変更する．次の【】を埋めて実行し，本文と同じ形式の<span style="color:red">推定結果をNotebookに出力せよ</span>．
 
 本文のループ内の処理をコピーし，追加の1組について計算する．
 
@@ -494,10 +496,9 @@ print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res
 
 ````{visible-answer} 演習1の解答例
 
-**1．本文の探索結果の確認**
+**1．最小のcostに到達した初期値**
 
-- **同程度の最小cost**：`[0.05, 30000.0]`，`[0.03, 13000.0]`，`[0.01, 20000.0]`の3組で，costは約5807180.6となる．
-- **異なる推定値で終了した初期値**：`[0.10, 10000.0]`ではcostが約157753795.5となり，上の3組より大きい．
+`[0.05, 30000.0]`，`[0.03, 13000.0]`，`[0.01, 20000.0]`の3組である．本文の表示桁数では同じcostとなる．
 
 **2．初期値を変更した推定**
 
@@ -609,7 +610,7 @@ r_train, K_train = result_train.x
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
 ```
 
-推定したパラメタを固定して1920〜2020年を計算し，訓練・検証期間のRMSEと最終年の予測を確認する．
+推定したパラメタを固定して1920〜2020年を計算し，訓練期間と検証期間のRMSEと最終年の予測を確認する．
 
 ```python
 # 推定したパラメタで全期間を計算する
@@ -620,11 +621,11 @@ rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
 
 - **コードの補足**：`y_fit_all`：1920年の初期条件から全期間を計算し，訓練期間と検証期間に対応する値を取り出してRMSEを求める．
 
-訓練・検証のRMSEと，2020年の予測人口を表示する．
+訓練期間と検証期間のRMSEと，2020年の予測人口を表示する．
 
 ```python
-print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
-print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
+print(f"訓練期間のRMSE: {rmse_train:8.1f} 万人")
+print(f"検証期間のRMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
 ```
 
@@ -632,13 +633,13 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 出力例：
 
 ```text
-訓練期間の RMSE:    141.0 万人
-検証期間の RMSE:   2154.6 万人
+訓練期間のRMSE:    141.0 万人
+検証期間のRMSE:   2154.6 万人
 2020年の予測: 16101.1 万人，観測: 12614.6 万人
 ```
 
 - **推定値の変化**：1990年までで推定した $K$ は約25900万人で，全期間で推定した約14750万人より大きい．人口の増加が鈍る後半のデータを含めるかどうかで，推定値が変わる．
-- **未使用期間の誤差**：訓練RMSEは約140万人，検証RMSEは約2150万人である．訓練期間に近い曲線を得ても，その後の人口を同じ精度で予測できるとは限らない．
+- **未使用期間の誤差**：訓練期間のRMSEは約140万人，検証期間のRMSEは約2150万人である．訓練期間に近い曲線を得ても，その後の人口を同じ精度で予測できるとは限らない．
 
 (estimation-population-plot)=
 ### 観測値・モデル・残差の可視化
@@ -700,73 +701,205 @@ plt.show()
 
 ![訓練期間・検証期間の人口モデルと残差](figs/07/population_fit_1990.png)
 
-````{note} 演習2：訓練期間と残差の比較
+````{note} 演習2：同じ検証期間での比較
 
-1. 訓練終了年を1970，1990，2010の3通りに変更する．次の【】を埋め，各条件で本文の推定・全期間の計算・可視化のコードを続けて実行せよ．推定値・訓練と検証のRMSE・人口と残差の図をNotebookに出力せよ．
+本文では訓練期間を変えると検証期間も変わる．ここでは**検証期間を1995〜2020年に固定**し，推定に使うデータの違いを比べる．
 
-本文の期間設定をコピーし，訓練終了年を1つずつ変更する．
+1. 訓練期間を1920〜1970年，1920〜1990年の2通りとする．次の【】を埋め，推定には各訓練期間のデータだけを使うこと．検証期間は両方とも1995〜2020年とする．[本文の全期間の計算とRMSEの表示](#estimation-population-validation)をコピーして実行し，両条件の推定値と訓練期間・検証期間のRMSEをまとめた<span style="color:red">計算結果をNotebookに出力せよ</span>．
+
+訓練期間だけを切り替えられるように，データを選ぶ条件を作る．
 
 ```python
-train_end = 【1970，1990，2010のいずれか】
-valid_start = train_end + 5
+train_end = 1970  # 1970年までの計算後，1990へ変更して再実行する
+valid_start = 1995
+train_mask = 【選んだ訓練終了年までの年を選ぶ条件】
+valid_mask = 【両条件に共通する検証期間の年を選ぶ条件】
+t_train, y_train = t_obs[train_mask], y_obs[train_mask]
+t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+```
+
+残差関数へどのデータを渡すかを考え，推定を実行する．
+
+```python
+result_train = least_squares(
+    residuals, [0.03, 13000.0],
+    args=【推定に使う時刻・観測人口・初期人口の組】,
+    bounds=(lower_bounds, upper_bounds),
+)
+r_train, K_train = result_train.x
+```
+
+各条件で計算した人口の配列を，次の名前で保存する．本文の全期間の計算を実行した後に対応する行を追加せよ．
+
+```python
+# 1970年までで推定した計算の後
+y_fit_1970 = y_fit_all
+```
+
+1990年までで推定した計算の後にも，人口の配列を保存する．
+
+```python
+y_fit_1990 = y_fit_all
+```
+
+2. [本文の人口と残差の描画](#estimation-population-plot)を変更し，上段に観測人口と2本の推定曲線，下段にそれぞれの残差を示す．両方の図で1995〜2020年に背景色を付け，<span style="color:red">比較図をNotebookに出力せよ</span>．
+
+3. 設問1の数値を根拠に，<span style="color:red">訓練期間のRMSEだけで予測精度を判断できるかをREADMEに1〜2文で記せ</span>．
+````
+
+````{visible-answer} 演習2の解答例
+
+**1．検証期間を固定した2通りの推定**
+
+本文の`train_mask`は訓練終了年までを選ぶ条件，`valid_mask`は検証開始年以降を選ぶ条件にする．**訓練終了年を変えても，検証開始年は1995年に固定する**．
+
+訓練期間を1970年までに設定し，共通の検証データを取り出す．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1,2
+:class: code-focus
+
+train_end = 1970
+valid_start = 1995
 train_mask = population["year"] <= train_end
 valid_mask = population["year"] >= valid_start
 t_train, y_train = t_obs[train_mask], y_obs[train_mask]
 t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
 ```
 
-2. `train_end = 1990`に戻して推定・全期間の計算・可視化を再実行せよ．次の【】を埋めて1945年と1980年の残差を順に出力し，正負と過大評価・過小評価の対応を確認せよ．
-
-本文の期間抽出と同じく年の条件で残差を選び，`[0]`でその年の値を取り出す．
+本文と同じ残差関数へ，訓練データと初期人口を渡す．
 
 ```python
-target_year = 【1945 または 1980】
-year_mask = population["year"] == target_year
-print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
+result_train = least_squares(residuals, [0.03, 13000.0], args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
+r_train, K_train = result_train.x
 ```
 
-検証対象の年は条件ごとに異なるため，同じ将来期間に対する予測精度の比較にはなっていない．
-````
-
-````{visible-answer} 演習2の解答例
-
-**1．訓練期間ごとの計算と描画**
-
-設問1の【】には1970，1990，2010を1つずつ入れる．各条件で本文の推定・全期間の計算・可視化のコードを続けて実行する．
-
-| 訓練終了年 | 推定 $r$［/年］ | 推定 $K$［万人］ | 訓練RMSE［万人］ | 検証RMSE［万人］ |
-| --- | ---: | ---: | ---: | ---: |
-| 1970 | 0.01605 | 34902.2 | 122.1 | 2089.0 |
-| 1990 | 0.01787 | 25872.2 | 141.0 | 2154.6 |
-| 2010 | 0.02467 | 16122.3 | 269.0 | 1112.2 |
-
-再実行した描画コードから，次の図を得る．1990年の図は本文と同じになる．
-
-![1970年までのデータによる推定と残差](figs/07/population_fit_1970.png)
-
-![2010年までのデータによる推定と残差](figs/07/population_fit_2010.png)
-
-**2．指定した年の残差**
-
-`train_end = 1990`に戻し，本文の期間設定・推定・全期間の計算・可視化を再実行する．年の条件を使って残差を取り出す．1945年の値を表示した後，`target_year = 1980`に変更して同じコードを実行する．
+本文と同じ手順で全期間を計算し，両期間のRMSEを求めて人口の配列を保存する．
 
 ```python
-target_year = 1945
-year_mask = population["year"] == target_year
-print(f"{target_year}年の残差: {residual_all[year_mask][0]:.1f} 万人")
+# 推定したパラメタで全期間を計算する
+y_fit_all = simulate_logistic(result_train.x, t_obs, N0)
+rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
+rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
+y_fit_1970 = y_fit_all
 ```
 
-- **コードの補足**：年の条件に一致する要素を選び，`[0]`でその値を取り出す．残差はモデル値−観測値である．
+推定値と，訓練期間と検証期間のRMSEを表示する．
+
+```python
+print(f"訓練期間: 1920〜{train_end}年，検証期間: {valid_start}〜2020年")
+print(f"推定値: r = {r_train:.5f} /年，K = {K_train:.1f} 万人")
+print(f"訓練期間のRMSE: {rmse_train:.1f} 万人")
+print(f"共通の検証期間のRMSE: {rmse_valid:.1f} 万人")
+```
 
 出力例：
 
 ```text
-1945年の残差: 583.2 万人
-1980年の残差: -156.8 万人
+訓練期間: 1920〜1970年，検証期間: 1995〜2020年
+推定値: r = 0.01605 /年，K = 34902.2 万人
+訓練期間のRMSE: 122.1 万人
+共通の検証期間のRMSE: 2755.2 万人
 ```
 
-1945年は正で過大評価，1980年は負で過小評価となる．
+訓練期間を1990年までに設定し，共通の検証データを取り出す．
 
+```{code-block} python
+:linenos:
+:emphasize-lines: 1
+:class: code-focus
+
+train_end = 1990
+valid_start = 1995
+train_mask = population["year"] <= train_end
+valid_mask = population["year"] >= valid_start
+t_train, y_train = t_obs[train_mask], y_obs[train_mask]
+t_valid, y_valid = t_obs[valid_mask], y_obs[valid_mask]
+```
+
+本文と同じ残差関数へ，訓練データと初期人口を渡す．
+
+```python
+result_train = least_squares(residuals, [0.03, 13000.0], args=(t_train, y_train, N0), bounds=(lower_bounds, upper_bounds))
+r_train, K_train = result_train.x
+```
+
+本文と同じ手順で全期間を計算し，両期間のRMSEを求めて人口の配列を保存する．
+
+```python
+# 推定したパラメタで全期間を計算する
+y_fit_all = simulate_logistic(result_train.x, t_obs, N0)
+rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
+rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
+y_fit_1990 = y_fit_all
+```
+
+推定値と，訓練期間と検証期間のRMSEを表示する．
+
+```python
+print(f"訓練期間: 1920〜{train_end}年，検証期間: {valid_start}〜2020年")
+print(f"推定値: r = {r_train:.5f} /年，K = {K_train:.1f} 万人")
+print(f"訓練期間のRMSE: {rmse_train:.1f} 万人")
+print(f"共通の検証期間のRMSE: {rmse_valid:.1f} 万人")
+```
+
+出力例：
+
+```text
+訓練期間: 1920〜1990年，検証期間: 1995〜2020年
+推定値: r = 0.01787 /年，K = 25872.2 万人
+訓練期間のRMSE: 141.0 万人
+共通の検証期間のRMSE: 2154.6 万人
+```
+
+**2．人口と残差の比較図**
+
+本文の描画にもう1本の曲線を加える．2つの残差は，保存した人口の配列から同じ観測人口を引いて求める．
+
+描画に使う年と，2通りの残差を準備する．
+
+```python
+years = population["year"].values
+residual_1970 = y_fit_1970 - y_obs
+residual_1990 = y_fit_1990 - y_obs
+```
+
+本文の2段の図に2通りの人口と残差を重ね，共通の検証期間を示す．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 4,11
+:class: code-focus
+
+fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+axes[0].plot(years, y_obs, color="black", marker="o", markersize=3, linestyle="none", label="観測値")
+axes[0].plot(years, y_fit_1970, color="tab:orange", label="1970年までで推定")
+axes[0].plot(years, y_fit_1990, color="tab:blue", label="1990年までで推定")
+axes[0].axvspan(valid_start, 2020, color="gray", alpha=0.15, label="共通の検証期間")
+axes[0].set_ylabel("人口 [万人]")
+axes[0].set_ylim(4000, 1.05 * max(y_obs.max(), y_fit_1970.max(), y_fit_1990.max()))
+axes[0].set_title("同じ検証期間による人口モデルの比較")
+axes[0].legend(fontsize=8)
+axes[1].plot(years, residual_1970, color="tab:orange", label="1970年までで推定")
+axes[1].plot(years, residual_1990, color="tab:blue", label="1990年までで推定")
+axes[1].axhline(0, color="black", linewidth=0.8)
+axes[1].axvspan(valid_start, 2020, color="gray", alpha=0.15)
+axes[1].set_ylabel("計算人口−観測人口 [万人]")
+axes[1].set_xlabel("年")
+axes[1].legend(fontsize=8)
+for ax in axes:
+    ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "population_common_validation.png", dpi=150)
+plt.show()
+```
+
+![同じ1995〜2020年で検証した2通りの人口モデル](figs/07/population_common_validation.png)
+
+**3．訓練期間のRMSEと予測精度**
+
+**訓練期間のRMSEだけでは予測精度を判断できない**．1970年までのモデルは訓練期間のRMSEが約122万人で，1990年までの約141万人より小さいが，共通の検証期間では約2755万人となり，1990年までの約2155万人より大きい．
 ````
 
 ## ダムモデル：観測量への換算を含む推定
@@ -1105,7 +1238,7 @@ plt.show()
 
 ````{note} 演習3：対象年による換算係数の比較
 
-1. 2021〜2023年から1年を選ぶ．次の【】を埋めた後，「別の年への適用と再推定の区別」の固定係数による計算・再推定・描画のコードを続けて実行せよ．選んだ年と2つのRMSEをREADMEに記し，水位と残差の図をNotebookに出力せよ．`alpha_reference`は2019年の推定値を保つこと．
+1. 2021〜2023年から1年を選ぶ．次の【】を埋めた後，「別の年への適用と再推定の区別」の固定係数による計算・再推定・描画を再実行し，<span style="color:red">水位と残差の比較図をNotebookに出力せよ</span>．`alpha_reference`は2019年の推定値を保つこと．
 
 本文の対象年と抽出条件を変更し，時刻・流量・水位を準備する．
 
@@ -1119,14 +1252,14 @@ h_dam = dam_year["water_level_m"].values
 print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
 ```
 
-2. 再推定した係数と観測水位の範囲を記せ．
+2. <span style="color:red">対象年で再推定した換算係数をREADMEに記せ</span>．
 
 固定した係数のRMSEが別の年への適用結果を表す．再推定後のRMSEはその年への当てはまりを表す．
 ````
 
 ````{visible-answer} 演習3の解答例
 
-**1．2021年への適用と再推定**
+**1．2021年の水位と残差の比較図**
 
 設問1の【】を`2021`と`dam["date"].dt.year == year`で埋める．続けて本文の固定係数による計算・再推定・描画のコードを実行する．`alpha_reference`を代入するセルは再実行せず，2019年の係数を保つ．
 
@@ -1140,10 +1273,9 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 
 ![2019年の換算係数を2021年へ適用した水位と再推定後の比較](figs/07/dam_alpha_transfer_2021.png)
 
-**2．係数と水位範囲の比較**
+**2．再推定した換算係数**
 
-2019年の係数は約1027.0千m³/m，2021年で再推定した係数は約939.8千m³/mである．水位の範囲は2019年が371.35〜391.99 m，2021年が371.69〜376.62 mであり，2021年はより狭い水位域を通る．水位・容量曲線を入手し，各年の水位域における傾きと比較する．係数の違いをそのまま湖面の形の変化とみなすことはできない．
-
+2021年で再推定した換算係数は，約939.8千m³/mである．
 
 ````
 
@@ -1161,77 +1293,59 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 
 ````{warning} 課題1：訓練期間を選んだ推定結果の報告
 
-人口のLogisticモデルについて，**本文のコードの訓練終了年を変更**して推定する．準備で読み込んだ人口データと，本文で定義した`residuals`・`simulate_logistic`・`mean_squared_error`を使う．数値と考察はREADMEに記し，コードと図はNotebookに残せ．
+人口のLogisticモデルについて，**本文のコードの訓練終了年を変更**して推定する．準備で読み込んだ人口データと，本文で定義した`residuals`・`simulate_logistic`・`mean_squared_error`を使う．計算には本文と同じモデル・初期人口・探索初期値・範囲を使う．
 
-1. [人口モデルの訓練・検証](#estimation-population-validation)の期間設定・推定・RMSEの計算をコピーし，訓練終了年を1960〜2010年から選んだ年へ変更せよ．次の【】は本文の対応する式・引数で埋め，順に実行せよ．モデル・推定するパラメタ・目的関数・両期間・探索初期値と範囲・微分方程式の初期条件，推定値と両期間のRMSEをREADMEに記せ．モデル・初期人口・探索初期値・範囲は本文と同じにすること．
+1. [人口モデルの訓練・検証](#estimation-population-validation)のコードをコピーし，訓練終了年を1960〜2010年から選んだ年へ変更する．次の【】に処理を記入して順に実行し，推定値と訓練期間・検証期間のRMSEを含む<span style="color:red">計算結果をNotebookに出力せよ</span>．
 
 訓練・検証の期間を設定し，それぞれの時刻と観測人口を取り出す．
 
 ```python
-train_end = 【選んだ訓練終了年】
-valid_start = 【訓練終了の5年後】
-train_mask = 【訓練期間の年を選ぶ条件】
-valid_mask = 【検証期間の年を選ぶ条件】
-【t_train と y_train に訓練期間のデータを代入する処理】
-【t_valid と y_valid に検証期間のデータを代入する処理】
+【訓練・検証期間を設定し，t_train・y_train・t_valid・y_validを取り出す処理】
 print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
 ```
 
 訓練データだけを使い，本文と同じ探索初期値と範囲で推定する．
 
 ```python
-result_train = least_squares(
-    residuals, [0.03, 13000.0],
-    args=【訓練期間の時刻・人口・初期人口の組】,
-    bounds=(lower_bounds, upper_bounds),
-)
-r_train, K_train = 【推定したパラメタの配列】
+【訓練データで推定し，result_train・r_train・K_trainに結果を保存する処理】
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
 print("停止結果:", result_train.success, result_train.message)
 ```
 
-推定した係数を固定して全期間を計算し，訓練・検証のRMSEを求める．
+推定した係数を固定して全期間を計算し，訓練期間と検証期間のRMSEを求める．
 
 ```python
-y_fit_all = 【推定した係数と1920年の初期人口による全期間の計算】
-rmse_train = 【訓練期間の観測値と計算値から求めるRMSE】
-rmse_valid = 【検証期間の観測値と計算値から求めるRMSE】
-print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
-print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
+【推定した係数で全期間のy_fit_allを計算し，rmse_train・rmse_validを求める処理】
+print(f"訓練期間のRMSE: {rmse_train:8.1f} 万人")
+print(f"検証期間のRMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
 ```
 
-2. [初期値依存性](#estimation-starting-points)の`initial_guesses`と`for`文をコピーせよ．**渡すデータを設問1の訓練データに変更**し，[範囲指定](#estimation-parameter-bounds)の`bounds`を加えよ．次の【】を埋めて実行し，推定値・cost・停止結果をREADMEで比較せよ．
+2. [初期値依存性](#estimation-starting-points)の`initial_guesses`と`for`文をコピーする．渡すデータを設問1の訓練データに変更し，[範囲指定](#estimation-parameter-bounds)の`bounds`を加え，4組の初期値での<span style="color:red">推定結果の比較表をNotebookに出力せよ</span>．
 
 訓練期間のデータと同じ範囲を使って開始点だけを変更する．
 
 ```python
 print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
-for guess in initial_guesses:
-    res = least_squares(
-        residuals, guess,
-        args=【訓練期間の時刻・人口・初期人口の組】,
-        bounds=【本文と同じ下限・上限の組】,
-    )
-    print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
-    print("停止結果:", res.success, res.message)
+【各探索初期値で推定し，推定値・cost・評価回数・停止結果を表示するfor文】
 ```
 
-3. [人口と残差の可視化](#estimation-population-plot)のコードをコピーし，設問1の計算結果を使って実行せよ．次の【】も本文の残差の式で埋め，人口と残差の図をNotebookに出力せよ．本文で扱った定数 $r,K$ の仮定について，図を根拠に見直す点をREADMEに2〜3文で記せ．
+3. [人口と残差の可視化](#estimation-population-plot)をコピーし，設問1の計算結果を使う．次の【】に描画用の配列を準備する処理を記入し，<span style="color:red">人口と残差の図をNotebookに出力せよ</span>．
 
 各年のモデル値と観測値の差を求める．
 
 ```python
-years = population["year"].values
-residual_all = 【全期間のモデル値 − 観測値】
+【描画に使うyearsと，全期間の残差residual_allを準備する処理】
 print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
 ```
+
+4. 設問3の図を根拠に，定数 $r,K$ のモデルについて<span style="color:red">見直す仮定を1つ挙げ，READMEに2〜3文で説明せよ</span>．
 
 ````
 
 ````{visible-answer} 課題1の解答例
 
-**1．推定条件と結果**
+**1．推定と誤差評価の出力**
 
 Logisticモデルの $r,K$ を推定する．初期人口は5596.3万人，目的関数は人口の残差二乗和である．探索初期値は`[0.03, 13000.0]`，範囲は $0\leq r\leq1$，$6000\leq K\leq50000$ 万人とする．本文の関数と人口データを準備した状態から実行する．
 
@@ -1273,7 +1387,7 @@ print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人
 print("停止結果:", result_train.success, result_train.message)
 ```
 
-係数を固定して全期間を計算し，訓練・検証のRMSEを求める．
+係数を固定して全期間を計算し，訓練期間と検証期間のRMSEを求める．
 
 ```python
 # 推定したパラメタで全期間を計算する
@@ -1282,11 +1396,11 @@ rmse_train = np.sqrt(mean_squared_error(y_train, y_fit_all[train_mask]))
 rmse_valid = np.sqrt(mean_squared_error(y_valid, y_fit_all[valid_mask]))
 ```
 
-訓練・検証のRMSEと，2020年の予測人口を表示する．
+訓練期間と検証期間のRMSEと，2020年の予測人口を表示する．
 
 ```python
-print(f"訓練期間の RMSE: {rmse_train:8.1f} 万人")
-print(f"検証期間の RMSE: {rmse_valid:8.1f} 万人")
+print(f"訓練期間のRMSE: {rmse_train:8.1f} 万人")
+print(f"検証期間のRMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
 ```
 
@@ -1295,12 +1409,12 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 ```text
 訓練期間で推定: r = 0.01500 /年,  K = 48065.8 万人
 停止結果: True `ftol` termination condition is satisfied.
-訓練期間の RMSE:    115.6 万人
-検証期間の RMSE:   2851.2 万人
+訓練期間のRMSE:    115.6 万人
+検証期間のRMSE:   2851.2 万人
 2020年の予測: 17843.8 万人，観測: 12614.6 万人
 ```
 
-**2．探索初期値の比較**
+**2．探索初期値による推定結果の比較表**
 
 本文の4組をrの降順で試す．残差関数へ渡すデータを訓練期間に変更し，同じ範囲を指定する．
 
@@ -1329,7 +1443,7 @@ for guess in initial_guesses:
 
 4組とも $r\approx0.01500$，$K\approx48065.8$ 万人，cost $\approx407449.5$ を得る．いずれも停止条件を満たすが，探索範囲全体の最小値を得たことの証明にはならない．
 
-**3．残差と見直す仮定**
+**3．人口と残差の図**
 
 推定した係数の人口と観測人口の差を計算する．
 
@@ -1373,6 +1487,8 @@ plt.show()
 
 ![1980年までのデータによる推定と残差](figs/07/population_fit_1980.png)
 
+**4．見直す仮定**
+
 検証期間では人口を過大予測し，差が大きくなる．定数 $r,K$ で人口増加の鈍化を表し続ける仮定を見直し，出生・死亡・人口移動の統計と照合する．
 
 
@@ -1382,48 +1498,32 @@ plt.show()
 
 2019年の1〜6月を訓練期間，7〜12月を検証期間とし，前半で推定した換算係数を固定して後半へ適用する．**人口モデルの期間分割と，ダムモデルの推定・描画を組み合わせる**．関数は本文で定義した`simulate_level`と`residuals_level`を使う．
 
-1. [ダムのデータの準備](#estimation-dam-preparation)の`year = 2019`による抽出と，`t_dam = ...`で始まる配列の準備をコピーして実行せよ．[人口モデルの期間分割](#estimation-population-validation)を参考に，次の【】を埋めて前半のデータだけを残差関数へ渡し，換算係数を推定せよ．その係数を固定して1年間の水位を計算し，前半・後半のRMSEを求めよ．推定した係数と両方のRMSEをREADMEに記せ．初期値は1月1日の観測水位から設定し，7月1日も同じ解を継続して計算すること．
+1. [ダムのデータの準備](#estimation-dam-preparation)の`year = 2019`による抽出と配列の準備をコピーして実行する．[人口モデルの期間分割](#estimation-population-validation)を参考に次の【】を埋め，前半で係数を推定して1年間を計算し，係数と訓練期間・検証期間のRMSEを含む<span style="color:red">計算結果をNotebookに出力せよ</span>．初期値は1月1日の観測水位から設定し，7月1日も同じ解を継続して計算すること．
 
 第6回の月の抽出と同じ日付の比較を使い，前半・後半を分ける．人口モデルの`t_obs[train_mask]`と同じ方法で，時刻・流量・水位を取り出す．
 
 ```python
-train_mask = 【6月30日までの行を選ぶ条件】
-valid_mask = 【7月1日以降の行を選ぶ条件】
-t_train = t_dam[train_mask]
-qin_train = qin_dam[train_mask]
-qout_train = qout_dam[train_mask]
-h_train = h_dam[train_mask]
+【前半・後半を選ぶtrain_mask・valid_maskを作り，前半のt_train・qin_train・qout_train・h_trainを取り出す処理】
 ```
 
 [換算係数の推定](#estimation-dam-estimate)の残差関数と同じ初期値・範囲を使い，渡すデータを前半に変更する．
 
 ```python
-alpha_assumed = 56000.0 / (393.3 - 304.0)
-result_alpha_train = least_squares(
-    residuals_level, [alpha_assumed],
-    args=【前半の時刻・流入量・放流量・水位の配列の組】,
-    bounds=([100.0], [5000.0]),
-)
-alpha_train = 【推定した換算係数を取り出す処理】
+【本文と同じ探索初期値・範囲で前半のデータから推定し，result_alpha_train・alpha_trainに結果を保存する処理】
 ```
 
 ダムの`simulate_level`で全期間を計算し，人口モデルと同じマスクによる抽出を使って，前半・後半の残差からRMSEを求める．表示には本文の推定値とRMSEの表示コードを変更して使え．
 
 ```python
-h_fit_all = 【前半で推定した係数と全期間の入力による水位の計算】
-residual_dam = 【全期間の計算水位と観測水位の差】
-rmse_train = 【前半の残差から求めるRMSE】
-rmse_valid = 【後半の残差から求めるRMSE】
+【係数を固定して全期間のh_fit_allと残差residual_damを計算し，rmse_train・rmse_validを求める処理】
 ```
 
-2. [ダムの水位・残差の描画](#estimation-dam-estimate)の`plt.subplots(2, 1, ...)`で始まるコードをコピーせよ．上段を観測水位と設問1の計算水位，下段を残差の図に変更せよ．[人口の描画](#estimation-population-plot)の`axvspan`もコピーし，背景色を付ける範囲を次の`valid_start`・`valid_end`に置き換え，Notebookに図を出力せよ．
+2. [ダムの水位・残差の描画](#estimation-dam-estimate)をコピーし，上段を観測水位と設問1の計算水位，下段を残差に変更する．[人口の描画](#estimation-population-plot)の`axvspan`で検証期間に背景色を付け，<span style="color:red">水位と残差の図をNotebookに出力せよ</span>．背景表示の範囲には，次の`valid_start`・`valid_end`を使う．
 
 第6回のデータ確認で使った`min()`・`max()`を使い，検証期間の日付から背景表示の始めと終わりを求める．
 
 ```python
-valid_dates = dam_year["date"][valid_mask]
-valid_start = valid_dates.min()
-valid_end = valid_dates.max()
+【検証期間の日付からvalid_start・valid_endを求める処理】
 ```
 
 検証期間にも観測された流入量・放流量を入力する．ここで評価するのは，観測入力の下で前半の換算係数を後半へ適用した結果である．
@@ -1481,7 +1581,7 @@ alpha_train = result_alpha_train.x[0]
 
 - **コードの補足**：残差関数へ渡す観測水位は前半だけなので，後半の水位は係数の推定に使われない．
 
-推定した係数で1年間を計算し，同じ解から訓練・検証のRMSEを求める．
+推定した係数で1年間を計算し，同じ解から訓練期間と検証期間のRMSEを求める．
 
 ```python
 h_fit_all = simulate_level(alpha_train, t_dam, qin_dam, qout_dam, h_dam)
@@ -1499,8 +1599,8 @@ print(f"訓練期間: 2019年1〜6月，{len(t_train)} 点")
 print(f"検証期間: 2019年7〜12月，{len(t_dam[valid_mask])} 点")
 print("停止結果:", result_alpha_train.success, result_alpha_train.message)
 print(f"前半で推定した係数: alpha = {alpha_train:.1f} 千m^3/m")
-print(f"前半の訓練RMSE: {rmse_train:.3f} m")
-print(f"後半の検証RMSE: {rmse_valid:.3f} m")
+print(f"訓練期間のRMSE: {rmse_train:.3f} m")
+print(f"検証期間のRMSE: {rmse_valid:.3f} m")
 ```
 
 出力例：
@@ -1510,8 +1610,8 @@ print(f"後半の検証RMSE: {rmse_valid:.3f} m")
 検証期間: 2019年7〜12月，184 点
 停止結果: True `ftol` termination condition is satisfied.
 前半で推定した係数: alpha = 1022.4 千m^3/m
-前半の訓練RMSE: 0.093 m
-後半の検証RMSE: 0.659 m
+訓練期間のRMSE: 0.093 m
+検証期間のRMSE: 0.659 m
 ```
 
 **2．水位・残差と検証期間の図**
@@ -1556,7 +1656,7 @@ plt.show()
 
 ![2019年前半で推定した換算係数と後半の検証結果](figs/07/dam_halfyear_validation_2019.png)
 
-前半の訓練RMSEは約0.093 m，後半の検証RMSEは約0.659 mである．前半に当てはまる係数でも，後半の水位を同じ精度で再現できるとは限らない．水位域によらず同じ換算係数を使う仮定や流量の補間を検討する手掛かりになるが，この比較だけではずれの原因を特定できない．
+訓練期間のRMSEは約0.093 m，検証期間のRMSEは約0.659 mである．前半に当てはまる係数でも，後半の水位を同じ精度で再現できるとは限らない．水位域によらず同じ換算係数を使う仮定や流量の補間を検討する手掛かりになるが，この比較だけではずれの原因を特定できない．
 ````
 
 ### 提出先・期限
@@ -1662,7 +1762,7 @@ def residuals_level_power(theta, t_data, qin_data, qout_data, h_data):
 
 ````{note} 発展課題：べき指数の推定と形状の解釈
 
-1. 次の【】を埋め，2019年の水位の残差二乗和を最小にする指数 $p$ を推定せよ．探索初期値は`[0.5]`，範囲は`([1 / 3], [1.0])`とし，推定値・RMSE・停止結果を示せ．
+1. 次の【】を埋め，2019年の水位から指数 $p$ を推定する．探索初期値は`[0.5]`，範囲は`([1 / 3], [1.0])`とし，推定値・RMSE・停止結果を含む<span style="color:red">推定結果をNotebookに出力せよ</span>．
 
 本文の係数推定を指数の推定に変更する．
 
@@ -1678,8 +1778,8 @@ print("停止結果:", result_power.success, result_power.message)
 print(f"推定した指数 p = {power_hat:.4f}，RMSE = {rmse_power:.3f} m")
 ```
 
-2. 本文で推定した線形係数と今回のべき乗モデルについて，水位・残差を比較する図をNotebookに出力せよ．また $p=1$ でのRMSEも計算し，どの線形モデルに対応するか説明せよ．
-3. 推定した $p$ で水位が上がると湖面積がどう変わるか答えよ．この値だけから実際の貯水池の形状を断定できるか，確かめるために必要な資料も挙げよ．
+2. 本文の線形換算と今回のべき乗換算による水位・残差を，本文と同じ2段の図で比較する．<span style="color:red">比較図をNotebookに出力せよ</span>．
+3. 推定した $p$ を湖面積の式に代入し，<span style="color:red">水位が上がると湖面積がどう変わるかをNotebookに説明せよ</span>．
 ````
 
 ````{visible-answer} 発展課題の解答例
@@ -1709,23 +1809,11 @@ print(f"推定した指数 p = {power_hat:.4f}，RMSE = {rmse_power:.3f} m")
 
 **2．線形モデルとの比較**
 
-本文で保存した2019年の線形係数と，推定した指数で水位を計算する．$p=1$ も同じ関数で確認する．
+本文で保存した2019年の線形係数と，推定した指数で水位を計算する．
 
 ```python
 h_linear = simulate_level(alpha_reference, t_dam, qin_dam, qout_dam, h_dam)
 h_power = simulate_level_power(power_hat, t_dam, qin_dam, qout_dam, h_dam)
-h_power_one = simulate_level_power(1.0, t_dam, qin_dam, qout_dam, h_dam)
-print(f"本文で推定した線形係数のRMSE: {np.sqrt(np.mean((h_linear - h_dam) ** 2)):.3f} m")
-print(f"べき乗モデルのRMSE: {rmse_power:.3f} m")
-print(f"p = 1のRMSE: {np.sqrt(np.mean((h_power_one - h_dam) ** 2)):.3f} m")
-```
-
-出力例：
-
-```text
-本文で推定した線形係数のRMSE: 0.472 m
-べき乗モデルのRMSE: 0.190 m
-p = 1のRMSE: 4.635 m
 ```
 
 本文の水位・残差の描画を使い，線形換算とべき乗換算を比較する．
@@ -1755,7 +1843,7 @@ plt.show()
 
 ![線形換算と推定したべき乗換算による水位と残差の比較](figs/07/dam_power_estimation_2019.png)
 
-$p=1$ は第6回の固定係数約627.1千m³/mに対応する．本文の推定係数約1027.0千m³/mとべき指数は，どちらも2019年の水位から求めた1パラメタの推定である．この例では関数形を変えると当てはまりが改善したが，その改善だけでは別の年への適用結果は分からない．
+線形係数とべき指数は，どちらも2019年の水位から求めた1パラメタの推定である．関数形によって当てはまりは変わるが，別の年への適用結果は別に評価する必要がある．
 
 **3．形状の解釈**
 
