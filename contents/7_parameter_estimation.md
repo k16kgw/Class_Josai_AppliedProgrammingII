@@ -1407,14 +1407,22 @@ print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_a
 訓練・検証の期間を設定し，それぞれの時刻と観測人口を取り出す．
 
 ```python
-【訓練・検証期間を設定し，t_train・y_train・t_valid・y_validを取り出す処理】
+train_end = 【1960〜2010から選んだ訓練終了年】
+valid_start = 【訓練終了年の5年後】
+train_mask = 【訓練期間の年を選ぶ条件】
+valid_mask = 【検証期間の年を選ぶ条件】
+t_train = 【訓練期間の時刻の配列】
+y_train = 【訓練期間の観測人口の配列】
+t_valid = 【検証期間の時刻の配列】
+y_valid = 【検証期間の観測人口の配列】
 print(f"訓練期間: {len(t_train)} 点（1920〜{train_end}年）， 検証期間: {len(t_valid)} 点（{valid_start}〜2020年）")
 ```
 
 訓練データだけを使い，本文と同じ探索初期値と範囲で推定する．
 
 ```python
-【訓練データで推定し，result_train・r_train・K_trainに結果を保存する処理】
+result_train = least_squares(【訓練データで推定するための引数】)
+r_train, K_train = 【推定したパラメタの配列】
 print(f"訓練期間で推定: r = {r_train:.5f} /年,  K = {K_train:.1f} 万人")
 print("停止結果:", result_train.success, result_train.message)
 ```
@@ -1422,7 +1430,9 @@ print("停止結果:", result_train.success, result_train.message)
 推定した係数を固定して全期間を計算し，訓練期間と検証期間のRMSEを求める．
 
 ```python
-【推定した係数で全期間のy_fit_allを計算し，rmse_train・rmse_validを求める処理】
+y_fit_all = 【推定した係数で全期間の人口を計算する関数呼び出し】
+rmse_train = 【訓練期間のRMSE】
+rmse_valid = 【検証期間のRMSE】
 print(f"訓練期間のRMSE: {rmse_train:8.1f} 万人")
 print(f"検証期間のRMSE: {rmse_valid:8.1f} 万人")
 print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} 万人")
@@ -1433,8 +1443,12 @@ print(f"2020年の予測: {y_fit_all[-1]:.1f} 万人，観測: {y_obs[-1]:.1f} �
 訓練期間のデータと同じ範囲を使って開始点だけを変更する．
 
 ```python
+initial_guesses = 【本文の4組の探索初期値】
 print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} {'評価回数':>8}")
-【各探索初期値で推定し，推定値・cost・評価回数・停止結果を表示するfor文】
+for guess in initial_guesses:
+    res = least_squares(【設問1と同じ訓練データ・範囲を使い，guessを探索初期値とする引数】)
+    print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res.nfev:8d}")
+    print("停止結果:", res.success, res.message)
 ```
 
 3. [人口と残差の可視化](#estimation-population-plot)をコピーし，設問1の計算結果を使う．次の【】に描画用の配列を準備する処理を記入し，<span style="color:red">人口と残差の図をNotebookに出力せよ</span>．
@@ -1442,7 +1456,8 @@ print(f"{'初期値 (r, K)':>22} {'推定 r':>10} {'推定 K':>10} {'cost':>12} 
 各年のモデル値と観測値の差を求める．
 
 ```python
-【描画に使うyearsと，全期間の残差residual_allを準備する処理】
+years = 【人口データの年の配列】
+residual_all = 【全期間の計算人口と観測人口の差】
 print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {residual_all.max():.1f} 万人")
 ```
 
@@ -1624,19 +1639,28 @@ plt.show()
 第6回の月の抽出と同じ日付の比較を使い，前半・後半を分ける．人口モデルの`t_obs[train_mask]`と同じ方法で，時刻・流量・水位を取り出す．
 
 ```python
-【前半・後半を選ぶtrain_mask・valid_maskを作り，前半のt_train・qin_train・qout_train・h_trainを取り出す処理】
+train_mask = 【2019年1〜6月を選ぶ条件】
+valid_mask = 【2019年7〜12月を選ぶ条件】
+t_train = 【前半の時刻の配列】
+qin_train = 【前半の流入量の配列】
+qout_train = 【前半の放流量の配列】
+h_train = 【前半の観測水位の配列】
 ```
 
 [換算係数の推定](#estimation-dam-estimate)の残差関数と同じ初期値・範囲を使い，渡すデータを前半に変更する．
 
 ```python
-【本文と同じ探索初期値・範囲で前半のデータから推定し，result_alpha_train・alpha_trainに結果を保存する処理】
+result_alpha_train = least_squares(【本文と同じ探索初期値・範囲で前半のデータから推定するための引数】)
+alpha_train = 【推定した換算係数を取り出す処理】
 ```
 
 ダムの`simulate_level`で全期間を計算し，人口モデルと同じマスクによる抽出を使って，前半・後半の残差からRMSEを求める．表示には本文の推定値とRMSEの表示コードを変更して使え．
 
 ```python
-【係数を固定して全期間のh_fit_allと残差residual_damを計算し，rmse_train・rmse_validを求める処理】
+h_fit_all = 【前半で推定した係数で全期間の水位を計算する関数呼び出し】
+residual_dam = 【全期間の計算水位と観測水位の差】
+rmse_train = 【訓練期間のRMSE】
+rmse_valid = 【検証期間のRMSE】
 ```
 
 2. [ダムの水位・残差の描画](#estimation-dam-estimate)をコピーし，上段を観測水位と設問1の計算水位，下段を残差に変更する．[人口の描画](#estimation-population-plot)の`axvspan`で検証期間に背景色を付け，<span style="color:red">水位と残差の図をNotebookに出力せよ</span>．背景表示の範囲には，次の`valid_start`・`valid_end`を使う．
@@ -1644,7 +1668,9 @@ plt.show()
 第6回のデータ確認で使った`min()`・`max()`を使い，検証期間の日付から背景表示の始めと終わりを求める．
 
 ```python
-【検証期間の日付からvalid_start・valid_endを求める処理】
+valid_dates = 【検証期間の日付の列】
+valid_start = 【検証期間の日付の最小値】
+valid_end = 【検証期間の日付の最大値】
 ```
 
 検証期間にも観測された流入量・放流量を入力する．ここで評価するのは，観測入力の下で前半の換算係数を後半へ適用した結果である．
