@@ -1289,7 +1289,8 @@ plt.show()
 year = 【2021〜2023から選んだ年】
 dam_year = dam[【date 列の年が year に等しい行を選ぶ条件】].reset_index(drop=True)
 t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
-【流入量・放流量を千m³/日に換算し，qin_dam・qout_damを作る2行】
+qin_dam = 【対象年の流入量を千m³/日に換算した配列】  # 流入量 [千m^3/日]
+qout_dam = 【対象年の放流量を千m³/日に換算した配列】  # 放流量 [千m^3/日]
 h_dam = 【対象年の観測水位の配列】  # 観測水位 [m]
 print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
 ```
