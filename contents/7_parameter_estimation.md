@@ -953,12 +953,29 @@ $$
 | 残差の単位 | 万人 | m |
 | 共通する処理 | モデルの計算 → 観測量の計算 → 残差配列 → 最小二乗の推定 | 同左 |
 
-```{tip} 仮定
+````{tip} 仮定と計算の流れ
 :class: simple
 
-- **観測モデル**：対象年を通じて同じ正の換算係数 $\alpha$ を使い，水位と貯水量を線形に結び付ける．
-- **収支モデルと入力**：第6回と同じ収支式と流量の線形補間を使う．流量と最低水位 $h_{\min}$ は固定し，換算係数だけを推定する．
+候補の換算係数 $\alpha$ ごとに，次の順で計算する．
+
+```{mermaid}
+flowchart TD
+    H0["初日の観測水位 $$\,h_0$$"] --> INIT["<div><div>初期値の設定</div><div>$$V_0 = \alpha(h_0 - h_{\min})$$</div></div>"]
+    INIT -->|"初期貯水量 $$\,V_0$$"| BALANCE["<div><div>収支モデル</div><div>$$\frac{dV}{dt} = Q_{\mathrm{in}}(t) - Q_{\mathrm{out}}(t)$$</div></div>"]
+    FLOW["観測された流入量・放流量"] -->|"線形補間"| BALANCE
+    BALANCE -->|"貯水量 $$\,V(t;\alpha)$$"| OBS["<div><div>観測モデル</div><div>$$\hat h(t;\alpha) = h_{\min} + \frac{V(t;\alpha)}{\alpha}$$</div></div>"]
+    OBS -->|"計算水位"| RESIDUAL["残差<br/>計算水位 − 観測水位"]
+    WATER["各時刻の観測水位"] --> RESIDUAL
+    classDef calculation fill:#eaf2fb,stroke:#32689a,color:#172b3a;
+    classDef observation fill:#fff0de,stroke:#b66a20,color:#4a2b10;
+    classDef data fill:#f5f5f5,stroke:#777,color:#222;
+    class INIT,BALANCE,RESIDUAL calculation;
+    class OBS observation;
+    class H0,FLOW,WATER data;
 ```
+
+初期値の設定と観測モデルには，対象年を通じて同じ正の $\alpha$ を使う．流量と最低水位 $h_{\min}$ は固定し，換算係数 $\alpha$ だけを推定する．
+````
 
 第6回と同じく，流入量は貯水位の変化と放流量から逆算された値である．この当てはめは独立な観測による容量曲線の検証とは区別する．
 
@@ -1000,10 +1017,10 @@ def m3s_to_1000m3_per_day(flow_m3s):
 時刻・流入量・放流量・水位の配列を作る．
 
 ```python
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)  # 流入量 [千m^3/日]
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)  # 放流量 [千m^3/日]
+h_dam = dam_year["water_level_m"].values  # 観測水位 [m]
 ```
 
 - **コードの補足**：流量は千m³/日，水位はmで扱う．時刻配列は第6回と同じく初日を0とした経過日数である．
@@ -1153,6 +1170,7 @@ plt.show()
 
 **別の年でも使えるか**を調べるため，次は2019年の係数を固定して2020年へ適用する．
 
+(estimation-dam-transfer)=
 ### 別の年への適用と再推定の区別
 
 2019年で求めた換算係数を保存する．以降，`alpha_reference`は固定し，対象年の水位の残差から選び直さない．
@@ -1166,10 +1184,10 @@ alpha_reference = alpha_hat
 ```python
 year = 2020
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)  # 流入量 [千m^3/日]
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)  # 放流量 [千m^3/日]
+h_dam = dam_year["water_level_m"].values  # 観測水位 [m]
 ```
 
 対象年と，観測水位の範囲を確認する．
@@ -1262,18 +1280,41 @@ plt.show()
 
 ````{note} 演習3：対象年による換算係数の比較
 
-1. 2021〜2023年から1年を選ぶ．次の【】を埋めた後，「別の年への適用と再推定の区別」の固定係数による計算・再推定・描画を再実行し，<span style="color:red">水位と残差の比較図をNotebookに出力せよ</span>．`alpha_reference`は2019年の推定値を保つこと．
+1. 2021〜2023年から1年を選ぶ．本文の[別の年への適用と再推定の区別](#estimation-dam-transfer)を参考に次の【】を埋め，固定係数による計算と再推定を実行する．続けて本文の描画コードを使い，<span style="color:red">水位と残差の比較図をNotebookに出力せよ</span>．`alpha_reference`は2019年の推定値を保つこと．
 
 本文の対象年と抽出条件を変更し，時刻・流量・水位を準備する．
 
 ```python
 year = 【2021〜2023から選んだ年】
 dam_year = dam[【date 列の年が year に等しい行を選ぶ条件】].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+【流入量・放流量を千m³/日に換算し，qin_dam・qout_damを作る2行】
+h_dam = 【対象年の観測水位の配列】  # 観測水位 [m]
 print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
+```
+
+2019年の係数を固定して対象年の水位を計算し，観測水位とのRMSEを求める．
+
+```python
+h_reference = 【alpha_referenceを使って水位を計算する関数呼び出し】
+rmse_reference = 【h_referenceとh_damから求めるRMSE】
+print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
+```
+
+対象年のデータを残差関数へ渡し，換算係数を推定し直す．探索初期値と範囲は本文と同じにする．
+
+```python
+result_alpha = least_squares(
+    residuals_level,
+    [alpha_assumed],
+    args=【対象年の時刻・流入量・放流量・水位の組】,
+    bounds=([100.0], [5000.0]),
+)
+alpha_hat = 【推定した換算係数を取り出す処理】
+rmse_alpha = 【推定後の残差配列から求めるRMSE】
+h_fitted = 【alpha_hatを使って水位を計算する関数呼び出し】
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
 ```
 
 2. <span style="color:red">対象年で再推定した換算係数をREADMEに記せ</span>．
@@ -1285,11 +1326,52 @@ print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max
 
 **1．2021年の水位と残差の比較図**
 
-設問1の【】を`2021`と`dam["date"].dt.year == year`で埋める．続けて本文の固定係数による計算・再推定・描画のコードを実行する．`alpha_reference`を代入するセルは再実行せず，2019年の係数を保つ．
+対象年を2021年とし，本文と同じ手順で時刻・流量・水位を準備する．`alpha_reference`を代入するセルは再実行せず，2019年の係数を保つ．
+
+```{code-block} python
+:linenos:
+:emphasize-lines: 1
+:class: code-focus
+
+year = 2021
+dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)  # 流入量 [千m^3/日]
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)  # 放流量 [千m^3/日]
+h_dam = dam_year["water_level_m"].values  # 観測水位 [m]
+print(f"対象年: {year}年，水位の範囲: {h_dam.min():.2f} 〜 {h_dam.max():.2f} m")
+```
+
+本文と同じ`simulate_level`に固定した係数を渡し，水位の差の二乗平均からRMSEを求める．
+
+```python
+h_reference = simulate_level(alpha_reference, t_dam, qin_dam, qout_dam, h_dam)
+rmse_reference = np.sqrt(np.mean((h_reference - h_dam) ** 2))
+print(f"2019年の係数を固定: alpha = {alpha_reference:.1f} 千m^3/m，RMSE = {rmse_reference:.3f} m")
+```
+
+対象年のデータで係数を推定し直し，推定した係数による水位を求める．残差関数と引数の順序は本文と同じである．
+
+```python
+result_alpha = least_squares(
+    residuals_level,
+    [alpha_assumed],
+    args=(t_dam, qin_dam, qout_dam, h_dam),
+    bounds=([100.0], [5000.0]),
+)
+alpha_hat = result_alpha.x[0]
+rmse_alpha = np.sqrt(np.mean(result_alpha.fun ** 2))
+h_fitted = simulate_level(alpha_hat, t_dam, qin_dam, qout_dam, h_dam)
+print("停止結果:", result_alpha.success, result_alpha.message)
+print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_alpha:.3f} m")
+```
+
+出力例：
 
 ```text
 対象年: 2021年，水位の範囲: 371.69 〜 376.62 m
 2019年の係数を固定: alpha = 1027.0 千m^3/m，RMSE = 0.265 m
+停止結果: True `ftol` termination condition is satisfied.
 対象年で再推定: alpha = 939.8 千m^3/m，RMSE = 0.027 m
 ```
 
@@ -1578,10 +1660,10 @@ plt.show()
 ```python
 year = 2019
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)  # 流入量 [千m^3/日]
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)  # 放流量 [千m^3/日]
+h_dam = dam_year["water_level_m"].values  # 観測水位 [m]
 ```
 
 人口モデルと同じく条件で期間を分け，前半のデータを取り出す．
@@ -1765,10 +1847,10 @@ $$
 ```python
 year = 2019
 dam_year = dam[dam["date"].dt.year == year].reset_index(drop=True)
-t_dam = np.arange(len(dam_year), dtype=float)
-qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)
-qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)
-h_dam = dam_year["water_level_m"].values
+t_dam = np.arange(len(dam_year), dtype=float)  # 時刻 [日]（対象年の初日からの経過日数）
+qin_dam = m3s_to_1000m3_per_day(dam_year["inflow_m3s"].values)  # 流入量 [千m^3/日]
+qout_dam = m3s_to_1000m3_per_day(dam_year["outflow_m3s"].values)  # 放流量 [千m^3/日]
+h_dam = dam_year["water_level_m"].values  # 観測水位 [m]
 
 H_REF = 393.3 - LEVEL_MIN
 V_REF = 56000.0
