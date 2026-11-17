@@ -25,7 +25,7 @@ project:
     - file: contents/5_parameter_sweep.md
     - file: contents/6_reservoir_balance.md
     - file: contents/7_parameter_estimation.md
-    # - file: contents/8_tank_model.md
+    - file: contents/8_tank_model.md
     # - file: contents/9_periodic_forcing.md
     # - file: contents/10_lotka_volterra.md
     # - file: contents/11_sir_model.md

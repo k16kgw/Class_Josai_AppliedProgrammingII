@@ -359,7 +359,6 @@ print(population_notes.loc[selected, ["year", "total_population_thousand", "note
 - 同じ名称に見える量でも，瞬時値，日平均値，日合計値を区別する
 - 物理量の変換に追加の仮定が必要なら，単なる前処理として隠さず，モデル上の仮定として明示する
 
-<!-- 
 ## 秩父の日降水量データ
 
 ### 取得方法
@@ -389,6 +388,7 @@ print(population_notes.loc[selected, ["year", "total_population_thousand", "note
 - 品質フラグは捨てず，値の列とは別の列に保存する
 - 気象観測所の移転や測定方法の変更による不均質にも注意する
 
+<!--
 ## 訪日外客数の月次データ
 
 ### 取得方法
