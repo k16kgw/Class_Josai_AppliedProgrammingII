@@ -494,7 +494,7 @@ print(f"{str(guess):>22} {res.x[0]:10.5f} {res.x[1]:10.1f} {res.cost:12.1f} {res
 ```
 ````
 
-````{visible-answer} 演習1の解答例
+````{hidden-answer} 演習1の解答例
 
 **1．最小のcostに到達した初期値**
 
@@ -753,7 +753,7 @@ y_fit_1990 = y_fit_all
 3. 設問1の数値を根拠に，<span style="color:red">訓練期間のRMSEだけで予測精度を判断できるかをREADMEに1〜2文で記せ</span>．
 ````
 
-````{visible-answer} 演習2の解答例
+````{hidden-answer} 演習2の解答例
 
 **1．検証期間を固定した2通りの推定**
 
@@ -1324,7 +1324,7 @@ print(f"対象年で再推定: alpha = {alpha_hat:.1f} 千m^3/m，RMSE = {rmse_a
 固定した係数のRMSEが別の年への適用結果を表す．再推定後のRMSEはその年への当てはまりを表す．
 ````
 
-````{visible-answer} 演習3の解答例
+````{hidden-answer} 演習3の解答例
 
 **1．2021年の水位と残差の比較図**
 
@@ -1466,7 +1466,7 @@ print(f"Logisticモデルの残差の範囲: {residual_all.min():.1f} 〜 {resid
 
 ````
 
-````{visible-answer} 課題1の解答例
+````{hidden-answer} 課題1の解答例
 
 **1．推定と誤差評価の出力**
 
@@ -1677,7 +1677,7 @@ valid_end = 【検証期間の日付の最大値】
 検証期間にも観測された流入量・放流量を入力する．ここで評価するのは，観測入力の下で前半の換算係数を後半へ適用した結果である．
 ````
 
-````{visible-answer} 課題2の解答例
+````{hidden-answer} 課題2の解答例
 
 **1．前半での推定と，両期間のRMSE**
 
@@ -1930,7 +1930,7 @@ print(f"推定した指数 p = {power_hat:.4f}，RMSE = {rmse_power:.3f} m")
 3. 推定した $p$ を湖面積の式に代入し，<span style="color:red">水位が上がると湖面積がどう変わるかをNotebookに説明せよ</span>．
 ````
 
-````{visible-answer} 発展課題の解答例
+````{hidden-answer} 発展課題の解答例
 
 **1．べき指数の推定**
 
