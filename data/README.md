@@ -1,3 +1,10 @@
+---
+downloads:
+  - file: precipitation_chichibu_daily.csv
+    filename: precipitation_chichibu_daily.csv
+    title: 秩父の日降水量（CSV）
+---
+
 # 授業用データ一覧
 
 本フォルダには，講義ノートで使用する整形済みCSVを置く．
@@ -8,12 +15,14 @@
 
 取得日：2026年9月21日．ただし，`iodine131_fukushima_tapwater_2011.csv`は2026年10月10日．
 
+秩父の日降水量は，ページタイトル右上のダウンロードボタン（下向き矢印）を開き，`precipitation_chichibu_daily.csv`として保存する．
+
 | ファイル | 内容 | 出典 | 利用条件 |
 |---|---|---|---|
 | {download}`population_japan.csv` | 日本の総人口（各年10月1日現在，1920〜2020年，年次） | 総務省統計局「人口推計」長期時系列データ（e-Stat）第1表「男女別人口 - 総人口」．「我が国の推計人口（大正9年〜平成12年）」および「長期時系列データ（平成12年〜令和2年）」を結合 | 政府標準利用規約（第2.0版）．CC BY 4.0互換．出典を明記して加工したことを記載 |
 | {download}`iodine131_fukushima_tapwater_2011.csv` | 福島市の原子力センター福島支所で採取した水道水のヨウ素131濃度（2011年3月21日〜4月3日，日次） | 厚生労働省「水道水中の放射性物質に関する検査の実施状況」（2011年4月4日公表）．原資料と抽出条件は下記参照 | [公共データ利用規約（PDL1.0）](https://www.mhlw.go.jp/chosakuken/index.html)．出典と加工した旨を明記 |
 | [`dam_urayama_daily.csv`](dam_urayama_daily.csv) | 浦山ダム（埼玉県，荒川水系浦山川）の日平均貯水位・流入量・放流量（2015〜2023年，日次） | 国土交通省 ダム諸量データベース（国土技術政策総合研究所）「貯水位、流入量及び放流量に関する年表」 | 政府標準利用規約（第2.0版）準拠．CC BY 4.0互換 |
-| {download}`precipitation_chichibu_daily.csv` | 秩父（気象官署）の日降水量（2019〜2023年，日次） | 気象庁「過去の気象データ検索」（地点：秩父，prec_no=43，block_no=47641）日ごとの値 | 公共データ利用規約（PDL1.0）．出典を明記して加工したことを記載 |
+| `precipitation_chichibu_daily.csv`（タイトル右上のダウンロードボタン） | 秩父（気象官署）の日降水量（2019〜2023年，日次） | 気象庁「過去の気象データ検索」（地点：秩父，prec_no=43，block_no=47641）日ごとの値 | 公共データ利用規約（PDL1.0）．出典を明記して加工したことを記載 |
 <!-- | [`visitors_monthly.csv`](visitors_monthly.csv) | 訪日外客数（総数，2003年1月〜2026年8月，月次） | 日本政府観光局（JNTO）「訪日外客統計」国籍/月別 訪日外客数 | 出典として「日本政府観光局（JNTO）」を明記すれば利用可 |
 | [`lynx_hare_pelts.csv`](lynx_hare_pelts.csv) | Hudson's Bay Company の毛皮取引記録（カンジキウサギ，カナダオオヤマネコ，1845〜1935年，年次，単位：千枚） | MacLulich (1937) をもとに Odum, Fundamentals of Ecology (1953) が再編集した古典データ．数値は R パッケージ tsibbledata の `pelt`（data-raw/pelt/lynxhare.csv）から取得 | 歴史的統計値．数値データは著作権の対象外 |
 | [`covid19_new_cases_daily.csv`](covid19_new_cases_daily.csv) | 新型コロナウイルス感染症 新規陽性者数（全国・埼玉県・東京都，2020年1月16日〜2023年5月8日，日次） | 厚生労働省「データからわかる－新型コロナウイルス感染症情報－」オープンデータ `newly_confirmed_cases_daily.csv` | 公共データ利用規約（PDL1.0）．出典を明記して加工したことを記載 | -->
