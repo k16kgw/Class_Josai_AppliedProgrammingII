@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="670" viewBox="0 0 1120 670" role="img" aria-labelledby="title desc">
+  <title id="title">日付をキーとする二つの表の内部結合</title>
+  <desc id="desc">dam_yearとrain_yearをdate列で結合する．両方にある2019年1月2日と3日の行だけが結果に入り，それぞれの流入量と降水量が同じ行に並ぶ．片方だけにある1日と4日は結果に含まれない．説明用の値を使用し，元の表から必要な列だけを示している．</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L8 4.5 L0 9" fill="#32689a"/></marker>
+    <style>
+      text { font-family: "Hiragino Sans", "Noto Sans CJK JP", sans-serif; fill: #243341; font-size: 19px; }
+      .title { font-size: 27px; font-weight: 600; }
+      .label { font-size: 23px; font-weight: 600; fill: #32689a; }
+      .small { font-size: 17px; }
+      .mono { font-family: Menlo, Consolas, monospace; font-size: 19px; }
+      .key { fill: #874714; font-weight: 600; }
+      .muted { fill: #6c7379; }
+      .rule { stroke: #c6cdd3; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect width="1120" height="670" rx="12" fill="#fff"/>
+  <text x="32" y="43" class="title">日付をキーとする表の結合</text>
+  <text x="32" y="76" class="small muted">説明用のデータ．元の表から必要な列だけを表示．橙色は両方の表にある日付．</text>
+
+  <text x="32" y="121" class="label">dam_year</text>
+  <text x="592" y="121" class="label">rain_year</text>
+  <!-- Left input: date / inflow. -->
+  <rect x="32" y="138" width="496" height="68" fill="#eaf2fb"/>
+  <rect x="32" y="206" width="496" height="52" fill="#f3f4f5"/>
+  <rect x="32" y="258" width="218" height="104" fill="#fff0de"/>
+  <rect x="250" y="258" width="278" height="104" fill="#f5f9fd"/>
+  <rect x="32" y="138" width="496" height="224" fill="none" class="rule"/>
+  <path d="M250 138 V362 M32 206 H528 M32 258 H528 M32 310 H528" fill="none" class="rule"/>
+  <text x="141" y="180" class="mono" text-anchor="middle">date</text>
+  <text x="389" y="166" class="mono" text-anchor="middle">inflow_m3s</text>
+  <text x="389" y="192" class="small" text-anchor="middle">流入量 [m³/s]</text>
+  <text x="141" y="239" class="mono muted" text-anchor="middle">2019-01-01</text>
+  <text x="389" y="239" class="mono muted" text-anchor="middle">1.8</text>
+  <text x="141" y="291" class="mono key" text-anchor="middle">2019-01-02</text>
+  <text x="389" y="291" class="mono" text-anchor="middle">2.1</text>
+  <text x="141" y="343" class="mono key" text-anchor="middle">2019-01-03</text>
+  <text x="389" y="343" class="mono" text-anchor="middle">2.4</text>
+
+  <!-- Right input: date / precipitation. The matching dates occupy different rows. -->
+  <rect x="592" y="138" width="496" height="68" fill="#eaf2fb"/>
+  <rect x="592" y="206" width="218" height="104" fill="#fff0de"/>
+  <rect x="810" y="206" width="278" height="104" fill="#f5f9fd"/>
+  <rect x="592" y="310" width="496" height="52" fill="#f3f4f5"/>
+  <rect x="592" y="138" width="496" height="224" fill="none" class="rule"/>
+  <path d="M810 138 V362 M592 206 H1088 M592 258 H1088 M592 310 H1088" fill="none" class="rule"/>
+  <text x="701" y="180" class="mono" text-anchor="middle">date</text>
+  <text x="949" y="166" class="mono" text-anchor="middle">precipitation_mm</text>
+  <text x="949" y="192" class="small" text-anchor="middle">日降水量 [mm]</text>
+  <text x="701" y="239" class="mono key" text-anchor="middle">2019-01-02</text>
+  <text x="949" y="239" class="mono" text-anchor="middle">0.0</text>
+  <text x="701" y="291" class="mono key" text-anchor="middle">2019-01-03</text>
+  <text x="949" y="291" class="mono" text-anchor="middle">12.5</text>
+  <text x="701" y="343" class="mono muted" text-anchor="middle">2019-01-04</text>
+  <text x="949" y="343" class="mono muted" text-anchor="middle">4.0</text>
+
+  <path d="M280 374 V396 H840 V374 M560 396 V452" stroke="#32689a" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <rect x="287" y="405" width="546" height="33" rx="5" fill="#fff"/>
+  <text x="560" y="429" class="mono" text-anchor="middle">pd.merge(..., on="date", how="inner")</text>
+
+  <text x="120" y="486" class="label">data</text>
+  <text x="205" y="485" class="small">共通する日付ごとに，二つの表の値を同じ行へ</text>
+  <rect x="120" y="504" width="880" height="60" fill="#eaf2fb"/>
+  <rect x="120" y="564" width="240" height="96" fill="#fff0de"/>
+  <rect x="360" y="564" width="640" height="96" fill="#f5f9fd"/>
+  <rect x="120" y="504" width="880" height="156" fill="none" class="rule"/>
+  <path d="M360 504 V660 M640 504 V660 M120 564 H1000 M120 612 H1000" fill="none" class="rule"/>
+  <text x="240" y="542" class="mono" text-anchor="middle">date</text>
+  <text x="500" y="542" class="mono" text-anchor="middle">inflow_m3s</text>
+  <text x="820" y="542" class="mono" text-anchor="middle">precipitation_mm</text>
+  <text x="240" y="594" class="mono key" text-anchor="middle">2019-01-02</text>
+  <text x="500" y="594" class="mono" text-anchor="middle">2.1</text>
+  <text x="820" y="594" class="mono" text-anchor="middle">0.0</text>
+  <text x="240" y="642" class="mono key" text-anchor="middle">2019-01-03</text>
+  <text x="500" y="642" class="mono" text-anchor="middle">2.4</text>
+  <text x="820" y="642" class="mono" text-anchor="middle">12.5</text>
+</svg>
