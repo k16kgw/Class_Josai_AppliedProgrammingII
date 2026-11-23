@@ -34,7 +34,7 @@ downloads:
 - **比較と評価**：同じデータ・誤差指標で二つのモデルを比較し，係数を固定した未使用データへの適用結果を報告できる．
 
 <!--
-105分の目安：準備・降水量と流入量の確認15分，単位と単一タンク・演習1に25分，推定・演習2に20分，並列2タンク・演習3に25分，別年への適用とまとめ・課題に20分．補足・発展課題は自主学習用．
+105分の目安：準備・降水量と流入量の確認15分，単位と単一タンク・演習1に20分，推定・演習2に20分，並列2タンク・演習3・4に30分，別年への適用とまとめ・課題に20分．補足・発展課題は自主学習用．
 -->
 
 ## 準備
@@ -86,7 +86,12 @@ applied_programming_ii/
 1. 期間ごとの誤差（Notebookに計算結果を出力）
 2. 流入量と残差（Notebookに図を出力）
 
-## 演習3：タンクの番号と推定値の解釈
+## 演習3：並列2タンクの関数の実装
+
+1. `tank2_rhs`（Notebookに関数を定義して実行）
+2. `simulate_tank2`（Notebookに関数を定義して実行）
+
+## 演習4：タンクの番号と推定値の解釈
 
 1. タンクの番号を入れ替えた比較（Notebookに計算結果を出力）
 2. 応答の速いタンクと遅いタンクの時定数：
@@ -97,10 +102,11 @@ applied_programming_ii/
 2. 流入量と残差（Notebookに図を出力）
 3. 後半の流入量をより小さいRMSEで再現したモデルと，数値による根拠：
 
-## 課題2：別の年での係数の適用と再推定
+## 課題2：並列3タンクによる流入量の推定
 
-1. 固定係数と再推定した係数（Notebookに比較表を出力）
-2. 流入量と残差（Notebookに図を出力）
+1. 3タンクの関数（Notebookに関数を定義して実行）
+2. 2タンク・3タンクのRMSE（Notebookに比較表を出力）
+3. 2020年の流入量と残差（Notebookに図を出力）
 ```
 
 5. 次のコードをNotebookの最初のコードセルにまとめて入力し，実行せよ．ライブラリと保存先を設定し，必要なCSVを確認する．
@@ -813,22 +819,99 @@ flowchart TD
 | 数値解 | `sol.y[0]` | `sol.y[0]`と`sol.y[1]` |
 | 観測モデル | `k * sol.y[0]` | `k1 * sol.y[0] + k2 * sol.y[1]` |
 
-二つの状態変数の変化率をリストで返す．
+````{note} 演習3：並列2タンクの関数の実装
+
+1. 単一タンクの`tank_rhs`と上の連立方程式を参考に【】を埋め，<span style="color:red">関数`tank2_rhs`をNotebookに定義せよ</span>．
+
+二つの状態変数の変化率を，第1・第2タンクの順に並べたリストで返す．
+
+```python
+def tank2_rhs(t, S, t_data, rain_data, c, k1, k2, f):
+    S1, S2 = S
+    rain_input = c * AREA_KM2 * np.interp(t, t_data, rain_data)
+    return 【第1・第2タンクの変化率を順に並べたリスト】
+```
+
+- **コードの補足**：状態の配列`S`を`S1, S2`に分け，微分方程式と同じ順に二つの変化率を返す．
+
+定義後，無降雨で貯留量が120千m³と400千m³の場合の変化率を確認せよ．`t_demo`と`rain_demo`は，単一タンクの無降雨時の計算で用意した配列を使う．
+
+```python
+rates_demo = tank2_rhs(0.0, [120.0, 400.0], t_demo, rain_demo, 0.7, 0.5, 0.1, 0.6)
+print(f"第1タンクの変化率: {rates_demo[0]:.1f} 千m^3/日")
+print(f"第2タンクの変化率: {rates_demo[1]:.1f} 千m^3/日")
+```
+
+2. 単一タンクの`simulate_tank`と並列2タンクの初期条件・観測モデルを参考に【】を埋め，<span style="color:red">関数`simulate_tank2`をNotebookに定義せよ</span>．
+
+初日の観測流量を二つに分け，貯留量から合計流出量を求める．
+
+```python
+def simulate_tank2(theta, t_data, rain_data, q0):
+    c, k1, k2, f = theta
+    S10 = 【第1タンクの初期貯留量】
+    S20 = 【第2タンクの初期貯留量】
+    sol = solve_ivp(
+        tank2_rhs, (t_data[0], t_data[-1]), 【初期貯留量を第1・第2の順に並べたリスト】,
+        t_eval=t_data, args=(t_data, rain_data, c, k1, k2, f),
+        max_step=0.25, rtol=1e-7, atol=1e-5,
+    )
+    return 【二つのタンクからの流出量を合計する式】
+```
+
+定義後，本文と同じ無降雨の入力で実行し，初日の合計流出量が`q0_demo`と一致することを確認せよ．
+
+```python
+q2_demo = simulate_tank2((0.7, 0.5, 0.1, 0.6), t_demo, rain_demo, q0_demo)
+print(f"初日の合計流出量: {q2_demo[0]:.2f} 千m^3/日")
+print(f"5日後の合計流出量: {q2_demo[5]:.2f} 千m^3/日")
+```
+````
+
+````{visible-answer} 演習3の解答例
+
+**1．二つの貯留量の変化率**
+
+各タンクの変化率は，分配された雨水の入力から，そのタンクの流出量を引いて求める．
 
 <!-- cell:tank2_rhs -->
-```python
+```{code-block} python
+:linenos:
+:emphasize-lines: 2,4
+:class: code-focus
+
 def tank2_rhs(t, S, t_data, rain_data, c, k1, k2, f):
     S1, S2 = S
     rain_input = c * AREA_KM2 * np.interp(t, t_data, rain_data)
     return [f * rain_input - k1 * S1, (1 - f) * rain_input - k2 * S2]
 ```
 
-- **コードの補足**：状態の配列`S`を`S1, S2`に分け，微分方程式と同じ順に二つの変化率を返す．
+無降雨では入力が0になるので，それぞれの貯留量は流出量の分だけ減る．設問の値で変化率を確認する．
 
-初日の観測流量を二つに分け，貯留量から合計流出量を求める．
+<!-- cell:answer3_rhs_check -->
+```python
+rates_demo = tank2_rhs(0.0, [120.0, 400.0], t_demo, rain_demo, 0.7, 0.5, 0.1, 0.6)
+print(f"第1タンクの変化率: {rates_demo[0]:.1f} 千m^3/日")
+print(f"第2タンクの変化率: {rates_demo[1]:.1f} 千m^3/日")
+```
+
+出力例：
+
+```text
+第1タンクの変化率: -60.0 千m^3/日
+第2タンクの変化率: -40.0 千m^3/日
+```
+
+**2．貯留量から合計流出量への換算**
+
+初日の流出量を割合`f`と`1 - f`で分け，それぞれを流出係数で割って初期貯留量を求める．計算後は，二つの貯留量から得られる流出量を足し合わせる．
 
 <!-- cell:simulate_tank2 -->
-```python
+```{code-block} python
+:linenos:
+:emphasize-lines: 3-4,6-7,10
+:class: code-focus
+
 def simulate_tank2(theta, t_data, rain_data, q0):
     c, k1, k2, f = theta
     S10 = f * q0 / k1
@@ -840,6 +923,25 @@ def simulate_tank2(theta, t_data, rain_data, q0):
     )
     return k1 * sol.y[0] + k2 * sol.y[1]
 ```
+
+本文で用意した無降雨の入力を与え，合計流出量を確認する．
+
+<!-- cell:answer3_flow_check -->
+```python
+q2_demo = simulate_tank2((0.7, 0.5, 0.1, 0.6), t_demo, rain_demo, q0_demo)
+print(f"初日の合計流出量: {q2_demo[0]:.2f} 千m^3/日")
+print(f"5日後の合計流出量: {q2_demo[5]:.2f} 千m^3/日")
+```
+
+出力例：
+
+```text
+初日の合計流出量: 100.00 千m^3/日
+5日後の合計流出量: 29.19 千m^3/日
+```
+
+初日の合計は $k_1S_1(0)+k_2S_2(0)=fQ_0+(1-f)Q_0=Q_0$ となり，指定した初期流量に一致する．
+````
 
 単一タンクと同じ期間の残差を取り出す関数を定義する．
 
@@ -958,9 +1060,9 @@ plt.show()
 
 **二つの時定数を導入した結果，この年の当てはまりが改善した**．推定した割合`c`が上限1に近い場合は，探索範囲と併せて報告する．係数の解釈には，雨量の代表性や時間分解能の近似も含まれる．
 
-````{note} 演習3：タンクの番号と推定値の解釈
+````{note} 演習4：タンクの番号と推定値の解釈
 
-1. 推定値の $k_1$ と $k_2$ を交換し， $f$ を $1-f$ に変える．本文の計算関数を再利用し，<span style="color:red">流出量の最大差をNotebookに出力せよ</span>．
+1. 推定値の $k_1$ と $k_2$ を交換し， $f$ を $1-f$ に変える．本文の`simulate_tank2`を再利用し，<span style="color:red">流出量の最大差をNotebookに出力せよ</span>．
 
 番号を入れ替えた係数で流出量を計算する．
 
@@ -974,13 +1076,13 @@ print(f"番号を入れ替えた流出量の最大差: {max_difference:.4f} 千m
 2. 第1・第2の時定数を比べ，<span style="color:red">速い応答と遅い応答の時定数をREADMEに記せ</span>．
 ````
 
-````{visible-answer} 演習3の解答例
+````{visible-answer} 演習4の解答例
 
 **1．番号を入れ替えた流出量の最大差**
 
 雨水と初日の流量の分け方も交換するため，二つのタンクの役割が入れ替わり，合計流出量は同じになる．数値計算では積分誤差の範囲で差が生じることがある．
 
-<!-- cell:answer3 -->
+<!-- cell:answer4 -->
 ```{code-block} python
 :linenos:
 :emphasize-lines: 1
@@ -1247,105 +1349,233 @@ plt.show()
 検証期間のRMSEは，単一タンクが約1328千m³/日，並列2タンクが約1183千m³/日なので，この比較では並列2タンクの方が後半をよりよく再現した．前半で係数を推定し，後半の流入量で評価した結果を根拠にしている．
 ````
 
-````{warning} 課題2：別の年での係数の適用と再推定
+### 課題2の準備：並列3タンクへの拡張
 
-2021〜2023年から1年を選び，単一タンクについて2019年の固定係数と対象年で再推定した係数を比べる．本文で保存した`theta_reference`を使う．
+第1タンクへ雨水の入力の割合 $f$ を配り，残りを割合 $g$ と $1-g$ で第2・第3タンクへ分ける．保存則と観測モデルは次のとおりである．
 
-1. [別の年のデータの準備](#tank-transfer)で対象年を変更する．次の【】を埋め，<span style="color:red">係数とRMSEの比較表をNotebookに出力せよ</span>．
+$$
+\begin{aligned}
+\frac{dS_1}{dt}&=fcAP(t)-k_1S_1,\\
+\frac{dS_2}{dt}&=(1-f)gcAP(t)-k_2S_2,\\
+\frac{dS_3}{dt}&=(1-f)(1-g)cAP(t)-k_3S_3,\\
+Q(t)&=k_1S_1(t)+k_2S_2(t)+k_3S_3(t).
+\end{aligned}
+$$
 
-本文と同じ開始値・範囲で再推定し，保存した2019年の係数でも計算する．
+- $S_1(t),S_2(t),S_3(t)$ ：各タンクの貯留量（千m³）．
+- $k_1,k_2,k_3$ ：各タンクの正の流出係数（1/日）．
+- $f$ ：全入力のうち第1タンクへ配る割合． $0\leq f\leq1$ とする．
+- $g$ ：第1タンクへ配った残りのうち，第2タンクへ配る割合． $0\leq g\leq1$ とする．
+- $c,A,P(t),Q_0$ ：並列2タンクと同じ意味で使う．
+
+三つの分配割合の合計は $f+(1-f)g+(1-f)(1-g)=1$ となる．初日の観測流量も同じ割合で分け，初期貯留量を設定する．
+
+$$
+S_1(0)=\frac{fQ_0}{k_1},\qquad
+S_2(0)=\frac{(1-f)gQ_0}{k_2},\qquad
+S_3(0)=\frac{(1-f)(1-g)Q_0}{k_3}.
+$$
+
+推定する係数は $\theta_3=(c,k_1,k_2,k_3,f,g)$ の六つである．
+
+````{warning} 課題2：並列3タンクによる流入量の推定
+
+2019年の全日で並列3タンクの係数を推定し，係数を固定して2020年へ適用する．並列2タンクとの比較には，本文で保存した`theta2_reference`を使う．
+
+1. 演習3の二つの関数と本文の`residuals_tank2`を変更し，<span style="color:red">並列3タンクの三つの関数をNotebookに定義せよ</span>．
+
+右辺，初期条件，合計流出量を3タンクの式に変更する．変数名と引数の順序は次にそろえよ．
 
 ```python
-valid_year = 【2021〜2023から選んだ年】
+def tank3_rhs(t, S, t_data, rain_data, c, k1, k2, k3, f, g):
+    S1, S2, S3 = S
+    rain_input = c * AREA_KM2 * np.interp(t, t_data, rain_data)
+    return 【三つのタンクの変化率を順に並べたリスト】
+
+def simulate_tank3(theta, t_data, rain_data, q0):
+    c, k1, k2, k3, f, g = theta
+    S10 = 【第1タンクの初期貯留量】
+    S20 = 【第2タンクの初期貯留量】
+    S30 = 【第3タンクの初期貯留量】
+    sol = solve_ivp(
+        tank3_rhs, (t_data[0], t_data[-1]), 【三つの初期貯留量のリスト】,
+        t_eval=t_data, args=(t_data, rain_data, c, k1, k2, k3, f, g),
+        max_step=0.25, rtol=1e-7, atol=1e-5,
+    )
+    return 【三つのタンクからの流出量を合計する式】
+
+def residuals_tank3(theta, t_data, rain_data, qin_data, fit_mask):
+    q_model = 【simulate_tank3による流出量の計算】
+    return (q_model - qin_data)[fit_mask]
 ```
 
-本文の`valid_year = 2020`の行を上記の行に置き換え，`data_valid`・`t_valid`・`p_valid`・`q_valid`を準備するコードを実行する．
+2. 本文の複数の初期値からの推定を変更し，<span style="color:red">2タンク・3タンクの2019年と2020年のRMSEをNotebookの比較表に出力せよ</span>．
+
+次の設定で本文の探索を実行し，試した初期値の中でcostが最小の結果を`result_tank3`に保存せよ．課題1で期間を変更した場合も，ここでは2019年の全日を選び直す．
 
 ```python
-q_fixed = 【2019年の固定係数で対象年の流出量を求める関数呼び出し】
-fit_valid = 【対象年の全日を選ぶ真偽値の配列】
-result_refit = least_squares(【対象年の全日で単一タンクを再推定するための引数】)
-q_refit = 【再推定した係数で対象年の流出量を求める関数呼び出し】
-rmse_fixed = 【固定した係数でのRMSE】
-rmse_refit = 【再推定した係数でのRMSE】
+fit_mask = np.ones(len(t_data), dtype=bool)
+bounds_tank3 = ([0.0, 0.001, 0.001, 0.001, 0.0, 0.0], [1.0, 5.0, 5.0, 5.0, 1.0, 1.0])
+initial_guesses_3 = [
+    [1.0, 4.2, 0.4, 0.4, 0.67, 0.5],
+    [0.7, 0.8, 0.2, 0.03, 0.5, 0.5],
+    [0.9, 1.5, 0.1, 0.01, 0.7, 0.5],
+]
 ```
 
-2. 本文の流入量・残差の描画を変更し，観測値，固定係数の結果，再推定した結果を示す<span style="color:red">比較図をNotebookに出力せよ</span>．
+2019年の計算には`q2_train`・`q3_train`，2020年の計算には`q2_fixed`・`q3_fixed`を使え．2020年の入力は本文の`t_valid`・`p_valid`・`q_valid`を再利用し，係数の再推定は行わずに適用する．
+
+3. 本文の2020年の描画を変更し，観測流入量と2タンク・3タンクの計算結果を示す<span style="color:red">流入量・残差の比較図をNotebookに出力せよ</span>．
 ````
 
 ````{visible-answer} 課題2の解答例
 
-**1．2021年の係数とRMSEの比較**
+**1．並列3タンクの関数**
 
-対象年を2021年にし，本文と同じ手順で入力を準備する．
+第2タンクへの分配に`g`を掛け，残りを第3タンクへ与える．
 
-<!-- cell:homework2_prepare -->
+<!-- cell:homework2_rhs -->
 ```{code-block} python
 :linenos:
-:emphasize-lines: 1
+:emphasize-lines: 2,6-7
 :class: code-focus
 
-valid_year = 2021
-dam_valid = dam[dam["date"].dt.year == valid_year].reset_index(drop=True)
-rain_valid = rain[rain["date"].dt.year == valid_year].reset_index(drop=True)
-data_valid = pd.merge(dam_valid, rain_valid, on="date", how="inner")
-t_valid = np.arange(len(data_valid), dtype=float)  # 時刻 [日]（対象年の初日を0とする）
-p_valid = data_valid["precipitation_mm"].values  # 降水強度 [mm/日]
-q_valid = m3s_to_1000m3_per_day(data_valid["inflow_m3s"].values)  # 観測流入量 [千m^3/日]
+def tank3_rhs(t, S, t_data, rain_data, c, k1, k2, k3, f, g):
+    S1, S2, S3 = S
+    rain_input = c * AREA_KM2 * np.interp(t, t_data, rain_data)
+    return [
+        f * rain_input - k1 * S1,
+        (1 - f) * g * rain_input - k2 * S2,
+        (1 - f) * (1 - g) * rain_input - k3 * S3,
+    ]
 ```
 
-固定係数の計算と，対象年のデータを使った再推定を行う．
+同じ分配割合で三つの初期貯留量を求め，数値解から合計流出量へ換算する．
 
-<!-- cell:homework2_calc -->
-```python
-q_fixed = simulate_tank(theta_reference, t_valid, p_valid, q_valid[0])
-fit_valid = np.ones(len(t_valid), dtype=bool)
-result_refit = least_squares(
-    residuals_tank, theta_initial,
-    args=(t_valid, p_valid, q_valid, fit_valid),
-    bounds=bounds_tank, diff_step=0.01,
-)
-q_refit = simulate_tank(result_refit.x, t_valid, p_valid, q_valid[0])
-rmse_fixed = np.sqrt(np.mean((q_fixed - q_valid) ** 2))
-rmse_refit = np.sqrt(np.mean((q_refit - q_valid) ** 2))
+<!-- cell:homework2_simulate -->
+```{code-block} python
+:linenos:
+:emphasize-lines: 4-5,7-8,11
+:class: code-focus
+
+def simulate_tank3(theta, t_data, rain_data, q0):
+    c, k1, k2, k3, f, g = theta
+    S10 = f * q0 / k1
+    S20 = (1 - f) * g * q0 / k2
+    S30 = (1 - f) * (1 - g) * q0 / k3
+    sol = solve_ivp(
+        tank3_rhs, (t_data[0], t_data[-1]), [S10, S20, S30],
+        t_eval=t_data, args=(t_data, rain_data, c, k1, k2, k3, f, g),
+        max_step=0.25, rtol=1e-7, atol=1e-5,
+    )
+    return k1 * sol.y[0] + k2 * sol.y[1] + k3 * sol.y[2]
 ```
 
-係数とRMSEを対応させて表示する．固定係数は別の年への適用，再推定の値は2021年への当てはまりを評価している．
+本文の残差関数で，呼び出すモデルを3タンクに変える．
 
-<!-- cell:homework2_report -->
+<!-- cell:homework2_residuals -->
 ```python
-refit_table = pd.DataFrame({
-    "条件": ["2019年の係数を固定", "対象年で再推定"],
-    "c": [theta_reference[0], result_refit.x[0]],
-    "k [1/日]": [theta_reference[1], result_refit.x[1]],
-    "RMSE [千m³/日]": [rmse_fixed, rmse_refit],
-})
-print(refit_table.round(3).to_string(index=False))
+def residuals_tank3(theta, t_data, rain_data, qin_data, fit_mask):
+    q_model = simulate_tank3(theta, t_data, rain_data, qin_data[0])
+    return (q_model - qin_data)[fit_mask]
+```
+
+**2．推定と未使用年のRMSE**
+
+2019年の全日を選び，六つの係数の上下限と探索初期値を設定する．
+
+<!-- cell:homework2_setup -->
+```python
+fit_mask = np.ones(len(t_data), dtype=bool)
+bounds_tank3 = ([0.0, 0.001, 0.001, 0.001, 0.0, 0.0], [1.0, 5.0, 5.0, 5.0, 1.0, 1.0])
+initial_guesses_3 = [
+    [1.0, 4.2, 0.4, 0.4, 0.67, 0.5],
+    [0.7, 0.8, 0.2, 0.03, 0.5, 0.5],
+    [0.9, 1.5, 0.1, 0.01, 0.7, 0.5],
+]
+```
+
+本文と同じ探索の手順で，試した初期値の中からcostが最小の結果を保存する．
+
+<!-- cell:homework2_fit -->
+```python
+fit_rows3 = []
+best_cost3 = np.inf
+for guess in initial_guesses_3:
+    res3 = least_squares(
+        residuals_tank3, guess,
+        args=(t_data, rain_obs, qin_obs, fit_mask),
+        bounds=bounds_tank3, diff_step=0.01,
+    )
+    c3, k13, k23, k33, f3, g3 = res3.x
+    rmse3 = np.sqrt(np.mean(res3.fun ** 2))
+    fit_rows3.append([c3, k13, k23, k33, f3, g3, rmse3, res3.success])
+    if res3.cost < best_cost3:
+        best_cost3 = res3.cost
+        result_tank3 = res3
+fit_table3 = pd.DataFrame(fit_rows3, columns=["c", "k1", "k2", "k3", "f", "g", "RMSE [千m³/日]", "停止条件"])
+print(fit_table3.round(3).to_string(index=False))
 ```
 
 出力例：
 
+<!-- output:homework2_fit -->
 ```text
-         条件     c  k [1/日]  RMSE [千m³/日]
-2019年の係数を固定 0.867    2.824       236.225
-    対象年で再推定 0.812    0.099        63.910
+c    k1    k2    k3     f     g  RMSE [千m³/日]  停止条件
+1.0 4.230 0.409 0.378 0.671 0.829       277.051  True
+1.0 4.453 1.455 0.366 0.627 0.205       277.010  True
+1.0 4.420 0.532 0.116 0.647 0.822       276.797  True
 ```
 
-**2．固定係数と再推定の比較図**
+保存した2タンクの係数と，推定した3タンクの係数で両年を計算する．
 
-本文の二つの曲線を，固定係数と再推定の結果に置き換える．
+<!-- cell:homework2_compare -->
+```python
+q2_train = simulate_tank2(theta2_reference, t_data, rain_obs, qin_obs[0])
+q3_train = simulate_tank3(result_tank3.x, t_data, rain_obs, qin_obs[0])
+q2_fixed = simulate_tank2(theta2_reference, t_valid, p_valid, q_valid[0])
+q3_fixed = simulate_tank3(result_tank3.x, t_valid, p_valid, q_valid[0])
+rmse2_2019 = np.sqrt(np.mean((q2_train - qin_obs) ** 2))
+rmse3_2019 = np.sqrt(np.mean((q3_train - qin_obs) ** 2))
+rmse2_2020 = np.sqrt(np.mean((q2_fixed - q_valid) ** 2))
+rmse3_2020 = np.sqrt(np.mean((q3_fixed - q_valid) ** 2))
+comparison3 = pd.DataFrame({
+    "モデル": ["並列2タンク", "並列3タンク"],
+    "係数の個数": [4, 6],
+    "2019年のRMSE": [rmse2_2019, rmse3_2019],
+    "2020年のRMSE": [rmse2_2020, rmse3_2020],
+})
+print(comparison3.round(1).to_string(index=False))
+```
+
+RMSEの単位は千m³/日である．
+
+出力例：
+
+<!-- output:homework2_compare -->
+```text
+モデル  係数の個数  2019年のRMSE  2020年のRMSE
+並列2タンク      4       277.1       316.7
+並列3タンク      6       276.8       315.6
+```
+
+この例では3タンクのRMSEは両年ともわずかに小さい．推定する係数は4個から6個に増えているため，改善の大きさとモデルの複雑さを併せて判断する．
+
+**3．2020年の流入量と残差**
+
+本文の2020年の比較図で，二つの曲線を2タンクと3タンクの計算結果に置き換える．
 
 <!-- cell:homework2_plot -->
 ```python
 fig, axes = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
 axes[0].plot(data_valid["date"], q_valid, color="black", label="観測流入量")
-axes[0].plot(data_valid["date"], q_fixed, color="tab:blue", label="2019年の係数を固定")
-axes[0].plot(data_valid["date"], q_refit, color="tab:orange", label="対象年で再推定")
-axes[0].set_title(f"固定係数と再推定の比較（{valid_year}年）")
+axes[0].plot(data_valid["date"], q2_fixed, color="tab:blue", label="並列2タンク")
+axes[0].plot(data_valid["date"], q3_fixed, color="tab:orange", linestyle="--", label="並列3タンク")
+axes[0].set_title(f"並列2タンクと3タンクの比較（{valid_year}年）")
 axes[0].set_ylabel("流量 [千m³/日]")
 axes[0].legend()
-axes[1].plot(data_valid["date"], (q_fixed - q_valid), color="tab:blue", label="2019年の係数を固定")
-axes[1].plot(data_valid["date"], (q_refit - q_valid), color="tab:orange", label="対象年で再推定")
+axes[1].plot(data_valid["date"], q2_fixed - q_valid, color="tab:blue", label="並列2タンク")
+axes[1].plot(data_valid["date"], q3_fixed - q_valid, color="tab:orange", linestyle="--", label="並列3タンク")
 axes[1].axhline(0, color="black", linewidth=0.8)
 axes[1].set_ylabel("計算流量−観測流量 [千m³/日]")
 axes[1].set_xlabel("日付")
@@ -1353,12 +1583,11 @@ axes[1].legend()
 for ax in axes:
     ax.grid(True)
 fig.tight_layout()
-fig.savefig(FIGURE_DIR / "homework2_refit_2021.png", dpi=150)
+fig.savefig(FIGURE_DIR / "homework2_three_tanks.png", dpi=150)
 plt.show()
 ```
 
-![単一タンクの固定係数と2021年の再推定の比較](figs/08/homework2_refit_2021.png)
-
+![2019年の係数を2020年へ適用した並列2タンクと3タンクの流入量・残差](figs/08/homework2_three_tanks.png)
 ````
 
 ### 提出先・期限
@@ -1376,56 +1605,152 @@ plt.show()
 
 ## 自主学習用の発展課題
 
-### 降水量の代表性と流出率の関係
+### 二つのタンクと単一タンクが一致する条件
 
-降水量の入力を一定の倍率 $a>0$ に変えたとき，モデルへの水量入力 $cAP(t)$ がどう変わるかを調べる．面積・流出係数・初日の観測流量は本文と同じにする．
+並列2タンクの流出量が，単一タンクと完全に一致する条件を検討する．初期貯留量は本文と同じ設定を使い，初日の流出量は $Q_0>0$ とする．
 
-````{note} 発展課題：降水量と流出率の組合せ
+````{note} 発展課題：モデルの一致条件と分配割合の影響
 
-1. 2019年の降水量を2倍にし，係数 $c$ を2で割る．本文の`simulate_tank`を使い，元の計算との<span style="color:red">流出量の最大差をNotebookに出力せよ</span>．
-
-入力と係数を変更して比較する．
-
-```python
-rain_scaled = 【2019年の降水強度を2倍にした配列】
-theta_scaled = 【cを2で割り，kは2019年の推定値と同じにした係数の組】
-q_scaled = 【変更後の入力と係数で流出量を求める関数呼び出し】
-q_original = 【保存した2019年の係数と元の降水量で流出量を求める関数呼び出し】
-max_difference = 【元の2019年の計算との流出量の差の絶対値の最大値】
-```
-
-2. 入力の式 $cAP(t)$ を根拠に，<span style="color:red">結果が一致する理由をNotebookに1〜2文で説明せよ</span>．
+1. $k_1=k_2=k$ とし，合計貯留量を $S(t)=S_1(t)+S_2(t)$ と置く．雨水の入力がある場合も含め，割合 $f$ によらず単一タンクと同じ流出量になることを，<span style="color:red">保存則・観測モデル・初期条件から数式で示せ</span>．
+2. 無降雨で $0<f<1$ の場合を考える．並列2タンクの流出量を，すべての $t\geq0$ について $Q_0e^{-kt}$ と表せるためには $k_1=k_2$ が必要であることを，<span style="color:red">数式で証明せよ</span>．初期時刻における1階・2階の導関数を比較せよ．
+3. 無降雨で $(k_1,k_2)=(0.2,0.2),(0.2,0.205),(0.1,0.5)$ の三つを比べる．各組について $f=0.2$ と $f=0.8$ の流出量の差の絶対値を求め，<span style="color:red">時間変化を示す比較図をNotebookに出力せよ</span>．本文の`t_demo`・`rain_demo`・`q0_demo`と`simulate_tank2`を使い， $c=0.7$ に固定せよ．
 ````
 
 ````{visible-answer} 発展課題の解答例
 
-**1．流出量の最大差**
+**1．時定数が等しい場合の一致**
 
-降水量と係数に逆の倍率を掛け，入力の積を保つ．2019年の係数は本文で保存した配列から取り出す．
+**主張**： $k_1=k_2=k>0$ のとき，本文の初期条件を使う並列2タンクは，任意の $0\leq f\leq1$ に対して同じ単一タンクの流出量を与える．
 
-<!-- cell:advanced -->
+**証明・ステップ1：保存則の加算**
+
+二つの保存則を足すと，入力の分配割合が消え，合計貯留量の式が閉じる．
+
+$$
+\begin{aligned}
+\frac{dS}{dt}
+&=fcAP(t)+(1-f)cAP(t)-kS_1-kS_2\\
+&=cAP(t)-kS.
+\end{aligned}
+$$
+
+**証明・ステップ2：観測モデルの確認**
+
+合計流出量も合計貯留量だけから計算できる．
+
+$$
+Q(t)=kS_1(t)+kS_2(t)=kS(t).
+$$
+
+**初期条件の確認**
+
+$$
+S(0)=\frac{fQ_0}{k}+\frac{(1-f)Q_0}{k}=\frac{Q_0}{k}.
+$$
+
+保存則・観測モデル・初期条件が単一タンクと一致する．したがって，同じ降水入力から得られる流出量も一致する．この条件では $f$ が合計流出量に現れず，流量の観測だけでは $f$ の値を区別できない．
+
+**2．無降雨時の一致に必要な条件**
+
+**主張**： $Q_0>0$， $0<f<1$ の下で，無降雨の並列2タンクの流出量が，ある定数 $k>0$ によりすべての $t\geq0$ で $Q_0e^{-kt}$ と表されるならば， $k_1=k_2$ である．
+
+**証明・ステップ1：二つの減衰の合計**
+
+本文の初期条件から，無降雨時の合計流出量は次の形になる．
+
+$$
+Q(t)=Q_0\left(fe^{-k_1t}+(1-f)e^{-k_2t}\right).
+$$
+
+**証明・ステップ2：初期時刻の導関数の比較**
+
+仮に $Q(t)=Q_0e^{-kt}$ なら，1階・2階の導関数も一致するため，
+
+$$
+\begin{aligned}
+k&=fk_1+(1-f)k_2,\\
+k^2&=fk_1^2+(1-f)k_2^2
+\end{aligned}
+$$
+
+を満たす．第1式を第2式へ代入すると，
+
+$$
+\begin{aligned}
+0
+&=fk_1^2+(1-f)k_2^2-\left(fk_1+(1-f)k_2\right)^2\\
+&=f(1-f)(k_1-k_2)^2.
+\end{aligned}
+$$
+
+ $0<f<1$ より $f(1-f)>0$ なので， $k_1=k_2$ を得る．
+
+**初期条件・特殊例の確認**
+
+ $t=0$ では両方の式が $Q_0$ を与える． $f=0$ または $f=1$ では一方のタンクの入力と初期貯留量が0となり，一つのタンクだけで流出を表せる．このため主張では $0<f<1$ を仮定した．
+
+**3．分配割合による流出量の違い**
+
+まず，同じ流出係数の二つのタンクで，割合だけを変えた差を求める．
+
+<!-- cell:advanced_equal -->
+```python
+q_f02 = simulate_tank2((0.7, 0.2, 0.2, 0.2), t_demo, rain_demo, q0_demo)
+q_f08 = simulate_tank2((0.7, 0.2, 0.2, 0.8), t_demo, rain_demo, q0_demo)
+difference_equal = np.abs(q_f02 - q_f08)
+```
+
+流出係数が近い場合も同じ手順で計算する．
+
+<!-- cell:advanced_close -->
 ```{code-block} python
 :linenos:
 :emphasize-lines: 1-2
 :class: code-focus
 
-rain_scaled = 2 * rain_obs
-theta_scaled = (theta_reference[0] / 2, theta_reference[1])
-q_scaled = simulate_tank(theta_scaled, t_data, rain_scaled, qin_obs[0])
-q_original = simulate_tank(theta_reference, t_data, rain_obs, qin_obs[0])
-max_difference = np.max(np.abs(q_scaled - q_original))
-print(f"流出量の最大差: {max_difference:.6f} 千m^3/日")
+q_f02 = simulate_tank2((0.7, 0.2, 0.205, 0.2), t_demo, rain_demo, q0_demo)
+q_f08 = simulate_tank2((0.7, 0.2, 0.205, 0.8), t_demo, rain_demo, q0_demo)
+difference_close = np.abs(q_f02 - q_f08)
 ```
 
-出力例：
+流出係数が離れた場合も計算し，比較する差の配列をそろえる．
 
-```text
-流出量の最大差: 0.000000 千m^3/日
+<!-- cell:advanced_separate -->
+```{code-block} python
+:linenos:
+:emphasize-lines: 1-2
+:class: code-focus
+
+q_f02 = simulate_tank2((0.7, 0.1, 0.5, 0.2), t_demo, rain_demo, q0_demo)
+q_f08 = simulate_tank2((0.7, 0.1, 0.5, 0.8), t_demo, rain_demo, q0_demo)
+difference_separate = np.abs(q_f02 - q_f08)
 ```
 
-**2．一致する理由**
+本文の2段の描画を使い，上段に流出係数が同じ場合・近い場合，下段に離れた場合の差を描く．
 
-$c$ を $c/2$ ，降水量を $2P(t)$ にすると，積 $cAP(t)$ は同じになる．初期条件と流出係数も同じなので，同じ微分方程式の解になる．
+<!-- cell:advanced_plot -->
+```python
+fig, axes = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
+axes[0].plot(t_demo, difference_equal, color="gray", linestyle="--", label="k1 = k2 = 0.2")
+axes[0].plot(t_demo, difference_close, color="tab:blue", label="k1 = 0.2，k2 = 0.205")
+axes[0].set_title("時定数が同じ場合と近い場合")
+axes[0].set_ylabel("流出量の差 [千m³/日]")
+axes[0].legend()
+axes[1].plot(t_demo, difference_separate, color="tab:orange", label="k1 = 0.1，k2 = 0.5")
+axes[1].set_title("時定数が離れている場合")
+axes[1].set_ylabel("流出量の差 [千m³/日]")
+axes[1].set_xlabel("経過日数 [日]")
+axes[1].legend()
+for ax in axes:
+    ax.grid(True)
+fig.tight_layout()
+fig.savefig(FIGURE_DIR / "advanced_time_constants.png", dpi=150)
+plt.show()
+```
 
-この結果は，観測地点の雨と流域全体の雨の違いが，推定した係数の解釈に関係することを示す．流出率を現実の量として説明するには，流域の降水量を独立に確かめる資料も必要になる．
+![分配割合を0.2から0.8へ変えたときの流出量の差と時定数の関係](figs/08/advanced_time_constants.png)
+
+時定数が等しい場合は，割合を変えても合計流出量が一致する．差の最大値は，時定数が近い組で約0.54千m³/日，離れた組で約32.1千m³/日である．上下の図の縦軸の目盛にも注意して比較する．
+
+割合の変更による差が観測誤差と比べて小さい場合は，流量から割合を推定することが難しくなる．二つのタンクの役割を解釈するときは，時定数の違いと観測データの精度を併せて確認する．
 ````
