@@ -504,7 +504,7 @@ q_fast = 【k=0.5として流出量を求める関数呼び出し】
 2. 図と時定数の式を使い，<span style="color:red">減衰が速い係数とその時定数をREADMEに記せ</span>．
 ````
 
-````{visible-answer} 演習1の解答例
+````{hidden-answer} 演習1の解答例
 
 **1．流出係数による比較図**
 
@@ -673,7 +673,7 @@ rmse_valid = 【検証期間のRMSE】
 2. 本文の流入量・残差の描画を使い，検証期間に背景色を付け，<span style="color:red">図をNotebookに出力せよ</span>．背景表示は第7回の`axvspan`を使い，開始日を`data["date"][valid_mask].min()`，終了日を`data["date"].max()`で求めよ．
 ````
 
-````{visible-answer} 演習2の解答例
+````{hidden-answer} 演習2の解答例
 
 **1．期間ごとのRMSE**
 
@@ -868,7 +868,7 @@ print(f"5日後の合計流出量: {q2_demo[5]:.2f} 千m^3/日")
 ```
 ````
 
-````{visible-answer} 演習3の解答例
+````{hidden-answer} 演習3の解答例
 
 **1．二つの貯留量の変化率**
 
@@ -1076,7 +1076,7 @@ print(f"番号を入れ替えた流出量の最大差: {max_difference:.4f} 千m
 2. 第1・第2の時定数を比べ，<span style="color:red">速い応答と遅い応答の時定数をREADMEに記せ</span>．
 ````
 
-````{visible-answer} 演習4の解答例
+````{hidden-answer} 演習4の解答例
 
 **1．番号を入れ替えた流出量の最大差**
 
@@ -1235,7 +1235,7 @@ rmse2_valid = 【並列2タンクの検証期間のRMSE】
 3. 検証期間のRMSEを根拠に，<span style="color:red">後半をよりよく再現したモデルをREADMEに2〜3文で記せ</span>．
 ````
 
-````{visible-answer} 課題1の解答例
+````{hidden-answer} 課題1の解答例
 
 **1．前半での推定と後半のRMSE**
 
@@ -1428,7 +1428,7 @@ initial_guesses_3 = [
 3. 本文の2020年の描画を変更し，観測流入量と2タンク・3タンクの計算結果を示す<span style="color:red">流入量・残差の比較図をNotebookに出力せよ</span>．
 ````
 
-````{visible-answer} 課題2の解答例
+````{hidden-answer} 課題2の解答例
 
 **1．並列3タンクの関数**
 
@@ -1616,7 +1616,7 @@ plt.show()
 3. 無降雨で $(k_1,k_2)=(0.2,0.2),(0.2,0.205),(0.1,0.5)$ の三つを比べる．各組について $f=0.2$ と $f=0.8$ の流出量の差の絶対値を求め，<span style="color:red">時間変化を示す比較図をNotebookに出力せよ</span>．本文の`t_demo`・`rain_demo`・`q0_demo`と`simulate_tank2`を使い， $c=0.7$ に固定せよ．
 ````
 
-````{visible-answer} 発展課題の解答例
+````{hidden-answer} 発展課題の解答例
 
 **1．時定数が等しい場合の一致**
 
